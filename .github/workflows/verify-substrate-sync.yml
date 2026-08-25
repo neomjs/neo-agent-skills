@@ -1,0 +1,59 @@
+# Reusable substrate guard. Enrolled repositories call this; they do not copy it.
+#
+# The enforcing seat is deliberately CI and not a git hook: `--no-verify` makes any hook feedback
+# rather than authority, so a hook alone cannot bind. Binding enforcement is this workflow plus a
+# required status check in branch protection — the branch-protection half is owned separately and
+# is what makes a red here actually block a merge.
+#
+# Caller:
+#   jobs:
+#     substrate:
+#       uses: neomjs/neo-agent-skills/.github/workflows/verify-substrate-sync.yml@main
+
+name: verify-substrate-sync
+
+on:
+  workflow_call:
+    inputs:
+      canonical-ref:
+        description: >-
+          Ref of neomjs/neo-agent-skills supplying the guard. Defaults to main. Pin this to audit a
+          consumer against an older guard; it does NOT change which canonical revision the consumer
+          is measured against — that comes from the consumer's own receipt.
+        required: false
+        type: string
+        default: main
+      consumer-path:
+        description: Subdirectory to treat as the consumer root, for monorepos.
+        required: false
+        type: string
+        default: .
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the consumer
+        uses: actions/checkout@v4
+        with:
+          # The guard resolves `HEAD:.agents/skills` into a content-addressed tree hash, so it needs
+          # real history rather than a treeless partial clone.
+          fetch-depth: 1
+
+      - name: Check out the canonical guard
+        uses: actions/checkout@v4
+        with:
+          repository: neomjs/neo-agent-skills
+          ref: ${{ inputs.canonical-ref }}
+          path: .canonical-guard
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify distribution and projection
+        run: >-
+          node .canonical-guard/scripts/verify-substrate-sync.mjs
+          --consumer-root ${{ inputs.consumer-path }}
