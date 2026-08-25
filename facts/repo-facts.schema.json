@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/neomjs/neo-agent-skills/facts/repo-facts.schema.json",
+  "title": "Repo facts head",
+  "description": "The bounded, structured facts a consuming repository owns. Rendered into the committed contributor-facing AGENTS.md head, above canonical public-common clauses. A fact qualifies ONLY if it is (1) executable by a clean fork with no Neo private infrastructure, (2) repo-specific or public-common rather than maintainer-institution policy, (3) mechanically falsifiable against the repo, and (4) required before the first safe contribution. `additionalProperties: false` is the cap made structural: an uncapped facts head becomes a second constitution by accretion, which is the failure this schema exists to prevent. The schema therefore REJECTS Memory Core / A2A identities, lane-claim rules, maintainer rotation, private paths, and any clause whose consumer requires a Neo seat — there is simply no property to put them in.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["repository", "defaultRef", "install", "commands"],
+  "properties": {
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$",
+      "description": "owner/name. Mechanically falsifiable against the remote."
+    },
+    "defaultRef": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The branch a contributor targets. neo uses `dev`; devindex uses `main` — a difference a copied constitution silently omitted, which is exactly why this is a fact and not prose."
+    },
+    "ticketAuthority": {
+      "type": "string",
+      "enum": ["github-issues", "gitlab-issues", "none"],
+      "description": "Where work is tracked. `none` is a legitimate answer and must be stated rather than left absent."
+    },
+    "install": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The exact install command a clean fork runs. No Neo private infrastructure may be required to execute it."
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit"],
+      "description": "Canonical invocations. Bounded deliberately: a free-form command map is prose wearing a schema.",
+      "properties": {
+        "unit": {"type": "string", "minLength": 1},
+        "e2e": {"type": "string", "minLength": 1},
+        "lint": {"type": "string", "minLength": 1},
+        "build": {"type": "string", "minLength": 1}
+      }
+    },
+    "forbiddenCommands": {
+      "type": "array",
+      "description": "Generic invocations that LOOK correct and are wrong here. Naming them is load-bearing: `npx playwright test` runs without the project config and is the standing example — a contributor cannot infer this from a passing-looking command.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "reason"],
+        "properties": {
+          "command": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 240}
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "description": "Escape hatch, hard-capped. Three entries of 200 characters each is not enough room for a policy document — that is the point. If a required fact does not fit the properties above, the schema is incomplete and should be amended rather than absorbed here as prose.",
+      "maxItems": 3,
+      "items": {"type": "string", "minLength": 1, "maxLength": 200}
+    }
+  }
+}

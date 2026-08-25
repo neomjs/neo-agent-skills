@@ -57,3 +57,11 @@ jobs:
         run: >-
           node .canonical-guard/scripts/verify-substrate-sync.mjs
           --consumer-root ${{ inputs.consumer-path }}
+
+      # Runs even when the step above fails: a contract owing signal to a returning family is worth
+      # reporting in the same run as a drift finding, not on the next push after someone fixes the drift.
+      - name: Check the Tier-2 revalidation trigger
+        if: always()
+        run: >-
+          node .canonical-guard/scripts/check-revalidation.mjs
+          --consumer-root ${{ inputs.consumer-path }}
