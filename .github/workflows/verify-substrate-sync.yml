@@ -23,12 +23,14 @@ on:
     inputs:
       canonical-ref:
         description: >-
-          Ref of neomjs/neo-agent-skills supplying the guard. Defaults to main. Pin this to audit a
+          Ref of neomjs/neo-agent-skills supplying the guard. Defaults to dev — this repository's
+          default branch. It carried no `main` after the 2026-08-26 topology change, so a `@main`
+          reference resolves to nothing rather than failing loudly on a real finding.  Pin this to audit a
           consumer against an older guard; it does NOT change which canonical revision the consumer
           is measured against — that comes from the consumer's own receipt.
         required: false
         type: string
-        default: main
+        default: dev
       consumer-path:
         description: Subdirectory to treat as the consumer root, for monorepos.
         required: false
