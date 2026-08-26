@@ -57,6 +57,15 @@ function run(mutate) {
 /** @summary Current byte sum of the budgeted surface. */
 const surfaceBytes = () => SURFACE.reduce((sum, rel) => sum + statSync(join(repoRoot, rel)).size, 0);
 
+/** @summary Apply a mutation to the copied manifest, preserving its on-disk shape. */
+function editManifest(work, mutate) {
+    const file     = join(work, '.agents/skills/skills.manifest.json'),
+          manifest = JSON.parse(readFileSync(file, 'utf8'));
+
+    mutate(manifest);
+    writeFileSync(file, JSON.stringify(manifest, null, 4) + '\n')
+}
+
 /** @summary Grow the second surface file so the pair lands on an exact total. */
 function padTo(work, total) {
     const
@@ -83,7 +92,26 @@ const cases = [
 
     ['a MISSING budgeted file fails closed', 1,
         w => rmSync(join(w, SURFACE[0])),
-        'a renamed or departed member must not silently shrink the sum to a passing total']
+        'a renamed or departed member must not silently shrink the sum to a passing total'],
+
+    // ── schema arm, migrated with the manifest it validates ──────────────────────────────────────
+    ['an UNSUPPORTED manifest key fails', 1, w => editManifest(w, m => { m.somethingNew = 1 }),
+        'an unrecognised key is a typo or an unreviewed extension; silently ignoring it is how drift enters'],
+
+    ['a wrong schemaVersion fails', 1, w => editManifest(w, m => { m.schemaVersion = 2 }),
+        'the validator only knows v1 shapes, so a v2 document would be checked against the wrong rules'],
+
+    ['a skill MISSING a required field fails', 1,
+        w => editManifest(w, m => { delete m.skills[Object.keys(m.skills)[0]].description }),
+        'the required list comes from $defs.skill — read from the wrong path it is [] and every one of these passes vacuously'],
+
+    ['a skill key that disagrees with entry.name fails', 1,
+        w => editManifest(w, m => { m.skills[Object.keys(m.skills)[0]].name = 'renamed-elsewhere' }),
+        'the key and the name address the same skill; when they diverge the router and the index disagree'],
+
+    ['a NON-kebab-case skill name fails', 1,
+        w => editManifest(w, m => { m.skills[Object.keys(m.skills)[0]].name = Object.keys(m.skills)[0].toUpperCase() }),
+        'the name is a directory name on disk, so casing is not cosmetic']
 ];
 
 let failed = 0;
