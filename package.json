@@ -29,7 +29,8 @@
     ],
     "scripts": {
         "materialize": "node scripts/materialize-harness-skills.mjs",
-        "lint"       : "node scripts/lint-skill-corpus.mjs"
+        "lint"       : "node scripts/lint-skill-corpus.mjs",
+        "test"       : "node scripts/test-lint-skill-corpus.mjs"
     },
     "keywords": [
         "neo.mjs",

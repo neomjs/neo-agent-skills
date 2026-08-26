@@ -33,8 +33,71 @@ const
     errors   = [],
     exempt   = new Set((defaults.oversizedWorkflowMaps || []).map(p => p.replace(/^\.agents\/skills\//, '')));
 
+const SKILL_GROWTH_JUSTIFIED_RE = /\[skill-growth-justified:\s*[^\]\n]+\]/i;
+
 /** @summary A skill's effective budget: its own override, else the default. */
 const budget = (row, key) => (Object.hasOwn(row, key) ? row[key] : defaults[key]);
+
+// ── 0. manifest schema ──────────────────────────────────────────────────────────────────────────
+// The manifest is the index every other arm reads, so a malformed one makes the rest of this lint
+// answer questions about the wrong document. Checked first for that reason.
+//
+// The per-skill shape lives at `$defs.skill`, NOT at `properties.skills.additionalProperties` —
+// that path is undefined here, so `required` reads as `[]` and every missing-field check passes
+// vacuously. Getting this wrong produces a green that means nothing.
+const schema = JSON.parse(readFileSync(join(SKILLS, 'skills.manifest.schema.json'), 'utf8'));
+
+{
+    const rootKeys = new Set([...schema.required, '$schema']);
+
+    for (const key of Object.keys(manifest)) {
+        if (!rootKeys.has(key)) errors.push(`manifest has unsupported key: ${key}`)
+    }
+
+    for (const key of schema.required) {
+        if (!(key in manifest)) errors.push(`manifest missing required key: ${key}`)
+    }
+
+    if (manifest.schemaVersion !== 1) errors.push('manifest schemaVersion must be 1.');
+
+    if (!manifest.skills || typeof manifest.skills !== 'object' || Array.isArray(manifest.skills)) {
+        errors.push('manifest skills must be an object.')
+    }
+
+    const defaultKeys = new Set(Object.keys(schema.properties.defaults.properties));
+
+    for (const key of Object.keys(defaults)) {
+        if (!defaultKeys.has(key)) errors.push(`defaults has unsupported key: ${key}`)
+    }
+
+    for (const key of schema.properties.defaults.required) {
+        if (!(key in defaults)) errors.push(`defaults missing required key: ${key}`)
+    }
+
+    for (const key of ['routerByteBudget', 'payloadBudget']) {
+        if (!Number.isInteger(defaults[key]) || defaults[key] < 1) {
+            errors.push(`defaults.${key} must be a positive integer.`)
+        }
+    }
+
+    const skillKeys = new Set(Object.keys(schema.$defs.skill.properties));
+
+    for (const [skillName, skill] of Object.entries(manifest.skills || {})) {
+        for (const key of Object.keys(skill)) {
+            if (!skillKeys.has(key)) errors.push(`${skillName} has unsupported key: ${key}`)
+        }
+
+        for (const key of schema.$defs.skill.required) {
+            if (!(key in skill)) errors.push(`${skillName} missing required key: ${key}`)
+        }
+
+        if (skill.name !== skillName) errors.push(`${skillName}: manifest key must match entry.name "${skill.name}".`);
+
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(skill.name || '')) {
+            errors.push(`${skillName} has an invalid kebab-case name.`)
+        }
+    }
+}
 
 /** @summary Total bytes of a directory tree, or 0 when absent. */
 function treeBytes(dir) {
@@ -162,6 +225,40 @@ for (const name of declared) {
     }
 }
 
+// ── 3b. combined budgets — a loaded SURFACE, not a single file ──────────────────────────────────
+//
+// Migrated from neomjs/neo's check-substrate-size (#15257) when the corpus moved here. Per-file
+// budgets cannot express it: the rule bounds what a reader loads when several files arrive together,
+// so two files each individually legal can still breach the surface. `limitBytes` is the baseline the
+// surface had to get BELOW, so landing exactly on it is the breach and the largest legal sum is
+// limitBytes - 1.
+const COMBINED_BUDGETS = [
+    {
+        label     : 'pr-review loaded surface (neomjs/neo#15257)',
+        limitBytes: 41357,
+        files     : [
+            'pr-review/audits/review-cost-circuit-breaker.md',
+            'pr-review/references/pr-review-guide.md'
+        ]
+    }
+];
+
+for (const {label, limitBytes, files} of COMBINED_BUDGETS) {
+    let sum = 0, missing = [];
+
+    for (const rel of files) {
+        const full = join(SKILLS, rel);
+
+        existsSync(full) ? sum += statSync(full).size : missing.push(rel)
+    }
+
+    if (missing.length) {
+        errors.push(`${label}: budgeted file(s) absent — ${missing.join(', ')}. A budget over a file that does not exist silently bounds nothing.`)
+    } else if (sum >= limitBytes) {
+        errors.push(`${label}: ${sum} bytes against a limit of ${limitBytes}; the largest legal sum is ${limitBytes - 1}. Individually legal files can still breach a loaded surface.`)
+    }
+}
+
 // ── 4. net-growth budget ────────────────────────────────────────────────────────────────────────
 const baseArg = process.argv.indexOf('--base');
 
@@ -176,8 +273,16 @@ if (baseArg !== -1 && process.argv[baseArg + 1]) {
             delta     = nowBytes - baseBytes,
             cap       = defaults.maxPositiveDeltaBytes;
 
-        if (Number.isFinite(cap) && delta > cap) {
-            errors.push(`corpus grew ${delta} bytes against ${base}, exceeds maxPositiveDeltaBytes ${cap}. Growth is allowed; unexamined growth is not — state why in the PR body or trim.`)
+        // The escape hatch, carried over from the authoring repo's lint. Without it the cap is a hard
+        // block with no legitimate way past, so the only route for justified growth becomes raising
+        // the cap — which is how a budget quietly stops being one. A justification must be written
+        // down, in the commit range being measured, and it names itself.
+        const justified = SKILL_GROWTH_JUSTIFIED_RE.test(
+            execFileSync('git', ['log', '--format=%B', `${base}..HEAD`], {cwd: root, encoding: 'utf8'})
+        );
+
+        if (Number.isFinite(cap) && delta > cap && !justified) {
+            errors.push(`corpus grew ${delta} bytes against ${base}, exceeds maxPositiveDeltaBytes ${cap}. Growth is allowed; unexamined growth is not — trim, or state why in a commit message as [skill-growth-justified: reason].`)
         }
     } catch {
         errors.push(`net-growth arm could not read ${base}:.agents/skills — refusing to report a pass it did not measure.`)

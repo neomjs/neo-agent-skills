@@ -29,12 +29,18 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Corpus coherence, budgets, reference integrity, net growth
         run: |
           BASE="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
           node scripts/lint-skill-corpus.mjs --base "$BASE"
+
+      - name: Corpus lint's own boundary cases
+        # The combined-surface rule arrived here from neomjs/neo with its tests. A rule that migrates
+        # without its proof silently stops being checked — the code lands, nothing exercises it, and
+        # the first regression is invisible.
+        run: node scripts/test-lint-skill-corpus.mjs
 
       - name: Package contents — what actually ships
         run: |
