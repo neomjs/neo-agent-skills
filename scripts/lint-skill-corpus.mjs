@@ -162,6 +162,40 @@ for (const name of declared) {
     }
 }
 
+// ── 3b. combined budgets — a loaded SURFACE, not a single file ──────────────────────────────────
+//
+// Migrated from neomjs/neo's check-substrate-size (#15257) when the corpus moved here. Per-file
+// budgets cannot express it: the rule bounds what a reader loads when several files arrive together,
+// so two files each individually legal can still breach the surface. `limitBytes` is the baseline the
+// surface had to get BELOW, so landing exactly on it is the breach and the largest legal sum is
+// limitBytes - 1.
+const COMBINED_BUDGETS = [
+    {
+        label     : 'pr-review loaded surface (neomjs/neo#15257)',
+        limitBytes: 41357,
+        files     : [
+            'pr-review/audits/review-cost-circuit-breaker.md',
+            'pr-review/references/pr-review-guide.md'
+        ]
+    }
+];
+
+for (const {label, limitBytes, files} of COMBINED_BUDGETS) {
+    let sum = 0, missing = [];
+
+    for (const rel of files) {
+        const full = join(SKILLS, rel);
+
+        existsSync(full) ? sum += statSync(full).size : missing.push(rel)
+    }
+
+    if (missing.length) {
+        errors.push(`${label}: budgeted file(s) absent — ${missing.join(', ')}. A budget over a file that does not exist silently bounds nothing.`)
+    } else if (sum >= limitBytes) {
+        errors.push(`${label}: ${sum} bytes against a limit of ${limitBytes}; the largest legal sum is ${limitBytes - 1}. Individually legal files can still breach a loaded surface.`)
+    }
+}
+
 // ── 4. net-growth budget ────────────────────────────────────────────────────────────────────────
 const baseArg = process.argv.indexOf('--base');
 
