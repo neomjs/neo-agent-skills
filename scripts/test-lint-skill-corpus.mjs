@@ -30,20 +30,39 @@ const
 /**
  * @summary Run the lint inside a disposable copy of the repo, after applying a mutation.
  * @param {Function} [mutate] receives the copy's root
+ * @param {Object} [options]
+ * @param {String} [options.commitMessage] enables a two-commit git fixture and the --base path
  * @returns {{code: Number, out: String}}
  */
-function run(mutate) {
+function run(mutate, {commitMessage = null} = {}) {
     const work = mkdtempSync(join(tmpdir(), 'corpus-lint-'));
 
     cpSync(join(repoRoot, '.agents'), join(work, '.agents'), {recursive: true});
     cpSync(join(repoRoot, 'scripts'), join(work, 'scripts'), {recursive: true});
 
+    if (commitMessage) {
+        execFileSync('git', ['init', '-q'], {cwd: work});
+        execFileSync('git', ['config', 'user.email', 'ci@local'], {cwd: work});
+        execFileSync('git', ['config', 'user.name', 'ci'], {cwd: work});
+        execFileSync('git', ['add', '.'], {cwd: work});
+        execFileSync('git', ['commit', '-qm', 'baseline'], {cwd: work})
+    }
+
     mutate?.(work);
+
+    if (commitMessage) {
+        execFileSync('git', ['add', '.'], {cwd: work});
+        execFileSync('git', ['commit', '-qm', commitMessage], {cwd: work})
+    }
 
     let code = 0, out = '';
 
     try {
-        out = execFileSync('node', [join(work, 'scripts/lint-skill-corpus.mjs')], {encoding: 'utf8'})
+        const args = [join(work, 'scripts/lint-skill-corpus.mjs')];
+
+        if (commitMessage) args.push('--base', 'HEAD~1');
+
+        out = execFileSync('node', args, {cwd: work, encoding: 'utf8'})
     } catch (err) {
         code = err.status ?? 1;
         out  = `${err.stdout ?? ''}${err.stderr ?? ''}`
@@ -64,6 +83,15 @@ function editManifest(work, mutate) {
 
     mutate(manifest);
     writeFileSync(file, JSON.stringify(manifest, null, 4) + '\n')
+}
+
+/** @summary Grow corpus Markdown one byte beyond its configured net-positive cap. */
+function growCorpus(work) {
+    const
+        manifest = JSON.parse(readFileSync(join(work, '.agents/skills/skills.manifest.json'), 'utf8'),
+        growth   = manifest.defaults.maxPositiveDeltaBytes + 1;
+
+    appendFileSync(join(work, SURFACE[1]), '\n' + 'x'.repeat(growth))
 }
 
 /** @summary Grow the second surface file so the pair lands on an exact total. */
@@ -111,15 +139,28 @@ const cases = [
 
     ['a NON-kebab-case skill name fails', 1,
         w => editManifest(w, m => { m.skills[Object.keys(m.skills)[0]].name = Object.keys(m.skills)[0].toUpperCase() }),
-        'the name is a directory name on disk, so casing is not cosmetic']
+        'the name is a directory name on disk, so casing is not cosmetic'],
+
+    // ── net-growth escape hatch — only observable through the --base git-history path ────────────
+    ['over-cap growth WITHOUT justification fails', 1, growCorpus,
+        'the cap must stay red when the measured commit range carries no explicit rationale',
+        {commitMessage: 'grow corpus'}],
+
+    ['over-cap growth WITH a non-empty justification passes', 0, growCorpus,
+        'the escape hatch exists so legitimate growth does not force maintainers to raise the cap',
+        {commitMessage: 'grow corpus\n\n[skill-growth-justified: fixture proves the exception path]'}],
+
+    ['an EMPTY growth marker does not justify growth', 1, growCorpus,
+        'a token with no reason is ceremony, not a recorded decay-mitigation rationale',
+        {commitMessage: 'grow corpus\n\n[skill-growth-justified:]'}]
 ];
 
 let failed = 0;
 
 console.log(`surface today: ${surfaceBytes()} of ${LIMIT} — headroom ${LIMIT - 1 - surfaceBytes()}\n`);
 
-for (const [name, expected, mutate, because] of cases) {
-    const {code} = run(mutate),
+for (const [name, expected, mutate, because, options] of cases) {
+    const {code} = run(mutate, options),
           ok     = code === expected;
 
     if (!ok) failed++;
