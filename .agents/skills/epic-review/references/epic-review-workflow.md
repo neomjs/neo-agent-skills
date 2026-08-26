@@ -93,11 +93,11 @@ Checks:
 - **Phase boundaries**: sub N's outputs feed sub N+1's inputs cleanly; no circular `blocked_by` dependencies
 - **Missing phases**: a prerequisite sub implied by the arc but not filed (e.g. a migration ticket, a schema ticket, a doc-update ticket)
 - **Scope creep risk**: subs whose titles or bodies exceed the parent epic's scope
-- **Structural Pre-Flight Sweep**: when subs prescribe new `.mjs` files (new daemon, new service, new script, new helper), validate each prescribed directory against `.agents/skills/structural-pre-flight/SKILL.md` Stage 0/1 BEFORE the sub is picked up. Each sub's PR will eventually have to satisfy this gate; surfacing mismatches at epic-review time is cheaper than at sub-PR-review time. Empirical anchor: M3 epic where sub PR #11008 misplaced `orchestrator-daemon.mjs` in `ai/scripts/` instead of v13-path.md M3 split (`ai/scripts/orchestrator-daemon.mjs` thin wrapper + `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/`); a Stage-3 sweep at epic-review would have caught the directory-choice mismatch in the prescription before sub pickup.
+- **Structural Pre-Flight Sweep**: when subs prescribe new `.mjs` files (new daemon, new service, new script, new helper), validate each prescribed directory against `.agents/skills/structural-pre-flight/SKILL.md` Stage 0/1 BEFORE the sub is picked up. Each sub's PR will eventually have to satisfy this gate; surfacing mismatches at epic-review time is cheaper than at sub-PR-review time. Empirical anchor: M3 epic where sub PR #11008 misplaced `orchestrator-daemon.mjs` in `ai/scripts/` instead of the Brain-owned [v13 path M3 split](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) (`ai/scripts/orchestrator-daemon.mjs` thin wrapper + `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/`); a Stage-3 sweep at epic-review would have caught the directory-choice mismatch in the prescription before sub pickup.
 
 #### Stage 3.1 — Evidence Matrix Producer Hook (entry side of the closeout contract)
 
-*(Required when any of the epic's acceptance criteria describe observable runtime effect on a surface the CI / agent sandbox cannot reach — i.e., when the [Substrate Evidence Ladder](../../../../learn/agentos/process/evidence-ladder.md) trigger applies. Mark N/A for epics where ACs are fully covered by unit tests / static contract.)*
+*(Required when any of the epic's acceptance criteria describe observable runtime effect on a surface the CI / agent sandbox cannot reach — i.e., when the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) trigger applies. Mark N/A for epics where ACs are fully covered by unit tests / static contract.)*
 
 The `epic-review` skill is the *entry pass* of the closeout contract; `epic-resolution` is the *exit pass* (sibling skill, runs at sub-closure time). Both consume the same matrix shape on the parent epic body. **Stage 3.1 is where the entry pass SEEDS the matrix** so the exit pass has a contract to reconcile against.
 
@@ -114,7 +114,7 @@ For each parent AC of the epic, Stage 3 must produce columns 1–3 of the shared
 
 **Where the matrix lives:** post the Stage 3.1 matrix as a comment on the epic ticket, OR amend the epic body to include a `## Closeout Matrix (entry-seeded)` section. The closeout pass (`epic-resolution`) reads the most recent matrix-shaped artifact and reconciles columns 4–6 against the actual delivered PRs.
 
-**Cross-reference:** [`learn/agentos/process/evidence-ladder.md`](../../../../learn/agentos/process/evidence-ladder.md) for L1-L4 ladder + sandbox-vs-achievable ceiling distinction + complete schema definitions.
+**Cross-reference:** the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) for L1-L4 ladder + sandbox-vs-achievable ceiling distinction + complete schema definitions.
 
 ### Stage 4 — Prescription Layer
 
@@ -192,7 +192,7 @@ These citations belong in the `ticket-intake` reflection step for the sub, not a
 | `ticket-intake` | Sub pickup | Sub-scope | Epic-review runs *before* ticket-intake the first time your identity picks up any sub from this epic. After epic-review, ticket-intake proceeds per its own protocol. |
 | `pull-request` | PR creation | PR-scope | Orthogonal — epic-review does not interact with the PR layer. |
 | `pr-review` | PR validation | Post-work | Complementary — epic-review catches scope/approach drift *before* work; pr-review catches execution drift *after*. Different blast radius, different timing. |
-| `epic-resolution` | Epic closeout | At sub-closure time | Sibling exit-pass to this entry-pass. Epic-review Stage 3.1 SEEDS the AC → required-evidence → owning-sub matrix; epic-resolution RECONCILES columns 4–6 (delivered PRs / achieved evidence / residual state) at closeout time. The two skills share the same matrix schema defined in [`learn/agentos/process/evidence-ladder.md`](../../../../learn/agentos/process/evidence-ladder.md). Different agents may run the two passes; the matrix-as-artifact is the contract between them. |
+| `epic-resolution` | Epic closeout | At sub-closure time | Sibling exit-pass to this entry-pass. Epic-review Stage 3.1 SEEDS the AC → required-evidence → owning-sub matrix; epic-resolution RECONCILES columns 4–6 (delivered PRs / achieved evidence / residual state) at closeout time. The two skills share the same matrix schema defined in the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md). Different agents may run the two passes; the matrix-as-artifact is the contract between them. |
 
 ## 7. Anti-Patterns
 

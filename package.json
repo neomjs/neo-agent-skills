@@ -1,6 +1,6 @@
 {
     "name"       : "neo-agent-skills",
-    "version"    : "0.1.1",
+    "version"    : "0.1.2",
     "description": "The canonical agent skill substrate for the neomjs organization. Consumers depend on it; they never copy it.",
     "type"       : "module",
     "license"    : "MIT",

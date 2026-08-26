@@ -14,7 +14,7 @@ This protocol ensures that feedback is:
 
 Build — and write down — your premise of the change **before** reading the patch as the source of truth. You can reject a toaster-when-we-need-a-car before reading a line; a green checklist over a wrong premise is theater. Capture four fields. The snapshot is **patch-blind** — the *premise authority* is the substrate, not the patch ("I wrote this first" is itself theater).
 
-1. **Inputs read before the patch** — the ticket/issue, the changed-file list, the current `dev` source of the touched files, sibling precedent, and the source-of-authority substrate (ADRs, `learn/`, the owning service). **NOT the PR's own self-description as the primary premise** — the PR body is a claim to verify, not the authority. Build the premise from the affected files (intent belongs in their JSDoc — `src/core/Base.mjs` is the bar), their neighbors, and their imports; use `memory-mining` / `ask_knowledge_base` when the code is thin. Intent you can't find anywhere is the finding: ticket the gap. **Intent authority:** PR claims to change / retire / amend / supersede / correct a prior position → mine the body's `Origin Session ID`: the premise is intent-vs-diff, not claims-vs-diff, and semantic search misses silently ([correction-culture](../../../../learn/agentos/process/correction-culture.md)).
+1. **Inputs read before the patch** — the ticket/issue, the changed-file list, the current `dev` source of the touched files, sibling precedent, and the source-of-authority substrate (ADRs, `learn/`, the owning service). **NOT the PR's own self-description as the primary premise** — the PR body is a claim to verify, not the authority. Build the premise from the affected files (intent belongs in their JSDoc — `src/core/Base.mjs` is the bar), their neighbors, and their imports; use `memory-mining` / `ask_knowledge_base` when the code is thin. Intent you can't find anywhere is the finding: ticket the gap. **Intent authority:** PR claims to change / retire / amend / supersede / correct a prior position → mine the body's `Origin Session ID`: the premise is intent-vs-diff, not claims-vs-diff, and semantic search misses silently (see the [correction-culture guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/correction-culture.md)).
 2. **Expected solution-shape** (1–3 sentences) — what *should* a correct change here look like? Explicitly include **"what boundary should this NOT hardcode?"** and **"what test-isolation should exist?"**, so the snapshot reaches the portability + test-isolation dimensions before the diff frames them away.
 3. **Patch-verdict** — does the diff **match / improve / contradict** the expected shape? Name the specific evidence that changed (or confirmed) your mind. "Matches" with no evidence is not a verdict.
 4. **Premise-coherence** — the value-coherence verdict, or a scoped "N/A — no value-surface".
@@ -84,7 +84,7 @@ The Retrospective daemon explicitly regex-matches these tags during REM sleep:
 
 ### 4.1 Reference Hygiene
 
-Before review prose/tags, read [`reference-hygiene.md`](../../../../learn/agentos/process/reference-hygiene.md): structural tokens stay bare; descriptive tokens use backticks.
+Before review prose/tags, read the [reference-hygiene guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/reference-hygiene.md): structural tokens stay bare; descriptive tokens use backticks.
 
 ## 5. Required Actions & Cross-Linking
 *   **Related Graph Nodes:** Every PR review MUST list related graph nodes (e.g., `Target Epic ID`, `Issue ID`) to ensure the Native Edge Graph links the evaluation to the overarching goal.
@@ -129,7 +129,7 @@ For PRs that introduce or modify public/consumed surfaces (e.g., configs, MCP to
 1. **Locate the Ledger:** Fetch the originating ticket (the close-target). Look for the "Contract Ledger" markdown table in the ticket body. If it is a sub-issue relying on a parent epic's ledger, fetch the parent epic to locate it.
 2. **Missing Ledger:** If the PR modifies public surfaces but both the originating ticket and its parent epic lack a Contract Ledger, flag as a **Required Action**:
    > *"PR modifies public/consumed surfaces but the originating ticket (and parent epic) lacks a Contract Ledger matrix. Required: backfill the Contract Ledger on the ticket to establish the formal API contract."*
-3. **Drift Detection:** Compare the PR diff against the ticket's Contract Ledger. If the implemented contract drifts from the ledger (e.g., added fields, changed types, missing deprecation steps), or if a ledger row fails the Surface-Anchor V-B-A in `learn/agentos/process/contract-ledger.md`, flag as a **Required Action**:
+3. **Drift Detection:** Compare the PR diff against the ticket's Contract Ledger. If the implemented contract drifts from the ledger (e.g., added fields, changed types, missing deprecation steps), or if a ledger row fails the Surface-Anchor V-B-A in the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md), flag as a **Required Action**:
    > *"Contract drift detected: the implementation differs from the Contract Ledger defined in the ticket. Required: update the ticket's Contract Ledger to reflect the exact shipped reality."*
 
 The PR cannot be approved if the implemented contract and the ticket's Contract Ledger are out of sync.
@@ -256,7 +256,7 @@ Demo/product-surface diffs touching rendered motion: load `audits/demo-surface-m
 
 ### 7.5.4 Seat Routing
 
-Before claiming/requesting visual-render, headed-harness, or native-matrix evidence: consult `learn/agentos/process/SeatEvidenceCapabilities.md` (check `observedAt`; stale = `unknown`).
+Before claiming/requesting visual-render, headed-harness, or native-matrix evidence: consult the Engine's [Seat Evidence Capabilities guide](https://github.com/neomjs/neo/blob/dev/learn/agentos/process/SeatEvidenceCapabilities.md) (check `observedAt`; stale = `unknown`).
 
 ### 7.6 CI / Security Checks Audit
 

@@ -57,8 +57,8 @@ You must use the `ideation-sandbox` skill to post a GitHub Discussion proposing 
 
 To understand the macro-architecture this skill serves (Neo as an Application Engine on the Left Hemisphere, and Agent OS on the Right Hemisphere), review the following:
 
-- `learn/benefits/ArchitectureOverview.md` (Left/Right Hemispheres)
-- `learn/agentos/DreamPipeline.md` (Sensory Input & DreamService)
+- Engine-owned [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) (Left/Right Hemispheres)
+- Brain-owned [Dream Pipeline](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/DreamPipeline.md) (Sensory Input & DreamService)
 - `resources/content/discussions/discussion-10119.md` (Engine-category vs. Framework-category positioning)
 - `resources/content/discussions/discussion-10137.md` (Agent OS context)
 - `.agents/skills/ideation-sandbox/references/ideation-sandbox-workflow.md` (Pre-Filing Precedent Sweep): The radar targets *frontier friction* where standards are failing. The `ideation-sandbox` precedent sweep targets *established standards* to avoid reinventing them. They are complementary disciplines.

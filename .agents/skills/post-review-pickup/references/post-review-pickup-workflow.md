@@ -36,8 +36,8 @@ file or route the bug, then continue picking the next lane.
   role payloads must be read before lane choice, and when review-first is
   legitimate.
 
-<!-- trigger: watchdog/night-shift wake, operator driver command, or lane-driver handoff → read learn/agentos/wake-substrate/NightShiftLeasedDriver.md -->
-- `learn/agentos/wake-substrate/NightShiftLeasedDriver.md` — TTL, renewal, and
+<!-- trigger: watchdog/night-shift wake, operator driver command, or lane-driver handoff → read https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/wake-substrate/NightShiftLeasedDriver.md -->
+- Brain-owned [night-shift leased-driver runbook](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/wake-substrate/NightShiftLeasedDriver.md) — TTL, renewal, and
   direct-driver routing for autonomous windows. A lane-ownership contract, not a
   review-pickup variant.
 

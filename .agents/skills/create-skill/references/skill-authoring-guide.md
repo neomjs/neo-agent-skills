@@ -68,7 +68,7 @@ The canonical worked example is `AGENTS.md` `Compaction Taxonomy` — every row 
 
 ### Byte Budget for SKILL.md Routers
 
-Empirical floor for the `SKILL.md` router itself: **7-12 lines** (range across all 18 current skills, anchored in `learn/agentos/measurements/cognitive-load-baseline-2026-05.md` §7 *SKILL.md Router Byte-Budget Baseline*; routers exceeding 12 lines historically benefit from extracting content into payload).
+Empirical floor for the `SKILL.md` router itself: **7-12 lines** (range across all 18 current skills, anchored in the Brain-owned [cognitive-load baseline](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/measurements/cognitive-load-baseline-2026-05.md) §7 *SKILL.md Router Byte-Budget Baseline*; routers exceeding 12 lines historically benefit from extracting content into payload).
 
 This is a *discriminator*, not a hard cap. A 14-line router can be justified if the additional lines are load-bearing trigger-language; an 8-line router lacking load-bearing trigger-language can be over-engineered. Use the 7-12 line floor as the *prompt* for "should this content live here, or in payload?"
 
@@ -185,7 +185,7 @@ Before pushing your new skill, check:
 
 Any PR that **creates OR modifies** `.agents/skills/**` substrate is an **agent-consumed governance-surface** change. Beyond the skill-shape checks above, the `pr-review` Contract-Completeness + load-effect audits require **two PR-open gates** — author both **up-front** (each is documentation-only: no diff, head, or CI impact):
 
-1. **Contract Ledger on the SOURCE TICKET** — not just the PR body. Post the T3 matrix (`learn/agentos/process/contract-ledger.md`) as a comment on the ticket / epic; the Contract-Completeness audit checks the *originating ticket*, so a PR-body-only ledger does not satisfy it.
+1. **Contract Ledger on the SOURCE TICKET** — not just the PR body. Post the T3 matrix defined by the Brain-owned [contract-ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md) as a comment on the ticket / epic; the Contract-Completeness audit checks the *originating ticket*, so a PR-body-only ledger does not satisfy it.
 2. **`/turn-memory-pre-flight` load-effect audit in the PR body** — document the load-runtime-effect placement: which file is the always-loaded **Map** (SKILL.md router / hot workflow §) vs the conditional **World-Atlas** payload, and that the net always-loaded delta is minimal or negative (rule bodies belong in the conditional audit, never the always-loaded Map).
 
 Doing both up-front avoids the predictable single-cycle `CHANGES_REQUESTED` this gate otherwise fires.

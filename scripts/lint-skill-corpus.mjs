@@ -12,8 +12,9 @@
  * apparent meaning instead of its actual one would silently pass every router in the corpus.
  *
  * Deliberately absent, because they belong to other owners or to nobody: identity-roster and
- * revalidation checks, consumer byte-drift, AGENTS entrypoint budgets, downstream doc targets, and
- * anything resembling a reusable consumer workflow.
+ * revalidation checks, consumer byte-drift, AGENTS entrypoint budgets, and anything resembling a
+ * reusable consumer workflow. Canonical documentation reach is corpus coherence, so it is checked
+ * here without teaching consumers any lint rule.
  *
  * @example
  * node scripts/lint-skill-corpus.mjs
@@ -128,6 +129,224 @@ function walk(dir, base = dir) {
 const
     dirs      = readdirSync(SKILLS, {withFileTypes: true}).filter(e => e.isDirectory()).map(e => e.name).sort(),
     declared  = Object.keys(manifest.skills).sort();
+
+// ── 0b. canonical document-reference census ────────────────────────────────────────────────────
+//
+// The package deliberately ships no `learn/` tree. A consumer-relative documentation path can
+// therefore appear to work in neomjs/neo while dangling in every other consumer. The census is the
+// bounded contract: every exact document token names its canonical repository, URL, consumers and
+// semantic use. The URL arm below checks the actual corpus rather than trusting the data to certify
+// itself.
+const
+    DOCUMENT_REFERENCE_FILE     = join(SKILLS, 'document-references.v1.json'),
+    DOCUMENT_REFERENCE_SELECTOR = 'learn/[A-Za-z0-9_./-]+\\.md',
+    DOCUMENT_REFERENCE_EXACT_RE = new RegExp(`^(?:${DOCUMENT_REFERENCE_SELECTOR})$`),
+    DOCUMENT_REFERENCE_OWNERS   = new Map([
+        ['neomjs/neo-agent-brain', 13],
+        ['neomjs/neo',             10]
+    ]),
+    DOCUMENT_REFERENCE_KINDS    = new Set(['load', 'target-write', 'prose']),
+    DOCUMENT_REFERENCE_ROOT_KEYS = new Set(['schemaVersion', 'selector', 'rows']),
+    DOCUMENT_REFERENCE_ROW_KEYS = new Set([
+        'token', 'canonicalOwner', 'resolution', 'referencingSkills', 'kinds'
+    ]);
+
+let documentReferenceCensus = {};
+
+try {
+    documentReferenceCensus = JSON.parse(readFileSync(DOCUMENT_REFERENCE_FILE, 'utf8'))
+} catch {
+    errors.push('document-references.v1.json is missing or invalid JSON — canonical documentation reach is unmeasured.')
+}
+
+for (const key of Object.keys(documentReferenceCensus)) {
+    if (!DOCUMENT_REFERENCE_ROOT_KEYS.has(key)) {
+        errors.push(`document-reference census has unsupported key: ${key}`)
+    }
+}
+
+for (const key of DOCUMENT_REFERENCE_ROOT_KEYS) {
+    if (!(key in documentReferenceCensus)) {
+        errors.push(`document-reference census missing required key: ${key}`)
+    }
+}
+
+if (documentReferenceCensus.schemaVersion !== 'document-references.v1') {
+    errors.push('document-reference census schemaVersion must be "document-references.v1".')
+}
+
+if (documentReferenceCensus.selector !== DOCUMENT_REFERENCE_SELECTOR) {
+    errors.push(`document-reference census selector must be "${DOCUMENT_REFERENCE_SELECTOR}".`)
+}
+
+const
+    documentReferenceRows = Array.isArray(documentReferenceCensus.rows) ? documentReferenceCensus.rows : [],
+    documentRowsByToken    = new Map(),
+    ownerCounts            = new Map([...DOCUMENT_REFERENCE_OWNERS.keys()].map(owner => [owner, 0]));
+
+if (!Array.isArray(documentReferenceCensus.rows)) {
+    errors.push('document-reference census rows must be an array.')
+}
+
+if (documentReferenceRows.length !== 23) {
+    errors.push(`document-reference census must contain exactly 23 rows; found ${documentReferenceRows.length}.`)
+}
+
+for (const [index, row] of documentReferenceRows.entries()) {
+    const label = `document-reference row ${index + 1}`;
+
+    if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        errors.push(`${label} must be an object.`);
+        continue
+    }
+
+    for (const key of Object.keys(row)) {
+        if (!DOCUMENT_REFERENCE_ROW_KEYS.has(key)) errors.push(`${label} has unsupported key: ${key}`)
+    }
+
+    for (const key of DOCUMENT_REFERENCE_ROW_KEYS) {
+        if (!(key in row)) errors.push(`${label} missing required key: ${key}`)
+    }
+
+    if (!DOCUMENT_REFERENCE_EXACT_RE.test(row.token || '')) {
+        errors.push(`${label} token is not an exact learn/**/*.md document: ${JSON.stringify(row.token)}.`)
+    } else if (documentRowsByToken.has(row.token)) {
+        errors.push(`document-reference census has duplicate row for ${row.token}.`)
+    } else {
+        documentRowsByToken.set(row.token, row)
+    }
+
+    if (!DOCUMENT_REFERENCE_OWNERS.has(row.canonicalOwner)) {
+        errors.push(`${label} has unknown canonicalOwner: ${JSON.stringify(row.canonicalOwner)}.`)
+    } else {
+        ownerCounts.set(row.canonicalOwner, ownerCounts.get(row.canonicalOwner) + 1)
+    }
+
+    const expectedResolution = `https://github.com/${row.canonicalOwner}/blob/dev/${row.token}`;
+
+    if (row.resolution !== expectedResolution) {
+        errors.push(`${label} resolution must be ${expectedResolution}; found ${JSON.stringify(row.resolution)}.`)
+    }
+
+    if (!Array.isArray(row.referencingSkills) || !row.referencingSkills.length) {
+        errors.push(`${label} referencingSkills must be a non-empty array.`)
+    } else {
+        const uniqueSkills = new Set(row.referencingSkills);
+
+        if (uniqueSkills.size !== row.referencingSkills.length) {
+            errors.push(`${label} referencingSkills contains duplicates.`)
+        }
+
+        for (const skillName of row.referencingSkills) {
+            if (typeof skillName !== 'string' || !manifest.skills[skillName]) {
+                errors.push(`${label} references unknown skill: ${JSON.stringify(skillName)}.`)
+            }
+        }
+    }
+
+    if (!Array.isArray(row.kinds) || !row.kinds.length) {
+        errors.push(`${label} kinds must be a non-empty array.`)
+    } else {
+        const uniqueKinds = new Set(row.kinds);
+
+        if (uniqueKinds.size !== row.kinds.length) errors.push(`${label} kinds contains duplicates.`)
+
+        for (const kind of row.kinds) {
+            if (!DOCUMENT_REFERENCE_KINDS.has(kind)) {
+                errors.push(`${label} has unknown kind: ${JSON.stringify(kind)}.`)
+            }
+        }
+    }
+}
+
+for (const [owner, expected] of DOCUMENT_REFERENCE_OWNERS) {
+    if (ownerCounts.get(owner) !== expected) {
+        errors.push(`document-reference census must contain ${expected} ${owner} rows; found ${ownerCounts.get(owner)}.`)
+    }
+}
+
+const observedDocumentSkills = new Map();
+
+/** @summary Records one document token and verifies it is inside the census row's exact URL. */
+function recordDocumentReference({file, index, skillName, source, token}) {
+    if (!observedDocumentSkills.has(token)) observedDocumentSkills.set(token, new Set());
+    observedDocumentSkills.get(token).add(skillName);
+
+    const row = documentRowsByToken.get(token);
+
+    if (!row) {
+        errors.push(`${file} references ${token}, which has no document-reference census row.`);
+        return
+    }
+
+    if (typeof row.resolution !== 'string') return;
+
+    const
+        prefixLength = row.resolution.length - token.length,
+        start        = index - prefixLength,
+        embedded     = start >= 0 && source.slice(start, index + token.length) === row.resolution;
+
+    if (!embedded) {
+        errors.push(`${file} references ${token} outside its exact canonical URL ${row.resolution}.`)
+    }
+}
+
+for (const name of dirs) {
+    const skillRoot = join(SKILLS, name);
+
+    for (const rel of walk(skillRoot)) {
+        if (!rel.endsWith('.md')) continue;
+
+        const
+            file   = `${name}/${rel}`,
+            source = readFileSync(join(skillRoot, rel), 'utf8');
+
+        for (const match of source.matchAll(new RegExp(DOCUMENT_REFERENCE_SELECTOR, 'g'))) {
+            recordDocumentReference({file, index: match.index, skillName: name, source, token: match[0]})
+        }
+    }
+}
+
+// The manifest repeats router descriptions, so it is a real shipped reference surface too. Attribute
+// each occurrence to the row whose description owns it rather than to a fake "manifest" skill.
+for (const [skillName, skill] of Object.entries(manifest.skills)) {
+    const source = skill.description || '';
+
+    for (const match of source.matchAll(new RegExp(DOCUMENT_REFERENCE_SELECTOR, 'g'))) {
+        recordDocumentReference({
+            file: `skills.manifest.json:${skillName}.description`,
+            index: match.index,
+            skillName,
+            source,
+            token: match[0]
+        })
+    }
+}
+
+for (const [token, row] of documentRowsByToken) {
+    const observed = observedDocumentSkills.get(token);
+
+    if (!observed) {
+        errors.push(`document-reference census row ${token} has no occurrence in the shipped skill corpus.`);
+        continue
+    }
+
+    const
+        expectedSkills = Array.isArray(row.referencingSkills) ? [...new Set(row.referencingSkills)].sort() : [],
+        actualSkills   = [...observed].sort();
+
+    if (JSON.stringify(actualSkills) !== JSON.stringify(expectedSkills)) {
+        errors.push(`${token} referencingSkills drift: census ${JSON.stringify(expectedSkills)}, corpus ${JSON.stringify(actualSkills)}.`)
+    }
+}
+
+for (const token of observedDocumentSkills.keys()) {
+    if (!documentRowsByToken.has(token)) {
+        // Per-occurrence findings above carry the exact files. This aggregate makes the missing-row
+        // contract explicit even when several files repeat the same uncatalogued token.
+        errors.push(`document-reference census is missing row for ${token}.`)
+    }
+}
 
 // ── 1. directory ↔ manifest coherence, and frontmatter agreement ────────────────────────────────
 for (const name of dirs) {
@@ -295,4 +514,4 @@ if (errors.length) {
     process.exit(1)
 }
 
-console.log(`skill-corpus: ${dirs.length} skills, coherent with the manifest, within budget, references resolve.`);
+console.log(`skill-corpus: ${dirs.length} skills, coherent with the manifest, within budget, document reach canonical.`);

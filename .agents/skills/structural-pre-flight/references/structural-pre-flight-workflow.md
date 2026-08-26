@@ -4,10 +4,10 @@ The authoritative protocol that runs **before** a new `.mjs` file is written to 
 
 **Empirical anchors.** Two real misplacement instances demonstrated the gap before this skill existed:
 
-1. `ai/daemons/wake/daemon.mjs` (then named `bridge-daemon.mjs`) — authored to `ai/scripts/` instead of `ai/daemons/` (the canonical home for long-running daemons, already documented in `learn/benefits/ArchitectureOverview.md`'s Structural Inventory + occupied by sibling `DreamService.mjs`); since relocated to `ai/daemons/wake/`. Original anchor → Discussion #10447 → Epic #10449.
-2. `ai/scripts/orchestrator-daemon.mjs` — PR #11008 added 455 lines of orchestration logic to `ai/scripts/` instead of splitting per `learn/agentos/v13-path.md` M3 (thin script wrapper + `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/SummarizationCoordinatorService.mjs`). Repair: #11009.
+1. `ai/daemons/wake/daemon.mjs` (then named `bridge-daemon.mjs`) — authored to `ai/scripts/` instead of `ai/daemons/` (the canonical home for long-running daemons, already documented in the Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory + occupied by sibling `DreamService.mjs`); since relocated to `ai/daemons/wake/`. Original anchor → Discussion #10447 → Epic #10449.
+2. `ai/scripts/orchestrator-daemon.mjs` — PR #11008 added 455 lines of orchestration logic to `ai/scripts/` instead of splitting per the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) M3 (thin script wrapper + `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/SummarizationCoordinatorService.mjs`). Repair: #11009.
 
-Both shipped through full `ticket-create` + `pull-request` + `pr-review` discipline. Neither caught the misplacement because the substrate to consult (`ArchitectureOverview.md` Structural Inventory + relevant ADRs in `learn/agentos/decisions/`) was not invoked at directory-CHOICE time.
+Both shipped through full `ticket-create` + `pull-request` + `pr-review` discipline. Neither caught the misplacement because the substrate to consult (the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory + relevant ADRs in their canonical owning repositories) was not invoked at directory-CHOICE time.
 
 This skill closes that gap. Read every section before authoring.
 
@@ -55,19 +55,19 @@ Fires when no clear sibling pattern matches the new file's role. The cost is ~5-
 
 Before drafting the file, you MUST read:
 
-1. **`learn/benefits/ArchitectureOverview.md`** — specifically the **Structural Inventory** section (currently lines 350-382). This is the canonical map of the codebase's directory taxonomy.
+1. **The Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md)** — specifically the **Structural Inventory** section (currently lines 350-382). This is the canonical map of the codebase's directory taxonomy.
 2. **Relevant ADRs in `learn/agentos/decisions/`** — these document cross-system architectural trade-offs that constrain directory choice. Examples:
    - `0001-cross-process-cache-coherence.md` (singleton-cache reasoning)
    - `0002-phase3-wake-substrate-standards-alignment.md` (wake-substrate standards)
    - Any newer ADR whose subsystem overlaps your candidate destination.
-3. **`learn/agentos/v13-path.md`** when the new file lives in `ai/`-side substrate — this is the M-milestone source-of-authority for current architectural posture (M1 deployment-pipeline, M2 BaseServer, M3 Orchestrator, M4 Dream/Sandman, M5 NEO_MC_PRIMARY retirement, M6 SDK migration, M7 closeout). PR #11008 misplaced because authoring did not grep this doc.
+3. **The [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md)** when the new file lives in `ai/`-side substrate — this is the M-milestone source-of-authority for current architectural posture (M1 deployment-pipeline, M2 BaseServer, M3 Orchestrator, M4 Dream/Sandman, M5 NEO_MC_PRIMARY retirement, M6 SDK migration, M7 closeout). PR #11008 misplaced because authoring did not consult this document.
 4. **1-2 sibling files in EACH candidate destination directory** — even when the role doesn't match exactly. Reading siblings in `ai/scripts/` and `ai/daemons/` side-by-side reveals which directory the new file actually belongs in. The empirical anchor would have surfaced immediately.
 
 ### 2.2 Pre-Flight Check Shape (Mandatory)
 
 Mirrors the `Mailbox Check Protocol` and `pr-review-guide §10` (cold-cache exception). Explicit reasoning-statement before authoring:
 
-> *"Pre-Flight (structural full): considered destinations `<dir-A>`, `<dir-B>`, ... ; consulted `ArchitectureOverview.md` Structural Inventory (sibling = `<sibling-X>`), `learn/agentos/decisions/<ADR>.md` (relevant constraint = `<rule>`), `<v13-path-or-related-doc>` (current architectural posture = `<posture>`); chose `<dir-final>` because `<rationale>`. Map-maintenance: `<update-needed | not-needed>`."*
+> *"Pre-Flight (structural full): considered destinations `<dir-A>`, `<dir-B>`, ... ; consulted the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory (sibling = `<sibling-X>`), the relevant canonical ADR (constraint = `<rule>`), and the current posture document (posture = `<posture>`); chose `<dir-final>` because `<rationale>`. Map-maintenance: `<update-needed | not-needed>`."*
 
 The statement is verbose by design. Brevity is the failure mode — terse hand-waving is what the empirical anchors demonstrate.
 
@@ -84,7 +84,7 @@ The four questions are not a checklist to mechanically tick. They are framing pr
 
 ### 2.4 Map-Maintenance Discipline (BLOCKING AC)
 
-When the new file is **structurally significant** — meaning it introduces a new role, a new subsystem, or relocates an existing canonical home — you MUST update `learn/benefits/ArchitectureOverview.md`'s Structural Inventory table in the same PR.
+When the new file is **structurally significant** — meaning it introduces a new role, a new subsystem, or relocates an existing canonical home — you MUST update the Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory. If the current checkout is Engine, include the update in the same PR. Otherwise route a linked companion change to Engine and keep the map-maintenance gate failed until it exists; never create a consumer-local map.
 
 **Heuristic for "structurally significant":**
 
@@ -98,7 +98,7 @@ The map-maintenance is a Blocking AC for the PR opening the file. PRs that autho
 
 Per Discussion #10447 OQ4 resolution, the threshold for filing an ADR vs an inline Anchor & Echo guard is the **system boundary** the trade-off crosses:
 
-- **Cross-system trade-off** (touches multiple subsystems, sets a precedent for future code, affects load-bearing invariants): **file an ADR** under `learn/agentos/decisions/`.
+- **Cross-system trade-off** (touches multiple subsystems, sets a precedent for future code, affects load-bearing invariants): **file an ADR** in the repository that canonically owns the affected substrate. If the current checkout is not that owner, route a linked companion change there and keep the ADR-genesis gate failed; never create a consumer-local decisions tree.
 - **Localized constraint** (specific to one file or one method, doesn't generalize): **inline Anchor & Echo guard** in the JSDoc with `@see` references.
 
 **Example — ADR-class:** "Memory Core uses singleton cache instead of cross-process IPC because IPC overhead exceeds memory pressure cost at expected scale" (became `0001-cross-process-cache-coherence.md`).
@@ -109,7 +109,7 @@ When in doubt, lean toward ADR genesis — under-documenting a cross-system trad
 
 ### 2.6 Map-as-Pointer Self-Eviction Defense
 
-Per Discussion #10447 OQ5 resolution, `ArchitectureOverview.md`'s Structural Inventory MUST link to relevant ADRs per subsystem. The skill's "read the map" mandate then propagates via graph traversal — readers who follow the map naturally encounter the ADRs without needing to remember to also consult `learn/agentos/decisions/` separately.
+Per Discussion #10447 OQ5 resolution, the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory MUST link to relevant ADRs per subsystem. The skill's "read the map" mandate then propagates via graph traversal — readers who follow the map naturally encounter the ADRs without needing to remember each repository's decisions location separately.
 
 **Implementation:** Sub-Issue 2 of #10449 (a separate doc-only PR) audits the Structural Inventory table and adds explicit ADR links per subsystem. Once that ships, this skill's §2.1 Reading list collapses one level (read the map → ADRs surface naturally).
 
@@ -121,17 +121,17 @@ If you find a subsystem section in the Structural Inventory that lacks an ADR-li
 
 When the new file lives in `ai/` substrate (Right Hemisphere / Agent OS):
 
-- `learn/agentos/v13-path.md` — current M-milestone architectural posture (M1-M7).
-- `learn/benefits/ArchitectureOverview.md` §Right Hemisphere + §Structural Inventory § Agent OS (Node.js).
-- `learn/agentos/decisions/0001-cross-process-cache-coherence.md` (Memory Core).
-- `learn/agentos/decisions/0002-phase3-wake-substrate-standards-alignment.md` (wake substrate).
+- The [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) — current M-milestone architectural posture (M1-M7).
+- The Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) §Right Hemisphere + §Structural Inventory § Agent OS (Node.js).
+- [ADR 0001: Cross-Process Cache Coherence](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0001-cross-process-cache-coherence.md) (Memory Core).
+- [ADR 0002: Phase-3 Wake Substrate Standards Alignment](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0002-phase3-wake-substrate-standards-alignment.md) (wake substrate).
 - Sibling files in EACH candidate `ai/{daemons,scripts,services,graph,mcp,...}/` directory.
 
 ### 3.2 `src/`-side authoring
 
 When the new file lives in `src/` substrate (Left Hemisphere / Runtime Engine):
 
-- `learn/benefits/ArchitectureOverview.md` §Left Hemisphere + §Structural Inventory § Runtime Engine (Browser).
+- The Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) §Left Hemisphere + §Structural Inventory § Runtime Engine (Browser).
 - `learn/guides/<subsystem>/` — subsystem-specific guides (e.g., `learn/guides/grid/` for grid work).
 - `learn/agentos/decisions/` ADRs whose stated subsystem touches your candidate destination.
 - Sibling files in EACH candidate `src/{component,container,grid,data,state,worker,vdom,main,...}/` directory.
@@ -146,7 +146,7 @@ When the new file lives in `test/playwright/`:
 
 ### 3.4 Cross-substrate authoring
 
-When the new file is itself a substrate-mutation (skill, ADR, AGENTS.md update, learn/agentos/* doc):
+When the new file is itself a substrate-mutation (skill, ADR, `AGENTS.md` update, or Agent OS document):
 
 - `AGENTS.md §13` Self-Evolving Systems — substrate-accretion defense (slot-rationale required).
 - `pull-request §1.1` Substrate-Mutation Pre-Flight Gate — slot-rationale section in PR body.
@@ -193,7 +193,7 @@ The skill does NOT fire for:
 
 ### 7.2 Full Pre-Flight Example (Hypothetical Orchestrator-Class File)
 
-> *"Pre-Flight (structural full): considered destinations `ai/scripts/`, `ai/daemons/`, and `ai/daemons/services/` for `Orchestrator.mjs`; consulted `learn/benefits/ArchitectureOverview.md` Structural Inventory (`ai/daemons/` sibling = `DreamService.mjs`, `ai/scripts/` sibling = one-shot scripts, `ai/daemons/services/` sibling = service-class daemons), `learn/agentos/v13-path.md` §M3 (current architectural posture explicitly mandates `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/SummarizationCoordinatorService.mjs` decomposition + thin `ai/scripts/orchestrator-daemon.mjs` boot wrapper); no relevant ADR conflict (0001 about caching, 0002 about wake substrate); chose `ai/daemons/Orchestrator.mjs` for the class body + `ai/daemons/services/SummarizationCoordinatorService.mjs` for the per-task service + `ai/scripts/orchestrator-daemon.mjs` for the thin wrapper, because v13-path.md §M3 establishes this exact split as the canonical architectural posture and the orchestrator class is a long-running coordination primitive (not a one-shot script). Map-maintenance: not-needed (existing Structural Inventory row for `ai/daemons/` covers Orchestrator without addition). Chief-architect framing: scalability (good — `ai/daemons/services/` accommodates future per-task services); ADR-conflict (none); ADR-genesis (not needed — v13-path.md §M3 already documents the trade-off at the M-milestone-plan level); future-self regression-risk (low — split mirrors existing decomposition discipline)."*
+> *"Pre-Flight (structural full): considered destinations `ai/scripts/`, `ai/daemons/`, and `ai/daemons/services/` for `Orchestrator.mjs`; consulted the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory (`ai/daemons/` sibling = `DreamService.mjs`, `ai/scripts/` sibling = one-shot scripts, `ai/daemons/services/` sibling = service-class daemons), and the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) §M3 (current architectural posture explicitly mandates `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/SummarizationCoordinatorService.mjs` decomposition + thin `ai/scripts/orchestrator-daemon.mjs` boot wrapper); no relevant ADR conflict (0001 about caching, 0002 about wake substrate); chose `ai/daemons/Orchestrator.mjs` for the class body + `ai/daemons/services/SummarizationCoordinatorService.mjs` for the per-task service + `ai/scripts/orchestrator-daemon.mjs` for the thin wrapper, because the v13 path §M3 establishes this exact split as the canonical architectural posture and the orchestrator class is a long-running coordination primitive (not a one-shot script). Map-maintenance: not-needed (existing Structural Inventory row for `ai/daemons/` covers Orchestrator without addition). Chief-architect framing: scalability (good — `ai/daemons/services/` accommodates future per-task services); ADR-conflict (none); ADR-genesis (not needed — the v13 path §M3 already documents the trade-off at the M-milestone-plan level); future-self regression-risk (low — split mirrors existing decomposition discipline)."*
 
 The full-pre-flight statement is verbose by design. Brevity hides reasoning; verbosity creates audit substrate.
 

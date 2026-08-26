@@ -26,10 +26,10 @@ For subsequent re-reviews (Cycle N), the measurement must capture the delta payl
 
 ## 3. Baseline Data Capture
 Before any pilot extraction (Sub-issue 2 of Epic #10537) can begin, we must capture a **minimum of 10 cycles** of baseline data. If statistical variance remains high at n=10, capture will extend to n=15 or n=20 before proceeding, to avoid extracting based on noisy or atypical cycle data.
-- The recorded data must be appended to the dedicated tracking file: `learn/agentos/measurements/pr-review-baseline-2026-04.md`.
+- The recorded data must be appended to the dedicated [PR-review baseline measurement log](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/measurements/pr-review-baseline-2026-04.md) in the Brain repository. If the current checkout is not Brain, route the write to a Brain change instead of creating a consumer-local copy.
 - **Gating Mechanism:** Sub-issue 2 (Pilot extraction of review templates) is strictly blocked until the baseline (per §3 opening) is fully captured and validated.
 
 ## 4. Execution Procedure
 1. During a PR Review, calculate the `wc -c` of the relevant files and payloads (separating Static vs Dynamic).
 2. Log the cycle details, including PR number, Cycle number, Static `wc -c`, Dynamic `wc -c`, and Total `wc -c`.
-3. Report the log natively in your PR Review comment as a `Measurement Payload` block. A dedicated aggregator or the author during session sunset will persist it to `learn/agentos/measurements/pr-review-baseline-2026-04.md` to avoid review-time merge conflicts.
+3. Report the log natively in your PR Review comment as a `Measurement Payload` block. A dedicated aggregator or the author during session sunset will persist it to the Brain repository's [PR-review baseline measurement log](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/measurements/pr-review-baseline-2026-04.md) to avoid review-time merge conflicts; a non-Brain checkout must route that write to Brain.
