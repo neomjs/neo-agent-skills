@@ -276,7 +276,11 @@ if (!manifest) {
         {projected, optedOut} = declaredProjection(manifest),
         present               = facadeEntries(join(root, CLAUDE_FACADE)),
         missing               = [...projected].filter(name => !present.has(name)),
-        undeclared            = [...present].filter(name => optedOut.has(name));
+        // `present - projected`, NOT `present ∩ optedOut`. The intersection only catches entries the
+        // manifest explicitly opts OUT of, so a façade entry absent from the manifest ENTIRELY — an
+        // invented skill, a stale link to a deleted one — was silently permitted. Exact projection
+        // means the façade equals what the manifest declares, with nothing extra from any source.
+        undeclared            = [...present].filter(name => !projected.has(name));
 
     if (missing.length) {
         failures.push(
@@ -287,7 +291,8 @@ if (!manifest) {
 
     if (undeclared.length) {
         failures.push(
-            `façade exposes ${undeclared.length} skill(s) the manifest opts OUT of: ${undeclared.join(', ')}. ` +
+            `façade exposes ${undeclared.length} entr${undeclared.length === 1 ? 'y' : 'ies'} the manifest does ` +
+            `not project: ${undeclared.map(n => optedOut.has(n) ? `${n} (declared opt-out)` : `${n} (absent from the manifest)`).join(', ')}. ` +
             `A declared opt-out must be absent from the projection.`
         )
     }

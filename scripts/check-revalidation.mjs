@@ -17,7 +17,7 @@
  */
 
 import {existsSync, readFileSync} from 'node:fs';
-import {pathToFileURL}          from 'node:url';
+import {readInertRoster}        from './inert-roster.mjs';
 import {join, resolve}            from 'node:path';
 
 const
@@ -42,31 +42,23 @@ function parseArgs(argv) {
 /**
  * @summary Families whose roster entry currently reads `participationStatus: 'active'`.
  *
- * @param {String} rosterPath  absolute path to the roster module
- * @returns {Promise<Set<String>>}
+ * @param {String} rosterSource  the roster module's TEXT — never imported, never evaluated
+ * @returns {{active: Set<String>}|{error: String}}
  */
-async function activeFamilies(rosterPath) {
-    // Read the roster as DATA rather than as text. Two regex parsers failed here first, and both
-    // failed silently green: `modelFamily` and `participationStatus` live under a nested
-    // `properties` object, entries contain further nested objects, and field ORDER varies — the
-    // gemini entry states its status BEFORE its family, so "nearest preceding match" is wrong on the
-    // one entry that matters most. The module declares no imports, so importing it costs nothing and
-    // removes the entire class of failure.
-    const {IDENTITIES} = await import(pathToFileURL(rosterPath).href);
+function activeFamilies(rosterSource) {
+    const parsed = readInertRoster(rosterSource);
 
-    if (!Array.isArray(IDENTITIES)) {
-        throw new Error(`${ROSTER} exported no IDENTITIES array; the roster contract changed shape.`)
-    }
+    if (parsed.error) return {error: parsed.error};
 
     const active = new Set();
 
-    for (const entry of IDENTITIES) {
+    for (const entry of parsed.identities) {
         const {modelFamily, participationStatus} = entry?.properties ?? {};
 
         if (modelFamily && participationStatus === 'active') active.add(modelFamily)
     }
 
-    return active
+    return {active}
 }
 
 const
@@ -92,9 +84,17 @@ if (!existsSync(join(root, ROSTER))) {
 }
 
 const
-    active    = await activeFamilies(join(root, ROSTER)),
-    signalled = new Set(revalidation.signalled || []),
-    owed      = (revalidation.requiredFrom || []).filter(f => active.has(f) && !signalled.has(f));
+    rosterRead = activeFamilies(readFileSync(join(root, ROSTER), 'utf8')),
+    signalled = new Set(revalidation.signalled || []);
+
+if (rosterRead.error) {
+    console.error(`revalidation: RED — ${rosterRead.error}`);
+    process.exit(1)
+}
+
+const
+    active = rosterRead.active,
+    owed   = (revalidation.requiredFrom || []).filter(f => active.has(f) && !signalled.has(f));
 
 if (owed.length) {
     console.error(

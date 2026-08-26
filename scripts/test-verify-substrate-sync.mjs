@@ -173,6 +173,12 @@ const results = [
             symlinkSync(`../../.agents/skills/${optedOut}`, join(root, '.claude/skills', optedOut))
         }),
 
+    check('facade-entry-absent-from-manifest', 1,
+        'RA-3: an entry the manifest does not mention AT ALL — invented, or a stale link to a deleted ' +
+        'skill. The old predicate was present ∩ optedOut, which only caught declared opt-outs and let ' +
+        'this through; exact projection is present − projected',
+        root => symlinkSync('../../.agents/skills/pr-review', join(root, '.claude/skills', 'not-a-real-skill'))),
+
     check('facade-missing-declared', 1,
         'a manifest-declared skill absent from the façade is drift, not a projection',
         root => rmSync(join(root, '.claude/skills/pr-review'), {force: true})),

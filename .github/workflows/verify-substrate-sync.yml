@@ -12,6 +12,12 @@
 
 name: verify-substrate-sync
 
+# Least privilege: this job reads two repositories and writes nothing. The default envelope a
+# caller inherits can be write-all, and this guard parses content from an untrusted PR — so the
+# token scope is pinned here rather than left to whatever the caller happens to grant.
+permissions:
+  contents: read
+
 on:
   workflow_call:
     inputs:
