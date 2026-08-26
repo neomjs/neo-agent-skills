@@ -49,7 +49,6 @@ Code is functioning but *state* is corrupted (bad topologies, missing context, d
 
 ## Phase 3: Deep Debugging
 
-- IDE/workspace lockups during health checks: the **`debugging-antigravity`** skill owns Antigravity config lockups, SQLite workspace crashes, and language-server conflicts.
 - **Fresh MCP Client Primitive** — for "ghost bugs" where cached tool definitions disagree with the live server. Never validate your own tool-shape changes through your primary long-lived connection; spawn an isolated client: `node ai/mcp/client/mcp-cli.mjs --server <target> --call-tool <tool>`.
 
 ## Phase 4: Treatment & Escalation

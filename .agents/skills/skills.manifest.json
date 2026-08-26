@@ -41,11 +41,6 @@
       "name": "create-skill",
       "description": "Authoritative guide on how to architect, format, and structure new Anthropic Progressive Disclosure skills. Triggers: Use before creating OR modifying any `.agents/skills/**/*.md` files — Progressive Disclosure architecture (Map vs World Atlas), YAML frontmatter, skill structure. Complementary to `turn-memory-pre-flight` (load-runtime-effect dimension vs skill-shape dimension)."
     },
-    "debugging-antigravity": {
-      "name": "debugging-antigravity",
-      "description": "Authoritative guide for Antigravity 2.x MCP authority, duplication forensics, UI-profile isolation, and sqlite workspace recovery. Triggers: Use when the Antigravity MCP panel spins indefinitely, MCP processes appear duplicated, sqlite workspace state throws a `__store` null error, `--user-data-dir` scope is unclear, or global `~/.gemini/config/mcp_config.json` vs workspace `.agents/mcp_config.json` ownership must be established.",
-      "claudeSymlinkRequired": false
-    },
     "epic-create": {
       "name": "epic-create",
       "description": "Authoritative protocol for authoring an Epic body — the creation-side dual of `ticket-create` + entry partner of `epic-review`/`epic-resolution`. Enforces: epic body = problem-scope + intended-solution (NOT pseudo-subs / ACs); ACs live in the SUB tickets; subs are LINKED via `update_issue_relationship` + added incrementally; the body MUST NOT hardcode a sub-list (it stales out → FAIL). Triggers: before creating an Epic (a parent issue labeled `epic`) via `create_issue`, or before decomposing one into sub-tickets."
