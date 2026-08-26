@@ -8,11 +8,11 @@ When agents add new memory substrate (`AGENTS.md`, `AGENTS_ATLAS.md`, or `.agent
 
 ## Substrate Boundary
 
-**IN-SCOPE:** Placement of turn-loaded or skill-loaded memory substrate whose wrong placement can affect future sessions before task-specific context is chosen. This covers: `AGENTS.md`, `learn/agentos/AGENTS_ATLAS.md`, `.agents/skills/**/SKILL.md` (maps), `.agents/skills/**/references/*.md` (atlases), `.codex/CODEX.md`, `.agents/ANTIGRAVITY_RULES.md`, `.claude/CLAUDE.md`, and any future harness-local turn-injection surface.
+**IN-SCOPE:** Placement of turn-loaded or skill-loaded memory substrate whose wrong placement can affect future sessions before task-specific context is chosen. This covers: `AGENTS.md`, the Engine's [Agent OS Atlas](https://github.com/neomjs/neo/blob/dev/learn/agentos/AGENTS_ATLAS.md), `.agents/skills/**/SKILL.md` (maps), `.agents/skills/**/references/*.md` (atlases), `.codex/CODEX.md`, `.agents/ANTIGRAVITY_RULES.md`, `.claude/CLAUDE.md`, and any future harness-local turn-injection surface.
 
 **OUT-OF-SCOPE:** Ordinary architecture substrate placement (`.mjs` files, configs, MCP tools, daemons, services, build pipeline, OpenAPI schemas). These route through the `/architecture-pre-flight` umbrella and `/structural-pre-flight` (`.mjs`).
 
-**CARVE-OUT:** `learn/agentos/*.md` docs are IN-SCOPE only if directly turn-loaded or skill-loaded (e.g., referenced by AGENTS.md or by a SKILL.md map). Otherwise OUT-OF-SCOPE.
+**CARVE-OUT:** Agent OS Markdown documents are IN-SCOPE only if directly turn-loaded or skill-loaded (e.g., referenced by `AGENTS.md` or by a `SKILL.md` map). Otherwise OUT-OF-SCOPE.
 
 ## The Placement Decision Tree
 
@@ -30,7 +30,7 @@ Before committing ANY change to the agent memory substrate, you **MUST** evaluat
 - **NO:** Proceed to Step 3.
 
 ### Step 3: Is this an edge-case, historical anchor, or detailed protocol for a rare scenario?
-- **YES:** This is an **Atlas entry**. It must be placed in `learn/agentos/AGENTS_ATLAS.md`. Add a 1-line pointer to the edge-case triggers section of `AGENTS.md`.
+- **YES:** This is an **Atlas entry**. Route it to the Engine's [Agent OS Atlas](https://github.com/neomjs/neo/blob/dev/learn/agentos/AGENTS_ATLAS.md) and add a 1-line pointer to the edge-case triggers section of Engine `AGENTS.md`. If the current checkout is not Engine, fail the local placement gate until a linked Engine change owns both writes; never create consumer-local copies.
 - **NO:** Proceed to Step 4.
 
 ### Step 4: Is it a Harness-Local rule?

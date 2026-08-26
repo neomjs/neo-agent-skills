@@ -19,7 +19,7 @@ After this workflow is activated:
    - `src/Neo.mjs`: `setupClass()`, `create()`, namespaces, and `ntype`.
    - `src/core/Base.mjs`: static/reactive configs, lifecycle, and config hooks.
    - `test/playwright/setup.mjs`: direct App/VDom wiring and `unitTestMode`.
-   - `learn/guides/testing/UnitTesting.md`: canonical testing patterns.
+   - The Engine's [Unit Testing guide](https://github.com/neomjs/neo/blob/dev/learn/guides/testing/UnitTesting.md): canonical testing patterns.
 3. Read the closest examples: `vdom/RealWorldUpdates.spec.mjs`, `collection/Base.spec.mjs`, and `core/Effect.spec.mjs` under `test/playwright/unit/`.
 
 ## 3. Operational Protocols
@@ -83,5 +83,5 @@ npm run test-unit -- test/playwright/unit/path/to/your.spec.mjs --debug
 ## 7. Directory Conventions
 
 - **Canonical Unit Tests**: `test/playwright/unit/`
-- **Right-Hemisphere Tests (Backend/Node.js)**: Tests affecting the "right hemisphere" (e.g., buildScripts, AI) belong under `test/playwright/unit/ai/` or `test/playwright/unit/ai/buildScripts/`. Do NOT place them inside the frontend source-mirror (e.g., `test/playwright/unit/<package>/`). This aligns with the architecture defined in `learn/benefits/ArchitectureOverview.md` § Two Hemispheres.
+- **Right-Hemisphere Tests (Backend/Node.js)**: Tests affecting the "right hemisphere" (e.g., buildScripts, AI) belong under `test/playwright/unit/ai/` or `test/playwright/unit/ai/buildScripts/`. Do NOT place them inside the frontend source-mirror (e.g., `test/playwright/unit/<package>/`). This aligns with the architecture defined in the Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) § Two Hemispheres.
 - **MCP Server Unit Tests**: You **MUST** place MCP tests in `test/playwright/unit/ai/mcp/server/`. Do NOT use the deprecated/grandfathered `test/playwright/mcp/` tree for new tests.

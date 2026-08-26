@@ -13,9 +13,9 @@ Markdown a human edits directly. Failure mode: generations drift apart (one doc 
 | `CONTRIBUTING.md`, `.github/GETTING_STARTED.md`, `.github/AI_QUICK_START.md` | Contributor-facing identity; MCP-server count; Node requirement |
 | `.github/STORY.md` | **Public-era heritage SSOT**: origin narrative, 2015 worker POC, public GitHub start, JSON-first VDOM, worker-first architecture, multi-window line. |
 | `.github/NEOMJS_HISTORY.md` | Pre-public contributor credits / acknowledgements archive. Do **not** extend it with public-era milestones unless an explicit operator ruling changes its document kind. |
-| `learn/benefits/**` | Engineering-altitude identity (ArchitectureOverview "Two Hemispheres", Introduction, comparisons/NeoVs*); the **RIGHT-hemisphere AI-team doc lives here** |
-| `learn/agentos/*.md` | Mechanism-altitude (DreamPipeline, MX, MemoryCore, NeuralLink); the recurring motto |
-| `.claude/CLAUDE.md` (§neo_identity_anchor, §swarm_topology_anchor), `learn/agentos/AGENTS_ATLAS.md` | Agent-facing identity anchors; maintainer roster; pillar definitions |
+| Engine-owned benefits corpus ([Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) entry point) | Engineering-altitude identity (Two Hemispheres, Introduction, comparisons/NeoVs*); the **RIGHT-hemisphere AI-team doc lives here** |
+| Canonical mechanism guides in their owning repositories — Brain-owned [Dream Pipeline](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/DreamPipeline.md) and Engine-owned [Neural Link](https://github.com/neomjs/neo/blob/dev/learn/agentos/NeuralLink.md) entry points | Mechanism-altitude identity (Dream Pipeline, MX, Memory Core, Neural Link); the recurring motto |
+| `.claude/CLAUDE.md` (§neo_identity_anchor, §swarm_topology_anchor), Engine-owned [Agent OS Atlas](https://github.com/neomjs/neo/blob/dev/learn/agentos/AGENTS_ATLAS.md) | Agent-facing identity anchors; maintainer roster; pillar definitions |
 
 ## Class 2 — generated-output-source (THE TRAP)
 A build script emits the surface. **Edit the generator, never the output.**
@@ -47,13 +47,13 @@ Correct as-of a date; ages silently. Refresh in lock-step.
 
 | Surface | Lock-step sibling |
 |---|---|
-| `README.md` "A Platform at Scale (State of <date>)" | `learn/guides/fundamentals/CodebaseOverview.md` (canonical numbers) |
-| `ROADMAP.md` velocity metrics; `learn/agentos/ModelStats.md` | their own as-of dates |
+| `README.md` "A Platform at Scale (State of <date>)" | Engine-owned [Codebase Overview](https://github.com/neomjs/neo/blob/dev/learn/guides/fundamentals/CodebaseOverview.md) (canonical numbers) |
+| `ROADMAP.md` velocity metrics; Brain-owned [Model Stats](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/ModelStats.md) | their own as-of dates |
 
 ## Coverage notes
 - Heritage facts live in `.github/STORY.md`; README + portal About Us reference that home without duplicating milestone lists. OS-Awards claims need an acceptable external public source before publication.
-- Identity handles are routed through `ai/graph/identityRoots.mjs`; handle de-versioning is operator-owned (account rename), the skill only propagates. Model-version stays in `ModelStats.md` per ADR 0012. Re-run a seam-keyed grep before claiming total coverage.
-- Not yet fully swept: `apps/portal/view/about` (`/about-us`), live neomjs.com `<meta>`/ld+json, `learn/comparisons/*`. Re-run a fan-out before claiming total coverage.
+- Identity handles are routed through `ai/graph/identityRoots.mjs`; handle de-versioning is operator-owned (account rename), the skill only propagates. Model-version stays in the Brain-owned [Model Stats guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/ModelStats.md) per ADR 0012. Re-run a seam-keyed grep before claiming total coverage.
+- Not yet fully swept: `apps/portal/view/about` (`/about-us`), live neomjs.com `<meta>`/ld+json, and the Engine-owned comparisons corpus. Re-run a fan-out before claiming total coverage.
 
 ## ACTIONS / CTA overlay
 
@@ -67,7 +67,7 @@ the business-owned content behind them.
 | `README.md` opening + v13 Agent OS pitch | Proof doors for public repo claims; product / deployment next-step door if the pitch asks the reader to act |
 | `README.md` Quickstart | Install door (`npx neo-app@latest`) plus getting-started docs |
 | `README.md` Community / Contributing | Community and contributor doors; channel liveness and retention must be checked before primary placement |
-| `learn/benefits/**`, `learn/agentos/**` | Learn / proof / contribute doors attached to identity claims and Agent OS mechanisms |
+| Engine-owned benefits guides plus Agent OS guides in their canonical Engine or Brain repository | Learn / proof / contribute doors attached to identity claims and Agent OS mechanisms |
 | `apps/portal/view/home/parts/*.mjs` | Portal hero / home-page CTA doors; generated SEO siblings may also need generator updates |
 | `apps/portal/view/services/**`, `apps/portal/resources/data/seo.json` | Services / contact / training doors; content is business-owned and must not be invented by the skill |
 | `buildScripts/docs/seo/generate.mjs` | Generated `llms.txt` / sitemap route doors; edit the generator, never generated output directly |

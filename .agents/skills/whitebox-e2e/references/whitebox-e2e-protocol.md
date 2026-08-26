@@ -16,7 +16,7 @@ When tasked with creating new end-to-end tests for the Neo.mjs framework, you mu
 Whitebox E2E tests belong in `test/playwright/e2e/`.
 Always use the custom `neuralLink` Playwright fixture provided by the Neo.mjs team.
 
-**Host capability pre-flight:** consult `learn/agentos/process/SeatEvidenceCapabilities.md` before authoring/routing headed work (check `observedAt`; stale = `unknown`; records advisory, counter-receipts retire ceilings).
+**Host capability pre-flight:** consult the Engine's [Seat Evidence Capabilities guide](https://github.com/neomjs/neo/blob/dev/learn/agentos/process/SeatEvidenceCapabilities.md) before authoring/routing headed work (check `observedAt`; stale = `unknown`; records advisory, counter-receipts retire ceilings).
 
 ```javascript
 import { test, expect } from '../../fixtures.mjs';
@@ -124,4 +124,4 @@ This is the single best lever for VDOM/rendering divergences: a wrong delta sits
 
 ## 6. Deep Dive Documentation
 For the complete API of the `neuralLink` test SDK (`nlApp`) including simulating native VNode events, VDOM querying, and complex store inspection, you MUST reference the foundational guide:
-`learn/guides/testing/WhiteboxE2E.md`
+the Engine's [Whitebox E2E guide](https://github.com/neomjs/neo/blob/dev/learn/guides/testing/WhiteboxE2E.md)

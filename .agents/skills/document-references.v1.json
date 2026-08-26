@@ -1,0 +1,285 @@
+{
+    "schemaVersion": "document-references.v1",
+    "selector": "learn/[A-Za-z0-9_./-]+\\.md",
+    "rows": [
+        {
+            "token": "learn/agentos/AGENTS_ATLAS.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/AGENTS_ATLAS.md",
+            "referencingSkills": [
+                "neo-identity-update",
+                "pull-request",
+                "turn-memory-pre-flight"
+            ],
+            "kinds": [
+                "target-write",
+                "prose"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0001-cross-process-cache-coherence.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0001-cross-process-cache-coherence.md",
+            "referencingSkills": [
+                "structural-pre-flight"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0002-phase3-wake-substrate-standards-alignment.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0002-phase3-wake-substrate-standards-alignment.md",
+            "referencingSkills": [
+                "structural-pre-flight"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0008-skill-anatomy-and-authoring-contract.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0008-skill-anatomy-and-authoring-contract.md",
+            "referencingSkills": [
+                "create-skill"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0018-neo-identity-source-of-truth-model.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0018-neo-identity-source-of-truth-model.md",
+            "referencingSkills": [
+                "neo-identity-update"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/DreamPipeline.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/DreamPipeline.md",
+            "referencingSkills": [
+                "industry-friction-radar",
+                "neo-identity-update"
+            ],
+            "kinds": [
+                "load",
+                "target-write"
+            ]
+        },
+        {
+            "token": "learn/agentos/measurements/cognitive-load-baseline-2026-05.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/measurements/cognitive-load-baseline-2026-05.md",
+            "referencingSkills": [
+                "create-skill"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/measurements/pr-review-baseline-2026-04.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/measurements/pr-review-baseline-2026-04.md",
+            "referencingSkills": [
+                "pr-review"
+            ],
+            "kinds": [
+                "target-write"
+            ]
+        },
+        {
+            "token": "learn/agentos/ModelStats.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/ModelStats.md",
+            "referencingSkills": [
+                "neo-identity-update"
+            ],
+            "kinds": [
+                "load",
+                "target-write"
+            ]
+        },
+        {
+            "token": "learn/agentos/NeuralLink.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/NeuralLink.md",
+            "referencingSkills": [
+                "neo-identity-update"
+            ],
+            "kinds": [
+                "target-write"
+            ]
+        },
+        {
+            "token": "learn/agentos/process/contract-ledger.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md",
+            "referencingSkills": [
+                "create-skill",
+                "pr-review",
+                "ticket-create",
+                "ticket-intake"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/process/correction-culture.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/correction-culture.md",
+            "referencingSkills": [
+                "pr-review"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/process/evidence-ladder.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md",
+            "referencingSkills": [
+                "epic-resolution",
+                "epic-review",
+                "pr-review",
+                "pull-request"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/process/reference-hygiene.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/reference-hygiene.md",
+            "referencingSkills": [
+                "ideation-sandbox",
+                "pr-review",
+                "pull-request",
+                "ticket-create"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/process/SeatEvidenceCapabilities.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/process/SeatEvidenceCapabilities.md",
+            "referencingSkills": [
+                "pr-review",
+                "whitebox-e2e"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/tooling/Tier2RevalidationSweep.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/tooling/Tier2RevalidationSweep.md",
+            "referencingSkills": [
+                "ideation-sandbox"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/v13-path.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md",
+            "referencingSkills": [
+                "epic-review",
+                "session-sunset",
+                "structural-pre-flight"
+            ],
+            "kinds": [
+                "load",
+                "prose"
+            ]
+        },
+        {
+            "token": "learn/agentos/wake-substrate/NightShiftLeasedDriver.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/wake-substrate/NightShiftLeasedDriver.md",
+            "referencingSkills": [
+                "post-review-pickup"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/benefits/ArchitectureOverview.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md",
+            "referencingSkills": [
+                "industry-friction-radar",
+                "neo-identity-update",
+                "structural-pre-flight",
+                "tech-debt-radar",
+                "unit-test"
+            ],
+            "kinds": [
+                "load",
+                "target-write",
+                "prose"
+            ]
+        },
+        {
+            "token": "learn/benefits/body/Speed.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/benefits/body/Speed.md",
+            "referencingSkills": [
+                "neo-identity-update"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/guides/fundamentals/CodebaseOverview.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/fundamentals/CodebaseOverview.md",
+            "referencingSkills": [
+                "neo-identity-update"
+            ],
+            "kinds": [
+                "load",
+                "target-write"
+            ]
+        },
+        {
+            "token": "learn/guides/testing/UnitTesting.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/testing/UnitTesting.md",
+            "referencingSkills": [
+                "unit-test"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/guides/testing/WhiteboxE2E.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/testing/WhiteboxE2E.md",
+            "referencingSkills": [
+                "whitebox-e2e"
+            ],
+            "kinds": [
+                "load"
+            ]
+        }
+    ]
+}

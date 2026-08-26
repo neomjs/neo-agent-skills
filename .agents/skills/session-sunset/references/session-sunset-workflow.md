@@ -80,7 +80,7 @@ The "main checkout's updated `dev`" assumption above only holds if the operator 
 
 - Worktree agents (correctly per the Linked-worktree rule above) do NOT pull dev into primary.
 - Operators don't always run `git pull origin dev` between sunset events.
-- Daemons running from primary — `orchestrator-daemon` (the canonical Agent OS scheduled-maintenance daemon per `learn/agentos/v13-path.md` M3; currently MVP-shape via #11008, full class extraction in flight under #11009) plus its current and future siblings (`wake-daemon` for wake delivery, `DreamService` for ingestion, KB sync pipeline) — silently read pre-merge code when primary is stale.
+- Daemons running from primary — `orchestrator-daemon` (the canonical Agent OS scheduled-maintenance daemon per the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) M3; currently MVP-shape via #11008, full class extraction in flight under #11009) plus its current and future siblings (`wake-daemon` for wake delivery, `DreamService` for ingestion, KB sync pipeline) — silently read pre-merge code when primary is stale.
 
 **Mandatory sunset probe (Isolated Worktree branch only):**
 

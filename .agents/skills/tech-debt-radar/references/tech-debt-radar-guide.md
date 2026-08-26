@@ -10,7 +10,7 @@ Run this meta-analysis with frontier-tier capability — it synthesizes document
 
 A copied canon decays by construction and eventually inverts — the radar then flags sanctioned shapes as debt. At sweep time, load the debt taxonomy FROM the living authorities, and keep three classes separate: **authority** (what the canon prescribes), **observation** (what the tree currently is), and **hypothesis** (candidate findings awaiting an owning lane):
 
-1. `learn/benefits/ArchitectureOverview.md` — the structural baseline (Body/Brain topology). *Authority.*
+1. The Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) — the structural baseline (Body/Brain topology). *Authority.*
 2. `learn/agentos/decisions/` — the ADR index IS the pattern canon. Minimum reads: ADR 0019 (the `ai/`-config antipattern catalog) for config debt; ADR 0008 for skill-shape debt. *Authority.*
 3. `npm run --silent ai:structure-map -- --files --loc` — current-tree measurement: where things ARE and how large. *Observation only — no intended-placement policy; observed placement is never its own authority.*
 4. The `pr-review` guide's anti-pattern tables and `AGENTS.md` §edge_case_triggers (the `apps/**` data-path/style gate, `core.Base` as the quality bar). *Authority.*
@@ -33,7 +33,7 @@ Across the two executable roots — `ai/` (Brain) vs `src/` (Body) — the Brain
 
 - structure-map LOC outliers, using the Body's densest exemplary files as the comparison scale;
 - folder-shape consistency across `ai/daemons/*` (factored vs monolith vs ad-hoc flat);
-- concept↔code-home coherence: a `learn/agentos/*.md` concept guide with no legible code home is a reportable CANDIDATE, calibrated against the Dream Pipeline specimen (a first-class guide smeared across 25+ files in five technical-layer buckets) — not a universal one-guide-one-home rule.
+- concept↔code-home coherence: an Agent OS concept guide with no legible code home is a reportable CANDIDATE, calibrated against the Dream Pipeline specimen (a first-class guide smeared across 25+ files in five technical-layer buckets) — not a universal one-guide-one-home rule.
 
 **Two-layer rule:** findings in this class are REPORTS routed to the #14304 / D#14302 canon lane — a canon-hole is itself a reportable finding. Prescribing target module shapes or file moves pre-SSOT is out of scope by #14304's own deferred gates.
 

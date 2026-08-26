@@ -23,7 +23,7 @@ subjects; the body run also rejects stacked commit tickets missing from
 ### 1.1 The Substrate-Mutation Pre-Flight Gate
 
 If your PR touches memory substrate per `/turn-memory-pre-flight` (`AGENTS.md`,
-`learn/agentos/AGENTS_ATLAS.md`, `.agents/skills/**`, or directly loaded
+the Engine's [Agent OS Atlas](https://github.com/neomjs/neo/blob/dev/learn/agentos/AGENTS_ATLAS.md), `.agents/skills/**`, or directly loaded
 `learn/agentos/**`), include a **slot-rationale section** in the PR body:
 - added sections: disposition (`keep` / `move` / `compress-to-trigger` / `rewrite` / `retire`) + trigger-frequency x failure-severity x enforceability;
 - modified sections: disposition delta + why the load/placement changed;
@@ -276,7 +276,7 @@ Do not copy ticket bodies or the optional external-contributor `.github/PULL_REQ
 
 ### 9.1 Reference Hygiene
 
-Before PR prose, read [`reference-hygiene.md`](../../../../learn/agentos/process/reference-hygiene.md): relationships stay bare; descriptive tokens use backticks.
+Before PR prose, read the [reference-hygiene guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/reference-hygiene.md): relationships stay bare; descriptive tokens use backticks.
 
 **Close-target rules (Mandatory, CI-enforced):**
 - `Resolves #N` only targets the leaf ticket fully delivered by the PR; never an
@@ -336,7 +336,7 @@ CI-covered counts (red CI already means no review).>
 
 `agent-pr-body-lint.yml` enforces `Evidence:`, `## AC Evidence`, `## Test Evidence`, `## Post-Merge Validation`, `## Deltas`, `Authored by ` as **unconditional** anchors — presence is never prose-conditional (PR #14465). The AC-Evidence CONTENT is machine-checked too: the lint resolves the close target and fails a certificate that misses the ticket's AC count or leaves a proof slot empty.
 
-**Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See [`evidence-ladder.md`](../../../../learn/agentos/process/evidence-ladder.md); `## AC Evidence` is the author's machine-checked coverage claim, which `pr-review` audits rather than reconstructs.
+**Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md); `## AC Evidence` is the author's machine-checked coverage claim, which `pr-review` audits rather than reconstructs.
 
 ## 10. Authorship Respect
 

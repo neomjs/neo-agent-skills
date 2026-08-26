@@ -29,7 +29,7 @@ Before drafting a Discussion/proposal, run [`../audits/pre-authoring-adjacency-s
 
 ### 2.1 Reference Hygiene
 
-Before Discussion prose, read [`reference-hygiene.md`](../../../../learn/agentos/process/reference-hygiene.md): relationships stay bare; descriptive tokens use backticks.
+Before Discussion prose, read the Brain-owned [reference-hygiene contract](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/reference-hygiene.md): relationships stay bare; descriptive tokens use backticks.
 
 ### 2.2 Provenance Signature
 
