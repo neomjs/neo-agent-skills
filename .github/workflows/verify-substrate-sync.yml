@@ -46,7 +46,10 @@ jobs:
           repository: neomjs/neo-agent-skills
           ref: ${{ inputs.canonical-ref }}
           path: .canonical-guard
-          fetch-depth: 1
+          # FULL history: Leg A resolves the consumer's pinned canonicalRevision out of canonical's
+          # own history to get an expected hash the consumer cannot rewrite. A shallow clone cannot
+          # reach an older pin, and the guard fails closed rather than degrading to self-attestation.
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -57,6 +60,7 @@ jobs:
         run: >-
           node .canonical-guard/scripts/verify-substrate-sync.mjs
           --consumer-root ${{ inputs.consumer-path }}
+          --canonical-root .canonical-guard
 
       # Runs even when the step above fails: a contract owing signal to a returning family is worth
       # reporting in the same run as a drift finding, not on the next push after someone fixes the drift.

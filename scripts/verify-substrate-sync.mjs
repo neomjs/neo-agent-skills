@@ -7,8 +7,9 @@
  * subsumes the other:
  *
  * - **Leg A — distribution.** Does this repo carry the canonical tree, unmodified? Every enrolled
- *   repo carries the same bytes; there are no per-repo subsets. Answered by a git tree hash, which
- *   is content-addressed and therefore a byte-equality proof rather than a sample of one.
+ *   repo carries the same bytes; there are no per-repo subsets. Answered by a git tree hash compared
+ *   against the receipt canonical publishes at the pinned revision — an anchor OUTSIDE the consumer,
+ *   because a hash compared to a locally-editable expectation proves only internal consistency.
  * - **Leg B — projection.** Does the harness façade match what the manifest *declares*? Per-harness
  *   subsets are legitimate, so a façade that differs from the canonical tree is not evidence of
  *   drift. A façade that differs from the manifest is.
@@ -22,8 +23,7 @@
  * no skill tree at all, and nothing reported it.
  *
  * @example
- * node scripts/verify-substrate-sync.mjs --consumer-root .
- * node scripts/verify-substrate-sync.mjs --consumer-root . --canonical-receipt ./canonical.json
+ * node scripts/verify-substrate-sync.mjs --consumer-root . --canonical-root /path/to/neo-agent-skills
  */
 
 import {execFileSync}                     from 'node:child_process';
@@ -58,9 +58,10 @@ function parseArgs(argv) {
 /**
  * @summary Content-addressed hash of a path in the work tree.
  *
- * Uses the git index rather than `HEAD:` so the guard sees what a PR actually proposes, not the
- * merge base. A guard reading `HEAD:` would pass a PR whose changes are staged but not committed
- * on the checked-out ref, which is precisely the mutation it exists to catch.
+ * Reads `HEAD:<path>`, which is what CI actually has: `actions/checkout` produces a committed ref,
+ * so the committed tree IS the proposal. An earlier version resolved this from the index to catch
+ * staged-but-uncommitted edits — a state that does not occur in CI — at the cost of three fallback
+ * strategies and a `fatal:` on every run.
  *
  * @param {String} root  repository root
  * @param {String} path  path relative to root
@@ -94,6 +95,52 @@ function readJson(file) {
         return JSON.parse(readFileSync(file, 'utf8'))
     } catch {
         return null
+    }
+}
+
+/**
+ * @summary The receipt canonical itself publishes at a pinned revision — the external trust anchor.
+ *
+ * Resolved out of canonical's own git history, so the consumer commit under test cannot influence
+ * it. Missing or unreachable canonical history is a FAILURE, never a skip: a guard that quietly
+ * degrades to self-attestation when its anchor is absent is exactly the false-green this repairs.
+ *
+ * @param {String} revision       the consumer's pinned canonicalRevision
+ * @param {String} [canonicalRoot] path to a canonical checkout carrying that revision
+ * @returns {{receipt: Object, via: String}|{error: String}}
+ */
+function authoritativeReceipt(revision, canonicalRoot) {
+    if (!canonicalRoot) {
+        return {error:
+            `cannot reach canonical history: no --canonical-root supplied, so the expected tree hash ` +
+            `could only come from this repo's own receipt — which is the self-attestation this guard ` +
+            `exists to reject. The reusable workflow passes it; standalone runs must clone ` +
+            `neomjs/neo-agent-skills (full history) and point at it.`}
+    }
+
+    if (!existsSync(join(resolve(canonicalRoot), '.git'))) {
+        return {error: `--canonical-root ${canonicalRoot} is not a git checkout; the pinned revision cannot be resolved.`}
+    }
+
+    let raw;
+
+    try {
+        raw = execFileSync('git', ['show', `${revision}:${RECEIPT_PATH}`], {
+            cwd     : resolve(canonicalRoot),
+            encoding: 'utf8',
+            stdio   : ['ignore', 'pipe', 'ignore']
+        })
+    } catch {
+        return {error:
+            `canonical@${revision.slice(0, 10)} is not reachable in the supplied canonical checkout. ` +
+            `Either this repo pins a revision canonical does not have — which is itself the finding — ` +
+            `or the checkout is shallow. The workflow uses fetch-depth: 0 for exactly this reason.`}
+    }
+
+    try {
+        return {receipt: JSON.parse(raw), via: `canonical git history @ ${revision.slice(0, 10)}`}
+    } catch {
+        return {error: `canonical@${revision.slice(0, 10)} has an unparseable ${RECEIPT_PATH}.`}
     }
 }
 
@@ -146,7 +193,16 @@ const
     failures = [],
     notes    = [];
 
-// ── Leg A — distribution: the tree is canonical, byte for byte ──────────────────────────────────
+// ── Leg A — distribution: the tree matches the IMMUTABLE canonical revision ─────────────────────
+//
+// The expected hash MUST come from canonical history, never from the consumer's own receipt.
+// Comparing a consumer-controlled tree against a consumer-controlled hash proves only internal
+// consistency: a commit that edits a synced skill AND rewrites `subject.skillTreeHash` alongside it
+// satisfies both sides of that comparison and reports GREEN. That was this guard's shipped
+// behaviour, demonstrated by @neo-gpt-emmy with a paired mutation, and my own defence at review
+// time — "a tampered receipt is itself a rejected non-sync mutation" — described a leg that did not
+// exist. A content-addressed hash is an equality proof only when the EXPECTED value comes from an
+// authority the change under test cannot rewrite.
 const receipt = readJson(join(root, RECEIPT_PATH));
 
 if (!receipt) {
@@ -157,25 +213,56 @@ if (!receipt) {
     )
 } else {
     const
-        claimed = receipt?.subject?.skillTreeHash,
-        actual  = treeHash(root, SKILL_TREE_PATH);
+        revision  = receipt.canonicalRevision,
+        declared  = receipt?.subject?.skillTreeHash,
+        actual    = treeHash(root, SKILL_TREE_PATH);
 
-    if (!claimed) {
+    if (!revision) {
+        failures.push(
+            `${RECEIPT_PATH} carries no canonicalRevision, so its skillTreeHash anchors to nothing ` +
+            `outside this repo. A self-signed receipt cannot distinguish a sync from a fork.`
+        )
+    } else if (!declared) {
         failures.push(`${RECEIPT_PATH} carries no subject.skillTreeHash; the receipt attests nothing.`)
     } else if (!actual) {
         failures.push(
-            `${SKILL_TREE_PATH} is absent, but the receipt pins ${claimed}. This is the ` +
-            `invisible-staleness case: not behind, simply missing, and previously reported by nothing.`
-        )
-    } else if (actual !== claimed) {
-        failures.push(
-            `skill tree diverges from canonical@receipt.\n` +
-            `      receipt claims : ${claimed}\n` +
-            `      this repo has  : ${actual}\n` +
-            `      The tree is forked, not stale. Re-sync from canonical rather than editing in place.`
+            `${SKILL_TREE_PATH} is absent, but the receipt pins canonical@${revision.slice(0, 10)}. ` +
+            `This is the invisible-staleness case: not behind, simply missing, and reported by nothing.`
         )
     } else {
-        notes.push(`leg A — skill tree matches canonical@receipt (${claimed})`)
+        const authority = authoritativeReceipt(revision, args['canonical-root']);
+
+        if (authority.error) {
+            failures.push(authority.error)
+        } else {
+            const expected = authority.receipt?.subject?.skillTreeHash;
+
+            if (!expected) {
+                failures.push(
+                    `canonical@${revision.slice(0, 10)} carries no subject.skillTreeHash; the pinned ` +
+                    `revision cannot serve as a trust anchor.`
+                )
+            } else if (declared !== expected) {
+                failures.push(
+                    `${RECEIPT_PATH} disagrees with canonical@${revision.slice(0, 10)}.\n` +
+                    `      this repo's receipt declares : ${declared}\n` +
+                    `      canonical actually publishes : ${expected}\n` +
+                    `      The receipt was edited locally. It is a synced artifact, not an editing surface.`
+                )
+            } else if (actual !== expected) {
+                failures.push(
+                    `skill tree diverges from canonical@${revision.slice(0, 10)}.\n` +
+                    `      canonical publishes : ${expected}\n` +
+                    `      this repo has       : ${actual}\n` +
+                    `      The tree is forked, not stale. Re-sync from canonical rather than editing in place.`
+                )
+            } else {
+                notes.push(
+                    `leg A — tree matches canonical@${revision.slice(0, 10)} (${expected}), and the ` +
+                    `local receipt agrees with the one canonical publishes at that revision [${authority.via}]`
+                )
+            }
+        }
     }
 }
 
