@@ -26,13 +26,10 @@
   "files": [
     ".agents/skills",
     "facts",
-    "scripts",
-    "AGENT_SUBSTRATE_REVISION.json",
-    "enrollment.json",
+    "scripts/materialize-harness-skills.mjs",
     "README.md"
   ],
   "scripts": {
-    "test": "node scripts/test-verify-substrate-sync.mjs",
     "materialize": "node scripts/materialize-harness-skills.mjs"
   },
   "keywords": [
