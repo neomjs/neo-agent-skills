@@ -205,15 +205,53 @@ if (args.check) {
     process.exit(0)
 }
 
+/**
+ * @summary Refuse to destroy anything git tracks.
+ *
+ * Materialization owns UNTRACKED projection and nothing else. Without this, running `npm install` in
+ * the authoring repository deletes its 133 tracked skill files and its 37 tracked façade links —
+ * silently, from a postinstall hook, because `rmSync(..., {recursive: true, force: true})` does not
+ * care what it is removing. A repo that still authors the corpus, or has not yet untracked its
+ * façade, must get a loud refusal rather than a wiped tree.
+ *
+ * @param {String} path  absolute path about to be replaced
+ * @param {String} label the path as a consumer would name it
+ */
+function refuseIfTracked(path, label) {
+    if (!existsSync(path)) return;
+
+    try {
+        const out = execFileSync('git', ['ls-files', '--error-unmatch', '--', label], {
+            cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']
+        });
+
+        if (out.trim()) {
+            console.error(
+                `neo-agent-skills: REFUSING to materialize over ${label} — git tracks it ` +
+                `(${out.trim().split('\n').length} file(s)).\n\n` +
+                `  Materialization manages untracked projection only. This repo either still authors ` +
+                `the corpus or has not untracked its façade yet; either way, replacing tracked content ` +
+                `from a postinstall hook would delete committed work with no prompt.\n` +
+                `  Untrack the path and git-ignore it first, then install again.`
+            );
+            process.exit(1)
+        }
+    } catch {
+        // Not a git repo, or the path is untracked — both mean nothing committed is at risk.
+    }
+}
+
 // ── write mode: (re)create the projection ───────────────────────────────────────────────────────
 // Harness-neutral surface: one directory link at the whole tree.
 const agentsDir = join(root, AGENTS);
 
+refuseIfTracked(agentsDir, AGENTS);
 rmSync(agentsDir, {recursive: true, force: true});
 mkdirSync(dirname(agentsDir), {recursive: true});
 symlinkSync(relative(dirname(agentsDir), skillsIn), agentsDir);
 
 // Claude façade: per-skill links, manifest-projected.
+refuseIfTracked(facadeDir, FACADE);
 rmSync(facadeDir, {recursive: true, force: true});
 mkdirSync(facadeDir, {recursive: true});
 
