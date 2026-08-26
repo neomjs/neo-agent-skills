@@ -18,10 +18,17 @@ Then run the materializer from your `postinstall`:
 }
 ```
 
-`postinstall` projects the installed package into the layout your harness discovers — **symlinks
-whose targets live under `node_modules`**. The links are created, never committed. Git-ignore the
-projection path (`.claude/skills/`); a tracked entry there is a shadow copy, which is the thing this
-package exists to make unnecessary.
+`postinstall` materializes **two surfaces**, both as symlinks into `node_modules`, both untracked:
+
+| surface | shape | for |
+|---|---|---|
+| `.agents/skills` | **one directory symlink** at the whole tree | harness-neutral discovery — Codex, Antigravity, any fork |
+| `.claude/skills` | **per-skill links**, manifest-projected | the Claude façade |
+
+The shapes differ on purpose. The manifest may opt a skill out of the Claude façade, and **you cannot
+opt a skill out of a directory symlink** — so the neutral surface links the tree and the façade links
+each skill. Git-ignore both paths; a tracked entry under either is a shadow copy, which is the thing
+this package exists to make unnecessary.
 
 **Skill changes bump this package's version.** Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
@@ -33,8 +40,9 @@ no bespoke lag gate anywhere in this contract.
 npx neo-agent-skills-materialize --check
 ```
 
-Run it in consumer CI. It answers the one question this transport leaves open: **did the projection
-actually happen?**
+Run it in consumer CI. It answers the questions this transport leaves open: **did both projections happen, and does every
+link point where it should?** Existence is not correctness — a link resolving to the wrong skill
+resolves.
 
 It can silently not happen. `npm ci --ignore-scripts` skips `postinstall` *and* `prepare`, and is
 already deliberate practice in several `neomjs` workflows — that yields a resolved dependency and

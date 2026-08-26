@@ -41,6 +41,16 @@ const
     here        = dirname(fileURLToPath(import.meta.url)),
     packageRoot = resolve(here, '..'),
     SKILLS_REL  = '.agents/skills',
+    // Two surfaces, deliberately different shapes.
+    //
+    // `.agents/skills` is ONE directory symlink: the harness-neutral discovery surface. A Codex,
+    // Antigravity or any other fork looks here, and it must see the whole tree — projection is not
+    // its concern.
+    //
+    // `.claude/skills` is PER-SKILL links, because the manifest may opt a skill out of the Claude
+    // façade and you cannot opt a skill out of a directory symlink. That asymmetry is the contract,
+    // not an inconsistency.
+    AGENTS      = '.agents/skills',
     FACADE      = '.claude/skills';
 
 /** @summary Parse `--flag [value]` pairs. */
@@ -131,6 +141,24 @@ if (args.check) {
         present  = existsSync(facadeDir) ? readdirSync(facadeDir).filter(n => !n.startsWith('.')) : [],
         failures = [];
 
+    // Harness-neutral surface first — its absence means a non-Claude fork discovers nothing.
+    const
+        agentsDir    = join(root, AGENTS),
+        agentsTarget = relative(dirname(agentsDir), skillsIn);
+
+    if (!existsSync(agentsDir) || !lstatSync(agentsDir).isSymbolicLink()) {
+        failures.push(
+            `${AGENTS} is absent or not a symlink. This is the harness-NEUTRAL discovery surface; ` +
+            `without it a Codex/Antigravity-style fork sees no skills at all, however healthy the ` +
+            `Claude façade looks.`
+        )
+    } else if (readlinkSync(agentsDir) !== agentsTarget) {
+        failures.push(
+            `${AGENTS} points at ${readlinkSync(agentsDir)}, expected ${agentsTarget}. A link that ` +
+            `resolves to the wrong tree resolves — existence is not correctness.`
+        )
+    }
+
     if (!present.length) {
         failures.push(
             `${FACADE} is empty or absent while neo-agent-skills is installed. The postinstall hook did ` +
@@ -149,6 +177,12 @@ if (args.check) {
             continue
         }
         if (!existsSync(link)) failures.push(`${FACADE}/${name} is a dangling link; its node_modules target is gone.`);
+        else if (readlinkSync(link) !== targetFor(name)) {
+            failures.push(
+                `${FACADE}/${name} points at ${readlinkSync(link)}, expected ${targetFor(name)}. ` +
+                `Checking that a link exists and resolves says nothing about WHERE it resolves.`
+            )
+        }
         if (tracked(root, join(FACADE, name))) {
             failures.push(`${FACADE}/${name} is TRACKED by git. Projection artifacts are untracked by contract — tracked links are shadow bytes.`)
         }
@@ -172,6 +206,14 @@ if (args.check) {
 }
 
 // ── write mode: (re)create the projection ───────────────────────────────────────────────────────
+// Harness-neutral surface: one directory link at the whole tree.
+const agentsDir = join(root, AGENTS);
+
+rmSync(agentsDir, {recursive: true, force: true});
+mkdirSync(dirname(agentsDir), {recursive: true});
+symlinkSync(relative(dirname(agentsDir), skillsIn), agentsDir);
+
+// Claude façade: per-skill links, manifest-projected.
 rmSync(facadeDir, {recursive: true, force: true});
 mkdirSync(facadeDir, {recursive: true});
 

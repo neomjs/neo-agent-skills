@@ -1,7 +1,5 @@
-# The canonical tree is byte-compared against every enrolled repo, so anything
-# that lands here uninvited becomes a diff in 48 repos. A macOS .DS_Store did
-# exactly that during seeding — ignored at the source, invisible to `cp -R`,
-# and staged by a fresh clone that had no ignore rules yet.
+# This tree is published as an npm package; anything uninvited here ships to
+# every consumer. A macOS .DS_Store slipped in once exactly this way.
 .DS_Store
 ._*
 .Spotlight-V100
@@ -9,3 +7,4 @@
 Thumbs.db
 desktop.ini
 node_modules/
+*.tgz
