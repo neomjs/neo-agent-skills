@@ -50,7 +50,6 @@ the next install. `--check` is what turns that from silent into loud.
 | path | what |
 |---|---|
 | `.agents/skills/` | the substrate — skills plus `skills.manifest.json` and its schema |
-| `facts/` | machine inputs: the bounded repo-facts schema and the public-common clause fragment |
 | `scripts/materialize-harness-skills.mjs` | the postinstall linker and its `--check` arm |
 
 The manifest governs **projection**: a skill declaring `claudeSymlinkRequired: false` is a declared
