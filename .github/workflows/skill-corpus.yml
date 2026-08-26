@@ -91,3 +91,34 @@ jobs:
           fi
 
           echo "negative arm holds: unmaterialized install is red"
+
+      - name: Regression arm — materialization must never eat tracked content
+        run: |
+          # 0.1.0 shipped without this guard: rmSync(recursive, force) replaced .agents/skills and
+          # .claude/skills without asking what was there, so a consumer that wired the postinstall
+          # while still tracking those paths lost committed files silently. Local proof is not proof;
+          # this arm is why the guard cannot regress unnoticed.
+          TARBALL="$PWD/$(npm pack --silent | tail -1)"
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          git init -q && git config user.email ci@local && git config user.name ci
+
+          mkdir -p .agents/skills/tracked-skill
+          echo 'committed work' > .agents/skills/tracked-skill/SKILL.md
+          git add -A && git commit -qm 'tracked corpus'
+          BEFORE=$(git ls-files | wc -l)
+
+          npm install --no-audit --no-fund --ignore-scripts "$TARBALL" >/dev/null
+
+          if npx --no-install neo-agent-skills-materialize; then
+            echo "materializer SUCCEEDED over a tracked tree — it must refuse"
+            exit 1
+          fi
+
+          AFTER=$(git ls-files | wc -l)
+          test "$BEFORE" -eq "$AFTER" \
+            || { echo "tracked files changed $BEFORE -> $AFTER; materialization destroyed committed work"; exit 1; }
+          test -f .agents/skills/tracked-skill/SKILL.md \
+            || { echo "tracked file deleted"; exit 1; }
+
+          echo "regression arm holds: refused, $AFTER tracked file(s) intact"
