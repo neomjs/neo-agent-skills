@@ -1,0 +1,46 @@
+{
+  "name": "neo-agent-skills",
+  "version": "0.1.0",
+  "description": "The canonical agent skill substrate for the neomjs organization. Consumers depend on it; they never copy it.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neomjs/neo-agent-skills.git"
+  },
+  "homepage": "https://github.com/neomjs/neo-agent-skills#readme",
+  "bugs": {
+    "url": "https://github.com/neomjs/neo/issues"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "bin": {
+    "neo-agent-skills-materialize": "./scripts/materialize-harness-skills.mjs"
+  },
+  "exports": {
+    "./manifest": "./.agents/skills/skills.manifest.json",
+    "./facts-schema": "./facts/repo-facts.schema.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    ".agents/skills",
+    "facts",
+    "scripts",
+    "AGENT_SUBSTRATE_REVISION.json",
+    "enrollment.json",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node scripts/test-verify-substrate-sync.mjs",
+    "materialize": "node scripts/materialize-harness-skills.mjs"
+  },
+  "keywords": [
+    "neo.mjs",
+    "agent-skills",
+    "agent-os"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
