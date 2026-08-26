@@ -1,42 +1,42 @@
 {
-  "name": "neo-agent-skills",
-  "version": "0.1.1",
-  "description": "The canonical agent skill substrate for the neomjs organization. Consumers depend on it; they never copy it.",
-  "type": "module",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/neomjs/neo-agent-skills.git"
-  },
-  "homepage": "https://github.com/neomjs/neo-agent-skills#readme",
-  "bugs": {
-    "url": "https://github.com/neomjs/neo/issues"
-  },
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "bin": {
-    "neo-agent-skills-materialize": "./scripts/materialize-harness-skills.mjs"
-  },
-  "exports": {
-    "./manifest": "./.agents/skills/skills.manifest.json",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    ".agents/skills",
-    "scripts/materialize-harness-skills.mjs",
-    "README.md"
-  ],
-  "scripts": {
-    "materialize": "node scripts/materialize-harness-skills.mjs",
-    "lint": "node scripts/lint-skill-corpus.mjs"
-  },
-  "keywords": [
-    "neo.mjs",
-    "agent-skills",
-    "agent-os"
-  ],
-  "publishConfig": {
-    "access": "public"
-  }
+    "name"       : "neo-agent-skills",
+    "version"    : "0.1.1",
+    "description": "The canonical agent skill substrate for the neomjs organization. Consumers depend on it; they never copy it.",
+    "type"       : "module",
+    "license"    : "MIT",
+    "repository" : {
+        "type": "git",
+        "url" : "git+https://github.com/neomjs/neo-agent-skills.git"
+    },
+    "homepage": "https://github.com/neomjs/neo-agent-skills#readme",
+    "bugs": {
+        "url": "https://github.com/neomjs/neo/issues"
+    },
+    "engines": {
+        "node": ">=24.0.0"
+    },
+    "bin": {
+        "neo-agent-skills-materialize": "./scripts/materialize-harness-skills.mjs"
+    },
+    "exports": {
+        "./manifest"    : "./.agents/skills/skills.manifest.json",
+        "./package.json": "./package.json"
+    },
+    "files": [
+        ".agents/skills",
+        "scripts/materialize-harness-skills.mjs",
+        "README.md"
+    ],
+    "scripts": {
+        "materialize": "node scripts/materialize-harness-skills.mjs",
+        "lint"       : "node scripts/lint-skill-corpus.mjs"
+    },
+    "keywords": [
+        "neo.mjs",
+        "agent-skills",
+        "agent-os"
+    ],
+    "publishConfig": {
+        "access": "public"
+    }
 }
