@@ -26,8 +26,7 @@
       "required": [
         "routerByteBudget",
         "payloadBudget",
-        "claudeSymlinkRequired",
-        "downstreamDocsTargets"
+        "claudeSymlinkRequired"
       ],
       "additionalProperties": false,
       "properties": {
@@ -65,13 +64,6 @@
         },
         "claudeSymlinkRequired": {
           "type": "boolean"
-        },
-        "downstreamDocsTargets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
         }
       }
     },
@@ -88,11 +80,7 @@
       "type": "object",
       "required": [
         "name",
-        "description",
-        "routerByteBudget",
-        "payloadBudget",
-        "claudeSymlinkRequired",
-        "downstreamDocsTargets"
+        "description"
       ],
       "additionalProperties": false,
       "properties": {
@@ -120,19 +108,14 @@
         "claudeSymlinkRequired": {
           "type": "boolean"
         },
-        "downstreamDocsTargets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        },
         "relationships": {
           "type": "object",
           "description": "Optional future-extension metadata. No v1 lint rules consume this field.",
           "additionalProperties": true
         }
-      }
+      },
+      "description": "A skill row. Only name and description are required: every budget field is an OVERRIDE of defaults, so a row that agrees with defaults omits them entirely. Restoring them as required would re-introduce the 148 default-equal repetitions this schema exists to forbid."
     }
-  }
+  },
+  "description": " downstreamDocsTargets was removed 2026-08-26: it named neomjs/neo doc paths that do not exist in a consuming repository, so it could never be satisfied outside the authoring repo."
 }

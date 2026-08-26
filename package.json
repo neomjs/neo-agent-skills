@@ -28,7 +28,8 @@
     "README.md"
   ],
   "scripts": {
-    "materialize": "node scripts/materialize-harness-skills.mjs"
+    "materialize": "node scripts/materialize-harness-skills.mjs",
+    "lint": "node scripts/lint-skill-corpus.mjs"
   },
   "keywords": [
     "neo.mjs",

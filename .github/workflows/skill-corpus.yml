@@ -1,0 +1,93 @@
+# The canonical anti-bloat CI. It runs HERE and nowhere else.
+#
+# 96% of this package is the skill corpus, so the corpus is what is worth protecting. Consuming
+# repositories run exactly one check — `materialize --check` — because a rule enforced in N repos is
+# N places to drift. One enforcement site is the point.
+#
+# Deliberately absent: identity-roster and revalidation checks, consumer byte-drift, AGENTS
+# entrypoint budgets, downstream doc targets, Playwright, and any reusable consumer workflow.
+
+name: skill-corpus
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the net-growth arm compares this tree against the merge base, and a shallow
+          # clone cannot reach it. The arm fails loudly rather than skipping when the base is absent.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Corpus coherence, budgets, reference integrity, net growth
+        run: |
+          BASE="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
+          node scripts/lint-skill-corpus.mjs --base "$BASE"
+
+      - name: Package contents — what actually ships
+        run: |
+          TARBALL=$(npm pack --silent | tail -1)
+
+          # The corpus must ship; the tooling that guards it must not. A consumer downloading this
+          # package should receive skills, one linker, and nothing else.
+          tar tzf "$TARBALL" | grep -q 'package/.agents/skills/skills.manifest.json' \
+            || { echo "manifest missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/materialize-harness-skills.mjs' \
+            || { echo "materializer missing from the tarball"; exit 1; }
+
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs'; do
+            tar tzf "$TARBALL" | grep -q "$unwanted" \
+              && { echo "$unwanted ships to consumers and should not"; exit 1; }
+          done
+
+          echo "tarball: $(tar tzf "$TARBALL" | grep -c 'package/.agents/skills/') corpus entries, no CI, no corpus lint"
+
+      - name: Materializer fixture — a clean consumer install
+        run: |
+          TARBALL="$PWD/$(npm pack --silent | tail -1)"
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          git init -q && git config user.email ci@local && git config user.name ci
+          node -e 'require("fs").writeFileSync("package.json",JSON.stringify({name:"fixture",version:"1.0.0",private:true,scripts:{postinstall:"neo-agent-skills-materialize"}},null,2))'
+          printf '.claude/skills/\n.agents/skills\nnode_modules/\n' > .gitignore
+
+          npm install --no-audit --no-fund "$TARBALL" >/dev/null
+          # `npm install <pkg>` does NOT run the consumer's postinstall; a bare install does. The
+          # fixture asserts the shipping path, so it runs both rather than assuming the first sufficed.
+          npm install --no-audit --no-fund >/dev/null
+
+          npx --no-install neo-agent-skills-materialize --check
+
+          git add -A
+          test "$(git ls-files | grep -c 'skills/')" -eq 0 \
+            || { echo "skill bytes reached consumer git — this transport copies nothing"; exit 1; }
+
+      - name: Materializer fixture — the arm that must fail
+        run: |
+          TARBALL="$PWD/$(npm pack --silent | tail -1)"
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          node -e 'require("fs").writeFileSync("package.json",JSON.stringify({name:"neg",version:"1.0.0",private:true,scripts:{postinstall:"neo-agent-skills-materialize"}},null,2))'
+
+          # --ignore-scripts skips postinstall, which is deliberate practice in several neomjs
+          # workflows. A resolved dependency with no materialized links must be RED, not silently fine.
+          npm install --no-audit --no-fund --ignore-scripts "$TARBALL" >/dev/null
+
+          if npx --no-install neo-agent-skills-materialize --check >/dev/null 2>&1; then
+            echo "--check passed with nothing materialized; the guard cannot fail and is scenery"
+            exit 1
+          fi
+
+          echo "negative arm holds: unmaterialized install is red"
