@@ -88,7 +88,7 @@ function editManifest(work, mutate) {
 /** @summary Grow corpus Markdown one byte beyond its configured net-positive cap. */
 function growCorpus(work) {
     const
-        manifest = JSON.parse(readFileSync(join(work, '.agents/skills/skills.manifest.json'), 'utf8'),
+        manifest = JSON.parse(readFileSync(join(work, '.agents/skills/skills.manifest.json'), 'utf8')),
         growth   = manifest.defaults.maxPositiveDeltaBytes + 1;
 
     appendFileSync(join(work, SURFACE[1]), '\n' + 'x'.repeat(growth))
