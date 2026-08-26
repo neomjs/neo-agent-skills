@@ -3,7 +3,7 @@
   "receiptVersion": 1,
   "subject": {
     "skillTree": ".agents/skills",
-    "skillTreeHash": "13d8e935f964fe99a3558ad82932be49722b7ee6",
+    "skillTreeHash": "e31730b7925e418967cc7b55741d472d5fa01c14",
     "skillTreeHashAlgorithm": "git-tree-sha1",
     "manifest": ".agents/skills/skills.manifest.json",
     "manifestSha256": "21cbeb4f96a33c15ae8e12cf28d5dc02707e2b7d90958097109829bf98c47108",
@@ -17,7 +17,7 @@
   },
   "provenance": {
     "sourceRepository": "neomjs/neo",
-    "sourceCommit": "09589b521fcbd284289459c4487cec57d0b34a53",
+    "sourceCommit": "bca4c120b3a059fea29e86599928a94a2943cea3",
     "sourcePath": ".agents/skills",
     "graduatedFrom": "D#17756",
     "ticket": "neomjs/neo#17784",
