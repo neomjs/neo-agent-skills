@@ -1,11 +1,12 @@
-# The canonical anti-bloat CI. It runs HERE and nowhere else.
+# The canonical Skills-source CI. Corpus rules run HERE and nowhere else; reusable consumer
+# workflows also live here, while each consumer commits only a pinned caller.
 #
 # 96% of this package is the skill corpus, so the corpus is what is worth protecting. Consuming
-# repositories run exactly one check — `materialize --check` — because a rule enforced in N repos is
-# N places to drift. One enforcement site is the point.
+# repositories run `materialize --check` through the reusable PR baseline because a rule enforced in
+# N workflow copies is N places to drift. One implementation site is the point.
 #
 # Deliberately absent: identity-roster and revalidation checks, consumer byte-drift, AGENTS
-# entrypoint budgets, downstream doc targets, Playwright, and any reusable consumer workflow.
+# entrypoint budgets, downstream doc targets, Playwright, and product-specific test/lint workflows.
 
 name: skill-corpus
 
@@ -42,6 +43,9 @@ jobs:
         # the first regression is invisible.
         run: node scripts/test-lint-skill-corpus.mjs
 
+      - name: Reusable PR baseline contract
+        run: node scripts/test-reusable-pr-baseline.mjs
+
       - name: Package contents — what actually ships
         run: |
           TARBALL=$(npm pack --silent | tail -1)
@@ -53,7 +57,7 @@ jobs:
           tar tzf "$TARBALL" | grep -q 'package/scripts/materialize-harness-skills.mjs' \
             || { echo "materializer missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
