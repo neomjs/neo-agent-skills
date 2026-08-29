@@ -1,0 +1,56 @@
+# Canonical non-product PR baseline for repositories consuming neo-agent-skills.
+#
+# Callers own only their event trigger and immutable `uses:` coordinate. This workflow owns the
+# executable jobs, so adding another consumer does not add another copy of either contract.
+
+name: Reusable PR Baseline
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      required_base:
+        description: Pull-request base branch accepted by the consumer repository.
+        required: false
+        type: string
+        default: dev
+      node_version:
+        description: Node.js version used to install and verify the consumer lockfile.
+        required: false
+        type: string
+        default: '24'
+
+jobs:
+  pr-base:
+    name: PR base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-PR caller or the wrong base
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != inputs.required_base }}
+        env:
+          ACTUAL_BASE: ${{ github.event.pull_request.base.ref }}
+          EXPECTED_BASE: ${{ inputs.required_base }}
+        run: |
+          echo "Expected PR base '${EXPECTED_BASE}', observed '${ACTUAL_BASE:-not-a-pull-request}'."
+          exit 1
+
+  skills-materialized:
+    name: Skills materialized
+    runs-on: ubuntu-latest
+    steps:
+      # With no repository override, checkout resolves the caller repository. The reusable workflow
+      # must inspect the consumer lockfile and projection, never its own source checkout.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+
+      - name: Install consumer dependencies
+        run: npm ci
+
+      - name: Assert skills are materialized and unshadowed
+        run: npx --no-install neo-agent-skills-materialize --check
