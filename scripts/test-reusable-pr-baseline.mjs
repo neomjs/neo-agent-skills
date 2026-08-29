@@ -52,7 +52,10 @@ export function validateReusablePrBaseline(source) {
         failures.push('direct event trigger present')
     }
     if (/^\s+repository:/m.test(source)) failures.push('checkout repository override present');
-    if (/^\s+[a-z_-]+: write\s*$/m.test(source)) failures.push('write permission present');
+    if (/^\s+[a-z_-]+: write(?:-all)?\s*$/m.test(source) ||
+        /^permissions: (?:read|write)-all\s*$/m.test(source)) {
+        failures.push('write permission present')
+    }
 
     return failures
 }
@@ -76,6 +79,9 @@ expectMutationFailure('trigger', source,
 expectMutationFailure('permissions', source,
     value => value.replace('contents: read', 'contents: write'),
     'missing read-only contents');
+expectMutationFailure('write-all shorthand', source,
+    value => value.replace('    runs-on: ubuntu-latest\n    steps:', '    runs-on: ubuntu-latest\n    permissions: write-all\n    steps:'),
+    'write permission present');
 expectMutationFailure('base job', source,
     value => value.replace('  pr-base:', '  removed-base:'),
     'missing PR-base job id');
@@ -92,4 +98,4 @@ expectMutationFailure('materializer command', source,
     value => value.replace('neo-agent-skills-materialize --check', 'neo-agent-skills-materialize'),
     'missing materializer check');
 
-console.log('reusable-pr-baseline: canonical contract + 7 negative mutations passed');
+console.log('reusable-pr-baseline: canonical contract + 8 negative mutations passed');
