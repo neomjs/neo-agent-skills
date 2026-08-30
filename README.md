@@ -53,12 +53,27 @@ One measured npm behaviour worth knowing: **`npm install <pkg>` does not run you
 a bare `npm install` does.** So the command that bumps this dependency leaves the links stale until
 the next install. `--check` is what turns that from silent into loud.
 
+## Shared source-comment guard
+
+```bash
+npx --no-install neo-agent-skills-ticket-archaeology --base origin/dev
+```
+
+The guard scans every changed tracked `.mjs` file in full. Repository-local issue numbers of any
+length and review-history markers fail only in comments or JSDoc; executable strings remain valid.
+Ambiguous numeric CSS colors require the token-scoped `[not-ticket-ref: css-color]` marker. Consumer
+repositories call the stable `Source comment archaeology` job in
+`.github/workflows/reusable-pr-baseline.yml` through an immutable Skills revision. That job installs
+its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by
+changing the caller lockfile or local binary.
+
 ## What is in the package
 
 | path | what |
 |---|---|
 | `.agents/skills/` | the substrate — skills plus `skills.manifest.json` and its schema |
 | `scripts/materialize-harness-skills.mjs` | the postinstall linker and its `--check` arm |
+| `scripts/check-ticket-archaeology.mjs` | the portable comment/JSDoc archaeology guard |
 
 The manifest governs **projection**: a skill declaring `claudeSymlinkRequired: false` is a declared
 opt-out and is correctly absent from the façade. Per-skill links rather than one directory link,
