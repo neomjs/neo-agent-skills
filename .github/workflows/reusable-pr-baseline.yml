@@ -1,7 +1,7 @@
 # Canonical non-product PR baseline for repositories consuming neo-agent-skills.
 #
 # Callers own only their event trigger and immutable `uses:` coordinate. This workflow owns the
-# executable jobs, so adding another consumer does not add another copy of either contract.
+# executable jobs, so adding another consumer does not copy any contract.
 
 name: Reusable PR Baseline
 
@@ -54,3 +54,42 @@ jobs:
 
       - name: Assert skills are materialized and unshadowed
         run: npx --no-install neo-agent-skills-materialize --check
+
+  source-comment-archaeology:
+    name: Source comment archaeology
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      - name: Checkout exact caller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Fetch pull-request base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags origin "${BASE_SHA}"
+
+      - name: Install immutable archaeology guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
+          SKILLS_VERSION: '0.1.2'
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      - name: Reject tracking and review archaeology
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
+        run: >-
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-ticket-archaeology"
+          --base "${BASE_SHA}"

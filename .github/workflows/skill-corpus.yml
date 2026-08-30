@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Install source dependencies
+        run: npm ci --ignore-scripts
+
       - name: Corpus coherence, budgets, reference integrity, net growth
         run: |
           BASE="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
@@ -46,18 +49,23 @@ jobs:
       - name: Reusable PR baseline contract
         run: node scripts/test-reusable-pr-baseline.mjs
 
+      - name: Ticket archaeology contract and packed CLI
+        run: node scripts/test-ticket-archaeology.mjs
+
       - name: Package contents — what actually ships
         run: |
           TARBALL=$(npm pack --silent | tail -1)
 
-          # The corpus must ship; the tooling that guards it must not. A consumer downloading this
-          # package should receive skills, one linker, and nothing else.
+          # The corpus, materializer and portable source guard ship. Source-only CI and contract tests
+          # do not.
           tar tzf "$TARBALL" | grep -q 'package/.agents/skills/skills.manifest.json' \
             || { echo "manifest missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/materialize-harness-skills.mjs' \
             || { echo "materializer missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-ticket-archaeology.mjs' \
+            || { echo "ticket-archaeology CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
