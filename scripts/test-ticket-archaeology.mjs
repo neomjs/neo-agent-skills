@@ -66,10 +66,18 @@ assert.deepEqual(findArchaeology([
 
 assert.deepEqual(hitLines('// CSS color #000000 [not-ticket-ref: css-color]'), [],
     'a typed marker exempts exactly one ambiguous numeric CSS token');
+assert.deepEqual(hitLines("// @member {String} backgroundColor_='#000000' [not-ticket-ref: css-color]"), [],
+    'the typed marker relieves the camelCase property idiom that motivated the Engine bug');
+assert.deepEqual(hitLines('// borderColor="#111111" [not-ticket-ref: css-color]'), [],
+    'a quoted camelCase color assignment is explicit color context');
+assert.deepEqual(hitLines('// fillStyle=`#123456` [not-ticket-ref: css-color]'), [],
+    'canvas-style color properties use the same typed escape');
 assert.deepEqual(hitLines('// ticket #14 beside CSS color #000000 [not-ticket-ref: css-color]'), [1],
     'the typed color marker cannot hide another tracking reference');
 assert.deepEqual(hitLines('// see #242 [not-ticket-ref: css-color]'), [1],
     'a typed marker without CSS syntax cannot relabel a short ticket');
+assert.deepEqual(hitLines("// issue='#9473' [not-ticket-ref: css-color]"), [1],
+    'generic quoted assignments cannot launder a real reference');
 assert.deepEqual(hitLines('// [not-ticket-ref: css-color]'), [1], 'an unused marker fails closed');
 assert.deepEqual(hitLines('// token #242'), [1], 'generic token wording cannot make a short ticket green');
 assert.deepEqual(hitLines('// theme #242'), [1], 'generic theme wording cannot make a short ticket green');

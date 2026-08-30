@@ -22,6 +22,8 @@ const
     workflowPath = join(root, '.github', 'workflows', 'reusable-pr-baseline.yml'),
     pkg          = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
+let mutationCount = 0;
+
 /** @summary Isolates one top-level job so a sibling cannot satisfy its contract. */
 function jobSource(source, jobId) {
     const marker = `  ${jobId}:\n`,
@@ -111,7 +113,8 @@ function expectMutationFailure(label, source, mutate, expectedFailure) {
           failures = validateReusablePrBaseline(mutated);
 
     assert.notEqual(mutated, source, `${label}: fixture mutation changed nothing`);
-    assert.ok(failures.includes(expectedFailure), `${label}: expected "${expectedFailure}", got ${failures.join(', ')}`)
+    assert.ok(failures.includes(expectedFailure), `${label}: expected "${expectedFailure}", got ${failures.join(', ')}`);
+    mutationCount++
 }
 
 const source = readFileSync(workflowPath, 'utf8');
@@ -179,4 +182,4 @@ expectMutationFailure('continue on error', source,
     value => value.replace('    runs-on: ubuntu-latest\n    steps:', '    runs-on: ubuntu-latest\n    continue-on-error: true\n    steps:'),
     'continue-on-error present');
 
-console.log('reusable-pr-baseline: canonical contract + 20 negative mutations passed');
+console.log(`reusable-pr-baseline: canonical contract + ${mutationCount} negative mutations passed`);

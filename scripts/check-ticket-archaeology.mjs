@@ -34,8 +34,8 @@ const
         /\b(?:earlier|previous|prior)\s+rounds?\b/i
     ]),
     NUMERIC_REF_RE = /#(\d+)(?![A-Za-z0-9_])/g,
-    CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})\s*\[not-ticket-ref:\s*css-color\]/gi,
-    CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-color)?|border(?:-color)?|color|fill|stroke)\s*(?::|=))\s*$/i,
+    CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})['"`]?\s*\[not-ticket-ref:\s*css-color\]/gi,
+    CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-?color)?|border(?:-?color)?|color|fill(?:style)?|stroke(?:style)?)_?\s*(?::|=)\s*['"`]?)\s*$/i,
     ANY_TYPED_ESCAPE_RE = /\[not-ticket-ref:[^\]]*\]/gi,
     LEGACY_ESCAPE_RE = /\bticket-ref-ok\b/i,
     __filename = fileURLToPath(import.meta.url);
