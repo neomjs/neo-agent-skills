@@ -167,6 +167,7 @@ export function validateReusablePrBaseline(source) {
 if ((prBodyJob.match(/if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/g) || []).length !== 2) {
     failures.push('PR-body author boundary missing from a judging step')
 }
+
 if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks out the caller tree');
 
     // Comments are stripped FIRST. Both checks below name the construct they forbid, so a detector
@@ -174,6 +175,41 @@ if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks
     // anchor satisfied it there; here prose describing a hazard reports it. Measured, not guessed:
     // the first revision of these two rows failed against the canonical file for exactly that.
     const prBodyCode = prBodyJob.split('\n').filter(line => !/^\s*#/.test(line)).join('\n');
+
+    // RA-4 — VALUE FLOW, not token presence. A token check passes on a decorative occurrence: the live
+    // fetch can sit in the file while an aliased event snapshot is what actually gets written, and the
+    // install line can name the package while the version is mutable. Each guard below follows the value.
+    //
+    // (a) The fetched response must be what reaches the file. A `pulls.get` whose result is discarded
+    //     while `writeFileSync` receives an event-payload alias satisfies every presence check.
+    const writeCall = prBodyCode.match(/writeFileSync\([^)]*\)/);
+
+    if (!writeCall) {
+        failures.push('PR-body never writes the body to a file')
+    } else if (!/\bdata\.body\b/.test(writeCall[0])) {
+        failures.push('PR-body writes something other than the fetched response')
+    }
+
+    // (b) No body value may reach a shell-visible surface — `env:` included, not only `run:`. An env
+    //     var carrying the body is interpolated by the shell exactly like an inline expression.
+    prBodyCode.split('\n').forEach(line => {
+        if (/^\s+[A-Z_]+\s*:\s*\$\{\{[^}]*\bbody\b/.test(line)) {
+            failures.push('PR-body content reaches a shell-visible env value')
+        }
+    });
+
+    // (c) The install must be IMMUTABLE. `neo-agent-skills@latest`, a range, or a missing pin all keep
+    //     the package name and change what actually executes.
+    const prBodyInstall = prBodyCode.match(/npm install[\s\S]*?neo-agent-skills@[^"'\s]*/);
+
+    if (!prBodyInstall) {
+        failures.push('PR-body guard is not installed from a pinned package')
+    } else if (!/neo-agent-skills@\$\{SKILLS_VERSION\}/.test(prBodyInstall[0])) {
+        failures.push('PR-body guard install is not pinned to an exact version')
+    }
+    if (!new RegExp(`SKILLS_VERSION: '${pkg.version}'`).test(prBodyJob)) {
+        failures.push('PR-body package version drift')
+    }
 
     // A body reaching a shell means an EXPRESSION interpolated into a run: line, not the substring
     // "body" appearing somewhere in the job. Scoped per line, so it cannot span steps.
@@ -335,6 +371,21 @@ expectMutationFailure('archaeology runner root — suffixed root', source,
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology-shadow'),
     'missing isolated runner root');
 
+
+expectMutationFailure('PR-body decorative live fetch', source,
+    // The fetch stays, so every presence check still passes — but an event-payload alias is what
+    // reaches the file. This is the arm a token check cannot have.
+    value => value.replace("            require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');",
+                           "            const snapshot = context.payload.pull_request.body;\n            require('node:fs').writeFileSync(process.env.BODY_FILE, snapshot ?? '');"),
+    'PR-body writes something other than the fetched response');
+expectMutationFailure('PR-body body into a shell-visible env', source,
+    value => value.replace('          BODY_FILE  : ${{ runner.temp }}/pr-body.md',
+                           '          BODY_FILE  : ${{ runner.temp }}/pr-body.md\n          PR_BODY    : ${{ github.event.pull_request.body }}'),
+    'PR-body content reaches a shell-visible env value');
+expectMutationFailure('PR-body mutable install', source,
+    value => value.replace('          "neo-agent-skills@${SKILLS_VERSION}"\n\n      # The body is fetched LIVE',
+                           '          "neo-agent-skills@latest"\n\n      # The body is fetched LIVE'),
+    'PR-body guard install is not pinned to an exact version');
 
 expectMutationFailure('PR-body author boundary dropped from one step', source,
     value => value.replace("        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}\n        uses: actions/github-script@v7", '        uses: actions/github-script@v7'),

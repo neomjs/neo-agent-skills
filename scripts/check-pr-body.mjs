@@ -3,9 +3,20 @@
  * @summary Validates an agent pull-request body against the anchors `pull-request-workflow.md` §9 promises.
  *
  * The decision half only. It receives a body and returns findings; it never fetches a pull request,
- * never posts a comment, and never reads the network. The reusable workflow owns event acquisition,
- * the live body read and the corrective comment — so this file is testable as a pure function, which
- * is the property the previous home could not have.
+ * never posts a comment, and never reads the network. The reusable workflow owns event acquisition
+ * and the live body read — so this file is testable as a pure function, which is the property the
+ * previous home could not have.
+ *
+ * **There is no corrective comment, deliberately.** An earlier revision of this contract promised
+ * the wrapper would post one on `opened`. It is retired for a reason that comes from this file's own
+ * design rather than from effort: the failure output names AT MOST ONE anchor and never an invisible
+ * one, because a message enumerating the full set is a template an agent can satisfy without writing
+ * the sections. A corrective comment is a strictly more enumerating surface, so shipping one would
+ * undo the anti-stuffing property the split between visible and invisible anchors exists to create.
+ *
+ * It also costs privilege: a reusable workflow cannot grant itself `issues: write`, so every consumer
+ * would have to hand a shared workflow comment-write access to deliver a message the failed check
+ * already carries.
  *
  * **Why this is not the workflow it replaces.** The gate lived as 253 lines of inline
  * `actions/github-script` inside a single repository's YAML. Inline logic cannot carry a

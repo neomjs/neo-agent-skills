@@ -2,6 +2,21 @@
 #
 # Callers own only their event trigger and immutable `uses:` coordinate. This workflow owns the
 # executable jobs, so adding another consumer does not copy any contract.
+#
+# REQUIRED CALLER TRIGGER — the `pr-body` job is only as good as the events the caller fires:
+#
+#   on:
+#     pull_request:
+#       types: [opened, edited, synchronize, ready_for_review]
+#
+# `edited` is the one that is easy to omit and expensive to miss. This job reads the LIVE body, so a
+# corrected body goes green with no push — but only if the caller fires on the edit. Without it the
+# live fetch buys nothing: the author fixes the body, nothing re-runs, and the red stands until an
+# unrelated commit arrives. `ready_for_review` matters for the same reason on the draft boundary,
+# where the close-target rule changes.
+#
+# The trigger cannot be asserted here — a reusable workflow does not see its caller's `on:` block.
+# It is a caller obligation, tracked per repository under #14.
 
 name: Reusable PR Baseline
 
