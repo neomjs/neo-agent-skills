@@ -93,3 +93,42 @@ jobs:
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-ticket-archaeology"
           --base "${BASE_SHA}"
+
+  substrate-size:
+    name: Substrate size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      # The head tree is the whole input: this guard measures what a seat loads at this commit and
+      # compares nothing against the base, so it needs no history.
+      - name: Checkout exact caller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      # The guard runs from runner.temp, never from the caller workspace. A checked-out copy would
+      # be the same diff under review, so a pull request could widen the limit it is judged by, or
+      # drop an entry from the target roster, and pass its own gate. The limit ships with the
+      # pinned release; nothing on the command line can move it.
+      - name: Install immutable substrate guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
+          SKILLS_VERSION: '0.1.2'
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      # Invoked bare, against the checked-out caller tree. A repository carrying none of the
+      # substrate entry points reports N/A and greens: three of the five consumers have no such
+      # files, and a baseline they cannot adopt is not a baseline.
+      - name: Measure the per-turn substrate budget
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
+        run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"

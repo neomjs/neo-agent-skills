@@ -19,8 +19,9 @@
         "acorn": "^8.18.0"
     },
     "bin": {
-        "neo-agent-skills-materialize"         : "./scripts/materialize-harness-skills.mjs",
-        "neo-agent-skills-ticket-archaeology" : "./scripts/check-ticket-archaeology.mjs"
+        "neo-agent-skills-materialize"        : "./scripts/materialize-harness-skills.mjs",
+        "neo-agent-skills-substrate-size"    : "./scripts/check-substrate-size.mjs",
+        "neo-agent-skills-ticket-archaeology": "./scripts/check-ticket-archaeology.mjs"
     },
     "exports": {
         "./manifest"    : "./.agents/skills/skills.manifest.json",
@@ -29,13 +30,14 @@
     "files": [
         ".agents/skills",
         "scripts/materialize-harness-skills.mjs",
+        "scripts/check-substrate-size.mjs",
         "scripts/check-ticket-archaeology.mjs",
         "README.md"
     ],
     "scripts": {
         "materialize": "node scripts/materialize-harness-skills.mjs",
         "lint"       : "node scripts/lint-skill-corpus.mjs",
-        "test"       : "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-ticket-archaeology.mjs"
+        "test"       : "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs"
     },
     "keywords": [
         "neo.mjs",
