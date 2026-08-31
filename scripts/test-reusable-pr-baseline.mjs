@@ -68,7 +68,7 @@ export function validateReusablePrBaseline(source) {
               ['substrate job id', /^  substrate-size:\n/m],
               ['substrate stable name', /^    name: Substrate size\n/m],
               ['substrate non-PR refusal', /github\.event_name != 'pull_request'/, substrateJob],
-              ['substrate caller head', /ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/, substrateJob],
+              ['substrate caller head', /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m, substrateJob],
               ['substrate isolated exact install',
                   /npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/, substrateJob],
               ['substrate exact package spec', /"neo-agent-skills@\$\{SKILLS_VERSION\}"/, substrateJob],
@@ -78,8 +78,14 @@ export function validateReusablePrBaseline(source) {
               // The guard resolves its root from cwd; outside the checkout every target is ENOENT,
               // which the negative-space contract reports as N/A — so a bare invocation from any
               // other directory GREENS. Asserted here because it is a silent failure everywhere else.
+              //
+              // ANCHORED TO END-OF-LINE, and that is the whole point of the assertion. The first
+              // version matched the pin as an unanchored substring, so `${{ github.workspace }}/docs`
+              // satisfied it — a wrong root passing the contract that exists to forbid wrong roots
+              // (RA-2, PR #26). A suffix on a PATH value silently redirects; substring presence can
+              // never express "and nothing follows".
               ['substrate measurement pinned to the caller workspace',
-                  /working-directory: \$\{\{ github\.workspace \}\}/, substrateJob]
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, substrateJob]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -92,7 +98,7 @@ export function validateReusablePrBaseline(source) {
         failures.push('direct event trigger present')
     }
     if (/^\s+repository:/m.test(source)) failures.push('checkout repository override present');
-    if (!/ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/.test(archaeologyJob)) {
+    if (!/^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m.test(archaeologyJob)) {
         failures.push('missing exact caller head')
     }
     if (!/fetch-depth: 0/.test(archaeologyJob)) failures.push('missing full history');
@@ -103,7 +109,9 @@ export function validateReusablePrBaseline(source) {
         failures.push('missing exact base fetch')
     }
     if (!archaeologyJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('package version drift');
-    if ((archaeologyJob.match(/SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-source-comment-archaeology/g) || []).length !== 2) {
+    // Anchored for the same reason as the workspace pin: `…-source-comment-archaeology-x` is a
+    // DIFFERENT install root that an unanchored match accepts.
+    if ((archaeologyJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-source-comment-archaeology\s*$/gm) || []).length !== 2) {
         failures.push('missing isolated runner root')
     }
     if (!/npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/.test(archaeologyJob)) {
@@ -115,7 +123,7 @@ export function validateReusablePrBaseline(source) {
     }
     if (!/--base "\$\{BASE_SHA\}"/.test(archaeologyJob)) failures.push('missing exact base invocation');
     if (!substrateJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('substrate package version drift');
-    if ((substrateJob.match(/SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-substrate-size/g) || []).length !== 2) {
+    if ((substrateJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-substrate-size\s*$/gm) || []).length !== 2) {
         failures.push('missing substrate isolated runner root')
     }
 
@@ -251,6 +259,33 @@ expectMutationFailure('substrate steered invocation', source,
         'run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"',
         'run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size" --root docs'),
     'substrate guard invoked with arguments');
+// ── RA-2: any root OTHER than the caller workspace must red ────────────────────────────────────
+//
+// The three below are one defect class, not three bugs. Each asserts a PATH, and each was written
+// as an unanchored substring — so appending a suffix produced a DIFFERENT root that satisfied the
+// contract forbidding different roots. A wrong `working-directory` is the dangerous one: the guard
+// resolves its targets from cwd, so outside the checkout every target is ENOENT, the negative-space
+// contract reports N/A, and the job GREENS having measured nothing.
+//
+// A suffix mutation is the only shape that catches this. Replacing the value wholesale (the shape
+// every other mutation here uses) reds against an unanchored pattern too, so it cannot distinguish
+// an anchored assertion from an unanchored one — it would have passed before this fix and after it.
+expectMutationFailure('substrate workspace pin — suffixed root', source,
+    value => value.replace(
+        'working-directory: ${{ github.workspace }}',
+        'working-directory: ${{ github.workspace }}/docs'),
+    'missing substrate measurement pinned to the caller workspace');
+expectMutationFailure('substrate runner root — suffixed root', source,
+    value => value.replace(
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size',
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size-shadow'),
+    'missing substrate isolated runner root');
+expectMutationFailure('archaeology runner root — suffixed root', source,
+    value => value.replace(
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology',
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology-shadow'),
+    'missing isolated runner root');
+
 expectMutationFailure('continue on error', source,
     value => value.replace('    runs-on: ubuntu-latest\n    steps:', '    runs-on: ubuntu-latest\n    continue-on-error: true\n    steps:'),
     'continue-on-error present');
