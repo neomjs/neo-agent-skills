@@ -2,6 +2,21 @@
 #
 # Callers own only their event trigger and immutable `uses:` coordinate. This workflow owns the
 # executable jobs, so adding another consumer does not copy any contract.
+#
+# REQUIRED CALLER TRIGGER — the `pr-body` job is only as good as the events the caller fires:
+#
+#   on:
+#     pull_request:
+#       types: [opened, edited, synchronize, ready_for_review]
+#
+# `edited` is the one that is easy to omit and expensive to miss. This job reads the LIVE body, so a
+# corrected body goes green with no push — but only if the caller fires on the edit. Without it the
+# live fetch buys nothing: the author fixes the body, nothing re-runs, and the red stands until an
+# unrelated commit arrives. `ready_for_review` matters for the same reason on the draft boundary,
+# where the close-target rule changes.
+#
+# The trigger cannot be asserted here — a reusable workflow does not see its caller's `on:` block.
+# It is a caller obligation, tracked per repository under #14.
 
 name: Reusable PR Baseline
 
@@ -140,3 +155,74 @@ jobs:
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
         run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"
+
+  pr-body:
+    name: PR body
+    runs-on: ubuntu-latest
+    # The top-level grant is `contents: read`; this job needs the pull request itself. Declared here
+    # rather than widened globally, so the other three jobs keep the narrower grant.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      # No checkout, deliberately. This job's whole input is the pull-request body, so the tree under
+      # review never enters it — a diff cannot weaken the gate that judges it, and there is nothing
+      # for a caller to shadow. The other jobs check out because they measure the tree; this one does
+      # not measure the tree.
+      - name: Install immutable PR-body guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+          SKILLS_VERSION: '0.1.2'
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      # The body is fetched LIVE, never read from `context.payload.pull_request.body`. An event
+      # snapshot is wrong in both directions: a re-run replays the stale text, so a corrected body can
+      # never go green, and a body edited after a green run keeps that green. Recorded as
+      # `neomjs/neo#17431`, whose fix lived only in the workflow the split deleted.
+      #
+      # It is written to a FILE from JavaScript and never interpolated into a shell. A pull-request
+      # body is attacker-controlled text; `run:` steps below receive only a workflow-owned path.
+      # §9 is the AGENT pull-request protocol, so this judges agent-authored PRs only — the same
+      # boundary the deleted `agent-pr-body-lint.yml` carried: a `neo-` login prefix, or an
+      # explicit `ai` label for a human-authored PR opting in. Widening it to every contributor
+      # would hold human PRs to a template nobody agreed they must follow, and that is a policy
+      # change, not a port. The steps are gated rather than the job, so the check still REPORTS on
+      # a human PR: a skipped job cannot serve as a required status context, which is what #14
+      # needs these to become.
+      - name: Read the live pull-request body
+        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
+        uses: actions/github-script@v7
+        env:
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
+        with:
+          script: |
+            const {data} = await github.rest.pulls.get({
+                owner      : context.repo.owner,
+                repo       : context.repo.repo,
+                pull_number: context.payload.pull_request.number
+            });
+
+            require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
+
+            // Resolved here so the shell never branches on it: a draft may defer its close target,
+            // and `${VAR:+--draft}` would pass the flag for the string "false" too.
+            core.exportVariable('DRAFT_FLAG', data.draft ? '--draft' : '')
+
+      - name: Validate the required anchors
+        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
+        env:
+          BODY_FILE  : ${{ runner.temp }}/pr-body.md
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+        run: >-
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
+          --body-file "${BODY_FILE}" ${DRAFT_FLAG}
