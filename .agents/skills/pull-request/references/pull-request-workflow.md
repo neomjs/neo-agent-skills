@@ -334,7 +334,12 @@ CI-covered counts (red CI already means no review).>
 <one compressed paragraph per pivot — why direction changed, not the old text>
 ```
 
-`agent-pr-body-lint.yml` enforces `Evidence:`, `## AC Evidence`, `## Test Evidence`, `## Post-Merge Validation`, `## Deltas`, `Authored by ` as **unconditional** anchors — presence is never prose-conditional (PR #14465). The AC-Evidence CONTENT is machine-checked too: the lint resolves the close target and fails a certificate that misses the ticket's AC count or leaves a proof slot empty.
+The shared `PR body` job enforces six **unconditional** anchors (PR #14465), each with a match kind:
+
+- **line** — opens a content line, ≤3-space indent; not code or a `|` row: `## AC Evidence` · `## Test Evidence` · `## Post-Merge Validation` · `## Deltas`
+- **substring** — line prefixes, not headings: `Evidence:` · `Authored by `
+
+Code (fenced/indented) is not content; `Resolves #N` must be standalone. A `##` anchor in prose is a mention, not the section (`neomjs/neo#17917`: heading gone, 3 mentions left, gate green). Prefixes stay substring: tightening re-opens `neomjs/neo#14344`. AC-Evidence: Brain preflight (`#24`).
 
 **Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md); `## AC Evidence` is the author's machine-checked coverage claim, which `pr-review` audits rather than reconstructs.
 

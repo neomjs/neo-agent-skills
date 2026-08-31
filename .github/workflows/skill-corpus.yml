@@ -55,6 +55,12 @@ jobs:
       - name: Substrate budget contract and packed CLI
         run: node scripts/test-substrate-size.mjs
 
+      # Wired HERE as well as in `package.json#test`, because this job runs each suite BY NAME
+      # rather than through `npm test`: a contract added to the package script alone would still
+      # never be selected here, which is exactly how the PR-body contract shipped unexecuted.
+      - name: PR-body anchor contract
+        run: node scripts/test-check-pr-body.mjs
+
       - name: Package contents — what actually ships
         run: |
           TARBALL=$(npm pack --silent | tail -1)
@@ -67,13 +73,15 @@ jobs:
             || { echo "materializer missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-ticket-archaeology.mjs' \
             || { echo "ticket-archaeology CLI missing from the tarball"; exit 1; }
-          # The substrate guard is only a gate if it SHIPS: the baseline job installs the pinned
-          # release and runs it from there, so a CLI absent from the tarball is a job that installs
-          # cleanly and then cannot invoke anything.
+          # A guard is only a gate if it SHIPS: the baseline job installs the pinned release and
+          # runs it from there, so a CLI absent from the tarball is a job that installs cleanly and
+          # then cannot invoke anything.
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-substrate-size.mjs' \
             || { echo "substrate-size CLI missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-pr-body.mjs' \
+            || { echo "PR-body CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
