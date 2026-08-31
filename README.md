@@ -67,6 +67,36 @@ repositories call the stable `Source comment archaeology` job in
 its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by
 changing the caller lockfile or local binary.
 
+## Shared substrate byte-budget guard
+
+```bash
+npx --no-install neo-agent-skills-substrate-size
+```
+
+Measures what a seat actually **loads** per turn — `AGENTS.md`, `.agents/ANTIGRAVITY_RULES.md`,
+`.claude/CLAUDE.md` — against a **24,576-byte** per-file limit, and fails the check on a breach.
+
+Loaded bytes, not file bytes: symlinks resolve through `realpathSync` (an `lstat` on a symlinked
+`CLAUDE.md` reports **12** — the length of `../AGENTS.md`), and whole-line `@path` imports are summed
+recursively as one unit with a cycle guard keyed on file identity. It reports **headroom** rather than
+pass/fail, because this drift is gradual: by the time a file flips to EXCEEDS it is already truncating.
+
+**Past the limit the harness silently truncates the BOTTOM of the file**, so a seat loses the tail of
+its own rules with nothing reporting it — the one failure that cannot be observed from inside the seat
+suffering it.
+
+**A missing entry point is `not applicable`, never a failure.** Consumers legitimately differ: only
+some carry all three. **Only `ENOENT` means absent** — a permission denial or an unreadable path is an
+error and fails the check, because absent is a claim about the repository while unreadable is a claim
+about the observation, and a failed observation supports neither.
+
+Consumer repositories call the stable `Substrate size` job in
+`.github/workflows/reusable-pr-baseline.yml` through an immutable Skills revision. **The limit ships
+with the guard, not with the caller**: the job installs its exact release outside the caller workspace
+and pins the measurement to the checked-out tree, so a pull request cannot widen the limit it is judged
+by, drop an entry from the target roster, or move the measurement to a directory where every target is
+absent and the check greens on nothing.
+
 ## What is in the package
 
 | path | what |
@@ -74,6 +104,7 @@ changing the caller lockfile or local binary.
 | `.agents/skills/` | the substrate — skills plus `skills.manifest.json` and its schema |
 | `scripts/materialize-harness-skills.mjs` | the postinstall linker and its `--check` arm |
 | `scripts/check-ticket-archaeology.mjs` | the portable comment/JSDoc archaeology guard |
+| `scripts/check-substrate-size.mjs` | the portable per-turn substrate byte-budget guard |
 
 The manifest governs **projection**: a skill declaring `claudeSymlinkRequired: false` is a declared
 opt-out and is correctly absent from the façade. Per-skill links rather than one directory link,

@@ -52,6 +52,9 @@ jobs:
       - name: Ticket archaeology contract and packed CLI
         run: node scripts/test-ticket-archaeology.mjs
 
+      - name: Substrate budget contract and packed CLI
+        run: node scripts/test-substrate-size.mjs
+
       - name: Package contents — what actually ships
         run: |
           TARBALL=$(npm pack --silent | tail -1)
@@ -64,8 +67,13 @@ jobs:
             || { echo "materializer missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-ticket-archaeology.mjs' \
             || { echo "ticket-archaeology CLI missing from the tarball"; exit 1; }
+          # The substrate guard is only a gate if it SHIPS: the baseline job installs the pinned
+          # release and runs it from there, so a CLI absent from the tarball is a job that installs
+          # cleanly and then cannot invoke anything.
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-substrate-size.mjs' \
+            || { echo "substrate-size CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
