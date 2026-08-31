@@ -48,6 +48,7 @@ export function validateReusablePrBaseline(source) {
           skillsJob      = jobSource(source, 'skills-materialized'),
           archaeologyJob = jobSource(source, 'source-comment-archaeology'),
           substrateJob   = jobSource(source, 'substrate-size'),
+          prBodyJob      = jobSource(source, 'pr-body'),
           required = [
               ['workflow-call trigger', /^on:\n  workflow_call:\n/m],
               ['read-only contents', /^permissions:\n  contents: read\n/m],
@@ -65,6 +66,13 @@ export function validateReusablePrBaseline(source) {
               ['lockfile install', /run: npm ci/, skillsJob],
               ['materializer check', /run: npx --no-install neo-agent-skills-materialize --check/, skillsJob],
               ['archaeology non-PR refusal', /github\.event_name != 'pull_request'/, archaeologyJob],
+              ['PR-body job id', /^  pr-body:\n/m],
+              ['PR-body stable name', /^    name: PR body\n/m],
+              ['PR-body pull-request grant', /^      pull-requests: read\n/m, prBodyJob],
+              ['PR-body non-PR refusal', /github\.event_name != 'pull_request'/, prBodyJob],
+              ['PR-body live fetch', /github\.rest\.pulls\.get/, prBodyJob],
+              ['PR-body isolated absolute bin', /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-pr-body"/, prBodyJob],
+              ['PR-body isolated runner root', /SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-pr-body/, prBodyJob],
               ['substrate job id', /^  substrate-size:\n/m],
               ['substrate stable name', /^    name: Substrate size\n/m],
               ['substrate non-PR refusal', /github\.event_name != 'pull_request'/, substrateJob],
@@ -134,6 +142,35 @@ export function validateReusablePrBaseline(source) {
     if (/neo-agent-skills-substrate-size"[^\n]*\S/.test(substrateJob)) {
         failures.push('substrate guard invoked with arguments')
     }
+
+
+// ── The PR-body job's own invariants ───────────────────────────────────────────────────────────
+//
+// Two properties this job has and the others do not, both load-bearing:
+//
+//   NO CHECKOUT — its whole input is the pull-request body, so the tree under review never enters
+//   the job. Adding a checkout would hand the diff a surface to shadow the guard from.
+//
+//   THE BODY NEVER REACHES A SHELL — it is fetched in JavaScript and written to a file; `run:`
+//   steps receive only a workflow-owned path. A pull-request body is attacker-controlled text, so
+//   interpolating it into `run:` is a shell-injection primitive. Carried from `neomjs/neo` PR
+//   #17917 AC-4, which was the only place this property had ever been written down.
+if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks out the caller tree');
+
+    // Comments are stripped FIRST. Both checks below name the construct they forbid, so a detector
+    // reading raw text flags this job's own JSDoc — the #28 defect inverted: prose describing an
+    // anchor satisfied it there; here prose describing a hazard reports it. Measured, not guessed:
+    // the first revision of these two rows failed against the canonical file for exactly that.
+    const prBodyCode = prBodyJob.split('\n').filter(line => !/^\s*#/.test(line)).join('\n');
+
+    // A body reaching a shell means an EXPRESSION interpolated into a run: line, not the substring
+    // "body" appearing somewhere in the job. Scoped per line, so it cannot span steps.
+    if (prBodyCode.split('\n').some(line => /\$\{\{[^}]*\bbody\b/.test(line))) {
+        failures.push('PR-body content reaches a run: block')
+    }
+// The event snapshot is the defect `neomjs/neo#17431` records: a re-run replays stale text, so a
+// corrected body can never go green and an edited one keeps a stale green.
+if (/context\.payload\.pull_request\.body/.test(prBodyCode)) failures.push('PR-body read from the event snapshot');
 
     if (/continue-on-error:\s*true/.test(source)) failures.push('continue-on-error present');
     if (/^\s+[a-z_-]+: write(?:-all)?\s*$/m.test(source) ||
@@ -285,6 +322,23 @@ expectMutationFailure('archaeology runner root — suffixed root', source,
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology',
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology-shadow'),
     'missing isolated runner root');
+
+
+expectMutationFailure('PR-body job removed', source,
+    value => value.replace('  pr-body:', '  removed-pr-body:'),
+    'missing PR-body job id');
+expectMutationFailure('PR-body stable name', source,
+    value => value.replace('    name: PR body\n', '    name: Body lint\n'),
+    'missing PR-body stable name');
+expectMutationFailure('PR-body event snapshot', source,
+    value => value.replace('            const {data} = await github.rest.pulls.get({', '            const data = context.payload.pull_request.body;\n            const {data: _} = await github.rest.pulls.get({'),
+    'PR-body read from the event snapshot');
+expectMutationFailure('PR-body checkout added', source,
+    value => value.replace('      - name: Install immutable PR-body guard', '      - uses: actions/checkout@v4\n\n      - name: Install immutable PR-body guard'),
+    'PR-body job checks out the caller tree');
+expectMutationFailure('PR-body reaches a shell', source,
+    value => value.replace('          --body-file "${BODY_FILE}" ${DRAFT_FLAG}', '          --body-file "${{ github.event.pull_request.body }}" ${DRAFT_FLAG}'),
+    'PR-body content reaches a run: block');
 
 expectMutationFailure('continue on error', source,
     value => value.replace('    runs-on: ubuntu-latest\n    steps:', '    runs-on: ubuntu-latest\n    continue-on-error: true\n    steps:'),
