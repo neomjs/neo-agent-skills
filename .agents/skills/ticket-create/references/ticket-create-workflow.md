@@ -41,6 +41,10 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 **Tiebreak — first-claim-timestamp-wins:** if a competing claim or a just-filed ticket surfaces, the **earliest claim/file timestamp wins** — and an earlier *unfiled claim* outranks a later *filed ticket* (claims must bind against fast-filers, or the sweep is toothless). The later party stands down; if it already filed, it closes its duplicate and ports any unique substance onto the survivor — i.e. the earlier claimant absorbs the later filer's content, **not** the reverse. Deterministic and self-healing — resolves simultaneous filings without lead mediation. A contested-lane resolution MUST set `wakeSuppressed: false` — claim-class is quiet by default (#15987), so omission leaves the "do-not-re-file" signal mailbox-only and it reaches no one in time.
 
+**(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)`, `(ii)` and the greps below are all **artifact** substrates — they answer *"does a ticket exist?"*, never *"was this already decided, and why?"* Run one `query_raw_memories` keyed on the system's nouns, and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body like `(i)` does.
+
+<!-- trigger: filing a ticket, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, attestation lines, same-turn porting, the #17997 anchor) -->
+
 ```
 grep on resources/content/issues/       # active + archived tickets
 grep on resources/content/discussions/   # ideation / brainstorming
@@ -49,7 +53,7 @@ grep on resources/content/discussions/   # ideation / brainstorming
 Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — semantic search surfaces conceptual duplicates that title scanning misses.
 Exact/historical sweep: `grep` / `query_documents` over issues, archived issues, and discussions for exact keyword verification.
 
-If an equivalent ticket exists: do NOT file a duplicate. Either comment on the existing ticket, extend its scope, or reject the new request.
+If an equivalent ticket or a prior decision exists: do NOT file a duplicate. Comment on the existing ticket, extend its scope, or reject the new request — and if the content belongs on a parent, comment it onto that parent **in the same turn**.
 
 ### 1b. The Meta-Skill Sweep (Progressive Disclosure)
 If the proposed ticket involves modifying any agent skill (i.e., any file within `.agents/skills/`), you MUST explicitly consult `.agents/skills/create-skill/SKILL.md` before finalizing the ticket body.
