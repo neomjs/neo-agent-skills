@@ -23,10 +23,10 @@ import {fileURLToPath}              from 'node:url';
  * @member {String[]} VISIBLE_PR_BODY_ANCHORS
  */
 export const VISIBLE_PR_BODY_ANCHORS = Object.freeze([
-    'Evidence:',
-    '## AC Evidence',
-    '## Test Evidence',
-    '## Post-Merge Validation'
+    {anchor: 'Evidence:',                match: 'substring'},
+    {anchor: '## AC Evidence',           match: 'line'},
+    {anchor: '## Test Evidence',         match: 'line'},
+    {anchor: '## Post-Merge Validation', match: 'line'}
 ]);
 
 /**
@@ -37,29 +37,48 @@ export const VISIBLE_PR_BODY_ANCHORS = Object.freeze([
  * only holds because the message never names them — it does not make them optional.
  * @member {String[]} INVISIBLE_PR_BODY_ANCHORS
  */
-export const INVISIBLE_PR_BODY_ANCHORS = Object.freeze(['Authored by ', '## Deltas']);
+export const INVISIBLE_PR_BODY_ANCHORS = Object.freeze([
+    {anchor: 'Authored by ', match: 'substring'},
+    {anchor: '## Deltas',    match: 'line'}
+]);
 
 /**
- * @summary Is this anchor present as a LINE, rather than anywhere in the prose?
+ * @summary Is this anchor present, under the match kind its declaration names?
  *
- * The previous implementation used `body.includes(anchor)` — a substring test against the whole
- * body — and that is the defect this port exists to close. Every anchor also appears in bodies that
- * *discuss* the anchors: a table cell describing `## Test Evidence`, or a sentence explaining why a
- * section was omitted, satisfied the gate while the section itself was absent. Measured on the
- * restoration PR: deleting the `## Deltas` heading left three surviving prose occurrences and the
- * check stayed green; only erasing every occurrence of an anchor reddened it.
+ * The previous implementation matched every anchor with `body.includes(anchor)` against the whole
+ * body. Every anchor also appears in bodies that *discuss* the anchors, so a table cell describing
+ * `## Test Evidence`, or a sentence explaining why a section was omitted, satisfied the gate while
+ * the section itself was absent. Measured on the restoration PR: deleting the `## Deltas` heading
+ * left three surviving prose occurrences and the check stayed green.
  *
- * Line-anchoring covers both anchor shapes without a second rule. `## AC Evidence` is a heading and
- * `Evidence:` / `Authored by ` are line-initial prefixes; all three open a line. A mention inside a
- * sentence, a table row (which opens with `|`), or a fenced snippet does not.
+ * **The kinds are per anchor and deliberately not uniform**, because the anchors are not one shape.
+ * The four `##` anchors are headings and are line-anchored — a mention inside a sentence, a table row
+ * (which opens with `|`), or a fenced snippet no longer counts. `Evidence:` and `Authored by ` are
+ * not headings and stay substring, because tightening them would re-open the false-NEGATIVE half
+ * already recorded as `neomjs/neo#14344`: a body legitimately carrying `- **Evidence:** …` or a
+ * signature line would start failing for formatting.
  *
- * Leading whitespace is tolerated because indentation is formatting, not evasion.
+ * Every anchor therefore declares its kind and there is **no default** — an undeclared anchor throws
+ * rather than silently picking one, since an unnamed default is how the original defect went
+ * unnoticed.
  * @param {String} body
- * @param {String} anchor
+ * @param {Object} spec
+ * @param {String} spec.anchor
+ * @param {'line'|'substring'} spec.match
  * @returns {Boolean}
+ * @throws {Error} When the anchor declares no match kind.
  */
-export function hasAnchorLine(body, anchor) {
-    return body.split('\n').some(line => line.replace(/^[ \t]+/, '').startsWith(anchor))
+export function hasAnchor(body, {anchor, match}) {
+    if (match === 'line') {
+        // Leading whitespace is tolerated: indentation is formatting, not evasion.
+        return body.split('\n').some(line => line.replace(/^[ \t]+/, '').startsWith(anchor))
+    }
+
+    if (match === 'substring') return body.includes(anchor);
+
+    // No default. An anchor whose match kind is absent is a declaration error, not a body error,
+    // and silently picking one is how the original defect survived unnamed for months.
+    throw new Error(`check-pr-body: anchor "${anchor}" declares no match kind`)
 }
 
 /**
@@ -74,8 +93,8 @@ export function hasAnchorLine(body, anchor) {
  */
 export function findBodyViolations({body = '', isDraft = false} = {}) {
     const
-        visible   = VISIBLE_PR_BODY_ANCHORS.filter(anchor => !hasAnchorLine(body, anchor)),
-        invisible = INVISIBLE_PR_BODY_ANCHORS.filter(anchor => !hasAnchorLine(body, anchor)),
+        visible   = VISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
+        invisible = INVISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
 
         // Ticket reference is a pattern, not an anchor: it may legitimately appear mid-line.
         hasResolves            = /\bResolves:?\s+#\d+/i.test(body),
@@ -139,7 +158,7 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
     // enumerates the full set is a template an agent can satisfy without writing the sections.
     visible[0] && error(`   First missing: ${visible[0]}`);
 
-    error('   Anchors are matched as LINES, not substrings — naming one in prose does not satisfy it.');
+    error('   `##` section anchors must open a LINE — naming one in prose does not satisfy it.');
     error('   See .agents/skills/pull-request/references/pull-request-workflow.md §9.');
 
     return 1

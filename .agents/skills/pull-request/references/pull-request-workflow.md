@@ -334,7 +334,18 @@ CI-covered counts (red CI already means no review).>
 <one compressed paragraph per pivot — why direction changed, not the old text>
 ```
 
-`agent-pr-body-lint.yml` enforces `Evidence:`, `## AC Evidence`, `## Test Evidence`, `## Post-Merge Validation`, `## Deltas`, `Authored by ` as **unconditional** anchors — presence is never prose-conditional (PR #14465). The AC-Evidence CONTENT is machine-checked too: the lint resolves the close target and fails a certificate that misses the ticket's AC count or leaves a proof slot empty.
+The shared `PR body` baseline job enforces six **unconditional** anchors — presence is never prose-conditional (PR #14465) — and each declares **how it is matched**, because they are not one shape:
+
+| anchor | match |
+|---|---|
+| `## AC Evidence` · `## Test Evidence` · `## Post-Merge Validation` · `## Deltas` | **line** — the anchor must open a line |
+| `Evidence:` · `Authored by ` | **substring** — these are line prefixes, not headings |
+
+**Naming a `##` anchor in prose does not satisfy it.** A sentence explaining why a section was omitted, or a table cell describing it, is a mention rather than the section — measured on `neomjs/neo` PR #17917, deleting the `## Deltas` heading left three surviving prose occurrences and the old substring-only gate stayed green. Indentation is tolerated; a table row (which opens with `|`) is not the anchor line.
+
+The two prefix anchors stay substring deliberately: tightening them would re-open the false-**negative** half recorded in `neomjs/neo#14344`, where a body legitimately carrying `- **Evidence:** …` would begin failing for formatting.
+
+The AC-Evidence CONTENT is machine-checked separately: the lint resolves the close target and fails a certificate that misses the ticket's AC count or leaves a proof slot empty. That half runs in the Brain preflight, not in this job — see `neo-agent-skills#24`.
 
 **Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md); `## AC Evidence` is the author's machine-checked coverage claim, which `pr-review` audits rather than reconstructs.
 

@@ -7,7 +7,7 @@ import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                 from 'node:os';
 import {dirname, join}                          from 'node:path';
 import {fileURLToPath}                          from 'node:url';
-import {VISIBLE_PR_BODY_ANCHORS, INVISIBLE_PR_BODY_ANCHORS, findBodyViolations, hasAnchorLine, run} from './check-pr-body.mjs';
+import {VISIBLE_PR_BODY_ANCHORS, INVISIBLE_PR_BODY_ANCHORS, findBodyViolations, hasAnchor, run} from './check-pr-body.mjs';
 
 const
     here      = dirname(fileURLToPath(import.meta.url)),
@@ -72,7 +72,7 @@ function cli(args, body) {
 //
 // Each arm below removes one anchor's LINE while leaving the anchor's text in prose. Under the old
 // substring rule every one of these was green.
-VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).forEach(anchor => {
+VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.match === 'line').forEach(({anchor}) => {
     const body = goodBody()
         .split('\n')
         .filter(line => !line.replace(/^[ \t]+/, '').startsWith(anchor))
@@ -93,9 +93,9 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).forEach(anchor => {
 
 // ── A table cell does not satisfy an anchor ────────────────────────────────────────────────────
 {
-    assert.equal(hasAnchorLine('| ## Test Evidence | present |', '## Test Evidence'), false,
+    assert.equal(hasAnchor('| ## Test Evidence | present |', {anchor: '## Test Evidence', match: 'line'}), false,
         'a table row opens with `|`, so it is not the anchor line');
-    assert.equal(hasAnchorLine('   ## Test Evidence', '## Test Evidence'), true,
+    assert.equal(hasAnchor('   ## Test Evidence', {anchor: '## Test Evidence', match: 'line'}), true,
         'indentation is formatting, not evasion')
 }
 
@@ -125,8 +125,42 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).forEach(anchor => {
     const body = goodBody().split('\n').filter(line => !line.startsWith('Authored by ')).join('\n'),
           {text} = cli([], body);
 
-    INVISIBLE_PR_BODY_ANCHORS.forEach(anchor => {
+    INVISIBLE_PR_BODY_ANCHORS.forEach(({anchor}) => {
         assert.ok(!text.includes(anchor), `the failure message must never name the invisible anchor ${anchor}`)
+    })
+}
+
+// ── NO REGRESSION: a governance body that DISCUSSES the anchor set stays green ─────────────────
+//
+// The arm that keeps the fix from overshooting. Bodies in this repository routinely name every
+// anchor in prose while also carrying the sections — this comment block does it. Line-anchoring
+// must refuse a body that only *mentions* an anchor without refusing one that mentions AND carries.
+{
+    const discursive = goodBody([
+        '',
+        'This PR explains the anchor set: `## AC Evidence` certifies coverage, `## Test Evidence`',
+        'carries outside-CI receipts, `## Post-Merge Validation` lists deferred checks, and',
+        '`## Deltas` records scope changes. `Evidence:` and `Authored by ` are line prefixes.'
+    ].join('\n'));
+
+    const {visible, invisible} = findBodyViolations({body: discursive});
+
+    assert.deepEqual(visible, [], 'a body that discusses the anchors AND carries them must stay green');
+    assert.deepEqual(invisible, [], 'discussion must not disturb the invisible anchors either');
+    assert.equal(cli([], discursive).code, 0)
+}
+
+// ── An anchor with no declared match kind THROWS rather than picking one ────────────────────────
+//
+// An unnamed default is how the substring rule survived unexamined: nobody chose it, so nobody
+// reviewed it. A declaration error must be loud at the point of declaration.
+{
+    assert.throws(() => hasAnchor('anything', {anchor: '## Nope'}), /declares no match kind/,
+        'an undeclared match kind must throw, not default');
+
+    [...VISIBLE_PR_BODY_ANCHORS, ...INVISIBLE_PR_BODY_ANCHORS].forEach(spec => {
+        assert.ok(['line', 'substring'].includes(spec.match),
+            `${spec.anchor} must declare a known match kind, not "${spec.match}"`)
     })
 }
 
