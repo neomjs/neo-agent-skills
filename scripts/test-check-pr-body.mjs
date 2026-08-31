@@ -164,6 +164,82 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     })
 }
 
+// ── A CODE anchor is not a section: fenced and indented blocks are not content ─────────────────
+//
+// The first fix taught the gate that a sentence naming `## Deltas` is not the section, and left it
+// believing a FENCED one is. Same defect, one level in. Both arms delete the real line and leave
+// the anchor visible in a place a reader would call code.
+{
+    const withoutTestEvidence = goodBody()
+        .split('\n').filter(line => !line.startsWith('## Test Evidence')).join('\n');
+
+    const fenced = `${withoutTestEvidence}\n\n\`\`\`md\n## Test Evidence\n\`\`\`\n`,
+          tilde  = `${withoutTestEvidence}\n\n~~~\n## Test Evidence\n~~~\n`,
+          indent = `${withoutTestEvidence}\n\n    ## Test Evidence\n`,
+          tabbed = `${withoutTestEvidence}\n\n\t## Test Evidence\n`;
+
+    [['fenced', fenced], ['tilde-fenced', tilde], ['4-space indented', indent], ['tab indented', tabbed]]
+        .forEach(([label, body]) => {
+            assert.ok(body.includes('## Test Evidence'), `${label}: fixture must still CONTAIN the anchor`);
+            assert.ok(findBodyViolations({body}).visible.includes('## Test Evidence'),
+                `a ${label} "## Test Evidence" must not satisfy the anchor`);
+            assert.equal(cli([], body).code, 1, `${label} must exit non-zero`)
+        });
+
+    // NO OVERSHOOT: Markdown permits up to three spaces before a heading, and a real body may
+    // carry one. Rejecting that would trade this defect for a false negative.
+    const threeSpace = withoutTestEvidence.replace('## AC Evidence', '   ## Test Evidence\n\n## AC Evidence');
+
+    assert.deepEqual(findBodyViolations({body: threeSpace}).visible, [],
+        'a heading indented three spaces is still a heading');
+
+    // An unterminated fence swallows the rest of the body — a real hazard, so it is asserted
+    // rather than left to chance.
+    const unterminated = `${goodBody()}\n\n\`\`\`\n## Test Evidence\n`;
+
+    assert.deepEqual(findBodyViolations({body: unterminated}).visible, [],
+        'the REAL sections above an unterminated fence still count');
+}
+
+// ── The close target is a STANDALONE line, exactly as §9.1 promises ────────────────────────────
+//
+// `pull-request-workflow.md` §9.1: "standalone Resolves #TICKET_ID", and "comma-separated
+// `Resolves #X, #Y` is forbidden". The previous pattern searched the whole raw body, so every
+// mutant below satisfied a rule that forbids it.
+{
+    const withoutResolves = goodBody()
+        .split('\n').filter(line => !line.startsWith('Resolves ')).join('\n');
+
+    const mutants = {
+        'mid-prose'  : 'This PR Resolves #1234 as a side effect.',
+        'fenced'     : '```\nResolves #1234\n```',
+        'table cell' : '| note | Resolves #1234 |',
+        'indented'   : '    Resolves #1234',
+        'colon form' : 'Resolves: #1234'
+    };
+
+    Object.entries(mutants).forEach(([label, line]) => {
+        const body = `${line}\n${withoutResolves}`;
+
+        assert.ok(body.includes('Resolves'), `${label}: fixture must still MENTION Resolves`);
+        assert.ok(findBodyViolations({body}).visible.some(v => v.includes('Resolves #N')),
+            `a ${label} "Resolves" must not satisfy the close target`)
+    });
+
+    // The comma form is a close target the author wrote DELIBERATELY, so it earns its own message
+    // rather than being reported as absent.
+    const comma = `Resolves #1234, #5678\n${withoutResolves}`;
+
+    assert.ok(findBodyViolations({body: comma}).visible.some(v => v.includes('`Resolves #X, #Y` is forbidden')),
+        'the comma form must be named as forbidden, not merely reported missing');
+
+    // Draft exception survives, and it is standalone too.
+    assert.deepEqual(findBodyViolations({body: `Refs #1234\n${withoutResolves}`, isDraft: true}).visible, [],
+        'a DRAFT may defer the close target with a standalone `Refs #N`');
+    assert.ok(findBodyViolations({body: `see Refs #1234 inline\n${withoutResolves}`, isDraft: true})
+        .visible.some(v => v.includes('Refs #N')), 'an inline `Refs` is not a declaration either')
+}
+
 // ── The CLI ships with a bin entry, or consumers cannot invoke it ──────────────────────────────
 {
     const pkg = JSON.parse(readFileSync(join(here, '../package.json'), 'utf8'));
