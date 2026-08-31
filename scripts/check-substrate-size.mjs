@@ -154,8 +154,23 @@ export function collectReport({root = process.cwd(), targets = TARGET_FILES, lim
 
         try {
             lstatSync(join(root, file))
-        } catch {
-            row.applicable = false;
+        } catch (cause) {
+            // ENOENT ONLY. A bare catch made "not applicable" absorb every filesystem failure — a
+            // permission denial, an unreadable mount, a malformed root whose parent component is not
+            // a directory — and each of those exited 0 as a legitimately empty consumer. That is the
+            // fail-open shape this guard exists to prevent, reintroduced by the very negative-space
+            // contract that lets Brain, Skills and Institution adopt the baseline at all.
+            //
+            // Absent is a claim about the repository. Unreadable is a claim about the observation,
+            // and an observation that failed supports neither verdict. Found by @neo-gpt in review.
+            if (cause.code === 'ENOENT') {
+                row.applicable = false;
+                return row
+            }
+
+            row.error = `${file}: cannot observe the entry (${cause.code || 'unknown'}) — refusing ` +
+                `to score an unreadable target as absent. ${cause.message}`;
+
             return row
         }
 

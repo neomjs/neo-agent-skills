@@ -3,7 +3,7 @@
 
 import assert                                                        from 'node:assert/strict';
 import {spawnSync}                                                   from 'node:child_process';
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                                      from 'node:os';
 import {dirname, join}                                               from 'node:path';
 import {fileURLToPath}                                               from 'node:url';
@@ -283,6 +283,35 @@ function capture(argv, cwd) {
     const preserved = spawnSync(process.execPath, ['--preserve-symlinks-main', link, '--root', root], {encoding: 'utf8'});
 
     assert.equal(preserved.status, 1, 'and under --preserve-symlinks-main, which reverses which side is unresolved')
+}
+
+// ── An UNREADABLE target is an error, never "not applicable" ───────────────────────────────────
+//
+// The negative-space contract is what lets Brain, Skills and Institution adopt this baseline: a
+// repository carrying no substrate files is not in breach of a budget it does not participate in.
+// That contract also creates a new way to fail open, and the first implementation took it — a bare
+// `catch` around the presence probe absorbed EVERY filesystem error, so a permission denial, an
+// unreadable mount, or a malformed root reported "not applicable" and exited 0.
+//
+// Absent is a claim about the repository; unreadable is a claim about the observation, and a failed
+// observation supports neither. Only ENOENT may mean absent. Found by @neo-gpt in review.
+{
+    const root = fixture();
+
+    write(root, 'AGENTS.md', 'A'.repeat(100));
+    write(root, '.agents/ANTIGRAVITY_RULES.md', 'R'.repeat(100));
+    chmodSync(join(root, '.agents'), 0o000);
+
+    const rows    = collectReport({root}),
+          blocked = rows.find(row => row.file === '.agents/ANTIGRAVITY_RULES.md'),
+          {code}  = capture(['--root', root], root);
+
+    // Restored before asserting, so a failing assertion cannot leave an unremovable fixture behind.
+    chmodSync(join(root, '.agents'), 0o755);
+
+    assert.equal(blocked.applicable, true, 'an unreadable target must not be scored as absent');
+    assert.match(blocked.error, /EACCES/, 'the error must name the filesystem cause');
+    assert.equal(code, 1, 'an unreadable target must exit non-zero, not green as an empty consumer')
 }
 
 // ── The CLI ships with a bin entry, or consumers cannot invoke it ──────────────────────────────

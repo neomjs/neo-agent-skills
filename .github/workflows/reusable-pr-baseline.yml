@@ -125,10 +125,18 @@ jobs:
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
 
-      # Invoked bare, against the checked-out caller tree. A repository carrying none of the
-      # substrate entry points reports N/A and greens: three of the five consumers have no such
-      # files, and a baseline they cannot adopt is not a baseline.
+      # Measured against the checked-out caller tree. A repository carrying none of the substrate
+      # entry points reports N/A and greens: three of the five consumers have no such files, and a
+      # baseline they cannot adopt is not a baseline.
+      #
+      # `working-directory` is PINNED to the workflow-owned `github.workspace` and is load-bearing,
+      # not tidiness. The guard resolves its root from cwd, and every target is ENOENT outside the
+      # checkout — so a bare invocation from any other directory reports all-N/A and GREENS. Under
+      # the negative-space contract a wrong root is indistinguishable from a legitimately empty
+      # consumer, which makes the pin the only thing separating "nothing to measure" from "measured
+      # nothing". Found by @neo-gpt in review; asserted by the workflow-contract suite.
       - name: Measure the per-turn substrate budget
+        working-directory: ${{ github.workspace }}
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
         run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"

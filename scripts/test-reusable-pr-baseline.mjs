@@ -73,7 +73,13 @@ export function validateReusablePrBaseline(source) {
                   /npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/, substrateJob],
               ['substrate exact package spec', /"neo-agent-skills@\$\{SKILLS_VERSION\}"/, substrateJob],
               ['substrate isolated absolute bin',
-                  /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-substrate-size"/, substrateJob]
+                  /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-substrate-size"/, substrateJob],
+              // The pin is the only thing separating "nothing to measure" from "measured nothing".
+              // The guard resolves its root from cwd; outside the checkout every target is ENOENT,
+              // which the negative-space contract reports as N/A — so a bare invocation from any
+              // other directory GREENS. Asserted here because it is a silent failure everywhere else.
+              ['substrate measurement pinned to the caller workspace',
+                  /working-directory: \$\{\{ github\.workspace \}\}/, substrateJob]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -225,10 +231,15 @@ expectMutationFailure('substrate package version', source,
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: '0.1.2'",
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: 'latest'"),
     'substrate package version drift');
+// Anchored on the STEP NAME rather than the comment that follows it. The archaeology job carries a
+// byte-identical install line, so this fixture needs something after it to disambiguate — it used
+// the prose `# Invoked bare`, and editing that comment silently turned the mutation into a no-op,
+// which `expectMutationFailure` then reported as a broken fixture rather than a passing contract.
+// A negative fixture coupled to prose fails the moment prose is correct-but-different.
 expectMutationFailure('substrate isolated install', source,
     value => value.replace(
-        '          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save\n          "neo-agent-skills@${SKILLS_VERSION}"\n\n      # Invoked bare',
-        '          npm install "neo-agent-skills@${SKILLS_VERSION}"\n\n      # Invoked bare'),
+        /(      - name: Install immutable substrate guard\n[\s\S]*?)          npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save\n          "neo-agent-skills@\$\{SKILLS_VERSION\}"/,
+        '$1          npm install "neo-agent-skills@${SKILLS_VERSION}"'),
     'missing substrate isolated exact install');
 expectMutationFailure('substrate absolute bin', source,
     value => value.replace(
