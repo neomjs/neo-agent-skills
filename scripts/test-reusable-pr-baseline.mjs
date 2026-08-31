@@ -71,6 +71,8 @@ export function validateReusablePrBaseline(source) {
               ['PR-body pull-request grant', /^      pull-requests: read\n/m, prBodyJob],
               ['PR-body non-PR refusal', /github\.event_name != 'pull_request'/, prBodyJob],
               ['PR-body live fetch', /github\.rest\.pulls\.get/, prBodyJob],
+              ['PR-body agent-author boundary', /startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/, prBodyJob],
+              ['PR-body ai-label opt-in', /contains\(github\.event\.pull_request\.labels\.\*\.name, 'ai'\)/, prBodyJob],
               ['PR-body isolated absolute bin', /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-pr-body"/, prBodyJob],
               ['PR-body isolated runner root', /SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-pr-body/, prBodyJob],
               ['substrate job id', /^  substrate-size:\n/m],
@@ -155,6 +157,16 @@ export function validateReusablePrBaseline(source) {
 //   steps receive only a workflow-owned path. A pull-request body is attacker-controlled text, so
 //   interpolating it into `run:` is a shell-injection primitive. Carried from `neomjs/neo` PR
 //   #17917 AC-4, which was the only place this property had ever been written down.
+// §9 is the AGENT pull-request protocol, so this job judges agent-authored PRs only — the boundary
+// the deleted `agent-pr-body-lint.yml` carried. Widening it to every contributor holds human PRs to
+// a template nobody agreed to, which is a policy change rather than a port.
+//
+// COUNTED, not merely present: the boundary must sit on BOTH judging steps. One gated and one not
+// still runs the agent template against a human PR through whichever half lost its condition, and a
+// presence check passes on a single surviving occurrence.
+if ((prBodyJob.match(/if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/g) || []).length !== 2) {
+    failures.push('PR-body author boundary missing from a judging step')
+}
 if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks out the caller tree');
 
     // Comments are stripped FIRST. Both checks below name the construct they forbid, so a detector
@@ -323,6 +335,13 @@ expectMutationFailure('archaeology runner root — suffixed root', source,
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology-shadow'),
     'missing isolated runner root');
 
+
+expectMutationFailure('PR-body author boundary dropped from one step', source,
+    value => value.replace("        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}\n        uses: actions/github-script@v7", '        uses: actions/github-script@v7'),
+    'PR-body author boundary missing from a judging step');
+expectMutationFailure('PR-body ai-label opt-in dropped', source,
+    value => value.split(" || contains(github.event.pull_request.labels.*.name, 'ai')").join(''),
+    'missing PR-body ai-label opt-in');
 
 expectMutationFailure('PR-body job removed', source,
     value => value.replace('  pr-body:', '  removed-pr-body:'),

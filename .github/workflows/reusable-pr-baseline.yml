@@ -177,7 +177,15 @@ jobs:
       #
       # It is written to a FILE from JavaScript and never interpolated into a shell. A pull-request
       # body is attacker-controlled text; `run:` steps below receive only a workflow-owned path.
+      # §9 is the AGENT pull-request protocol, so this judges agent-authored PRs only — the same
+      # boundary the deleted `agent-pr-body-lint.yml` carried: a `neo-` login prefix, or an
+      # explicit `ai` label for a human-authored PR opting in. Widening it to every contributor
+      # would hold human PRs to a template nobody agreed they must follow, and that is a policy
+      # change, not a port. The steps are gated rather than the job, so the check still REPORTS on
+      # a human PR: a skipped job cannot serve as a required status context, which is what #14
+      # needs these to become.
       - name: Read the live pull-request body
+        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
         uses: actions/github-script@v7
         env:
           BODY_FILE: ${{ runner.temp }}/pr-body.md
@@ -196,6 +204,7 @@ jobs:
             core.exportVariable('DRAFT_FLAG', data.draft ? '--draft' : '')
 
       - name: Validate the required anchors
+        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
         env:
           BODY_FILE  : ${{ runner.temp }}/pr-body.md
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
