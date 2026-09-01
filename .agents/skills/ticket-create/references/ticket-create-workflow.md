@@ -41,6 +41,10 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 **Tiebreak — first-claim-timestamp-wins:** if a competing claim or a just-filed ticket surfaces, the **earliest claim/file timestamp wins** — and an earlier *unfiled claim* outranks a later *filed ticket* (claims must bind against fast-filers, or the sweep is toothless). The later party stands down; if it already filed, it closes its duplicate and ports any unique substance onto the survivor — i.e. the earlier claimant absorbs the later filer's content, **not** the reverse. Deterministic and self-healing — resolves simultaneous filings without lead mediation. A contested-lane resolution MUST set `wakeSuppressed: false` — claim-class is quiet by default (#15987), so omission leaves the "do-not-re-file" signal mailbox-only and it reaches no one in time.
 
+**(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)`, `(ii)` and the greps below are all **artifact** substrates — they answer *"does a ticket exist?"*, never *"was this already decided, and why?"* Run one `query_raw_memories` keyed on the **problem's** nouns (the symptom as observed, never the mechanism you are about to build), and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body like `(i)` does.
+
+<!-- trigger: filing a ticket, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, attestation lines, same-turn porting, the #17997 anchor) -->
+
 ```
 grep on resources/content/issues/       # active + archived tickets
 grep on resources/content/discussions/   # ideation / brainstorming
@@ -49,7 +53,7 @@ grep on resources/content/discussions/   # ideation / brainstorming
 Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — semantic search surfaces conceptual duplicates that title scanning misses.
 Exact/historical sweep: `grep` / `query_documents` over issues, archived issues, and discussions for exact keyword verification.
 
-If an equivalent ticket exists: do NOT file a duplicate. Either comment on the existing ticket, extend its scope, or reject the new request.
+If an equivalent ticket or a prior decision exists: do NOT file a duplicate. Comment on the existing ticket, extend its scope, or reject the new request — and if the content belongs on a parent, comment it onto that parent **in the same turn**.
 
 ### 1b. The Meta-Skill Sweep (Progressive Disclosure)
 If the proposed ticket involves modifying any agent skill (i.e., any file within `.agents/skills/`), you MUST explicitly consult `.agents/skills/create-skill/SKILL.md` before finalizing the ticket body.
@@ -182,9 +186,9 @@ If the "ticket" is really an architectural question, brainstorming, or pre-PR ex
 
 ## 10. After Creation (Chained MCP Tool Usage)
 
-The `create_issue` tool returns the new issue number. Typical immediate follow-ups:
+The `create_issue` tool returns the new issue number. The ownership disposition is decided **at** that call; the rest are typical follow-ups:
 
-- **`manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])`** — **MANDATORY** if you intend to start working immediately (AGENTS.md §0 Invariant 7). Do this *before* editing any tracked files. (Note: once `#11308` is resolved, atomic assignee injection at creation will replace this post-hoc call).
+- **Ownership disposition — exactly one arm, every ticket:** a non-empty `assignees` (you are taking it), an explicit named addressee (you are handing it over — their handle in `assignees`, or a one-line `handoff: @handle` in the body), or a one-line `unowned-rationale:` in the body (you are parking it, and you say why). Unowned is allowed; *silently* unowned is not — the rationale is what lets the next reader tell parked from dropped. Taking it is **`manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])`**, **MANDATORY before editing any tracked file** (AGENTS.md §0 Invariant 7). No intent-to-start condition: a **finding** never satisfies one, and findings are what orphans (`#34`). (Once `#11308` lands atomic assignee injection, the arms attach to the tool contract and this collapses to a pointer.)
 - **`manage_issue_labels(action: 'add', ...)`** — only if the label set needs adjustment post-creation (e.g., label list was incomplete at `create_issue` time). Prefer getting labels right in the initial call.
 - **`update_issue_relationship(parent_id: N, child_id: M, type: 'SUB_ISSUE')`** — required when filing sub-issues under an Epic. Native graph linkage only; do NOT rely on inline `- [ ] #N` markdown checkboxes (see §6).
 - **Ticket body edits:** Update GitHub directly with `gh issue edit N --body-file <path>` (or the equivalent live GitHub write surface). GitHub remains canonical; scheduled mirroring may lag.
