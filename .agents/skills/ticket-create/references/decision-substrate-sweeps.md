@@ -46,7 +46,7 @@ gh issue list --repo <r> --label epic --state open --json number,title
 
 Read **every** row — there are few — plus one semantic outcome-overlap query. Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
 
-**Why `(i)` cannot reach these.** An outcome authority is defined by not churning: it is filed once, then supervises for weeks. That places it permanently outside a latest-20 window, so the recency axis is not merely unlucky here — it is **structurally** blind. And its title is written in the vocabulary of the outcome (*"An external plane cannot recover itself…"*), which shares no keywords with a newcomer's framing of the same outcome, so title search misses it too. Both existing artifact axes fail on the same filing for different reasons.
+**Why `(i)` cannot reach these.** An outcome authority is defined by not churning — filed once, then supervising for weeks — so it sits permanently outside a latest-20 window: the recency axis is **structurally** blind here, not unlucky. Its title speaks the outcome's vocabulary (*"An external plane cannot recover itself…"*), sharing no keywords with a newcomer's framing of that same outcome, so title search misses it too.
 
 **Why the cost is topology, not tidiness.** A duplicate leaf is one closure. Competing Epic roots split *sub-attachment, review attention and closure authority* until someone reconciles them — and each sub filed under the wrong root deepens the split.
 
