@@ -6,7 +6,7 @@ A `NOT_PLANNED` predecessor is a **ruling**. An artifact sweep surfaces its titl
 
 ## (iii) Memory Core rationale sweep
 
-Run at least one `query_raw_memories` as the last step before `create_issue`, keyed on the **system's nouns** — repo, package, mechanism, file and symbol names:
+Run at least one `query_raw_memories` as the last step before `create_issue`, keyed on the **problem's nouns** — repo, package, file and symbol names, and the *existing* mechanism that failed, never the one you are about to build:
 
 ```js
 query_raw_memories({query: '<repo> <mechanism> <file/symbol> <prior-decision terms>', nResults: 6})
