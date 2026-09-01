@@ -12,7 +12,19 @@ Run at least one `query_raw_memories` as the last step before `create_issue`, ke
 query_raw_memories({query: '<repo> <mechanism> <file/symbol> <prior-decision terms>', nResults: 6})
 ```
 
-Never key it on your own phrasing or on the operator's prompt wording. Memory Core indexes artifacts, so a structurally-shaped query ("should we add a gate for…") matches session boilerplate rather than the decision. `query_summaries` and `explore_lane_landscape` widen it when the first call returns only noise.
+**Query the PROBLEM's nouns, never the SOLUTION's.** This is the distinction the arm turns on, and it is not "search harder":
+
+| | example | finds |
+|---|---|---|
+| ❌ the solution's nouns — the mechanism you are about to build | *"MC gate for ticket-create"* | only prior art that chose the same fix |
+| ❌ structural / boilerplate phrasing | *"should we add a gate for…"* | session boilerplate; Memory Core indexes artifacts |
+| ✅ the problem's nouns — the symptom as observed | *"vast amounts of additional tickets"*, *"different casualty each run"* | prior art that solved the same problem **differently** |
+
+The problem's nouns are frequently **the operator's own words for the symptom**, so their phrasing is a source to mine rather than one to avoid — it is your own solution vocabulary that blinds the query.
+
+> **Empirical anchor — two independent instances, one night (2026-08-31).** `neo-agent-skills#32` was filed after a sweep on *"ticket-create duplicate sweep gate Memory Core"* — the mechanism about to be built. `neomjs/neo#16212` (operator-commissioned five weeks earlier, whose gate inventory already named this exact file) was invisible to it; a sweep on the operator's own *"vast amounts of additional tickets"* surfaces it immediately. Independently, `neomjs/neo#18000` was filed after a sweep scoped by **suite name** (*"flaky component suite"*), which could not match `neomjs/neo#17796` because that ticket names the **unit** suite — the searchable thing was the symptom shape, *"different casualty each run"*. Six days of prior art stayed invisible to four seats for that reason.
+
+`query_summaries` and `explore_lane_landscape` widen the sweep when the first call returns only noise.
 
 ## (iv) Own-assignment sweep
 
