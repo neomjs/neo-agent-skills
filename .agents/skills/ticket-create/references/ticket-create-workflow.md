@@ -186,9 +186,9 @@ If the "ticket" is really an architectural question, brainstorming, or pre-PR ex
 
 ## 10. After Creation (Chained MCP Tool Usage)
 
-The `create_issue` tool returns the new issue number. Typical immediate follow-ups:
+The `create_issue` tool returns the new issue number. The ownership disposition is decided **at** that call; the rest are typical follow-ups:
 
-- **`manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])`** — **MANDATORY** if you intend to start working immediately (AGENTS.md §0 Invariant 7). Do this *before* editing any tracked files. (Note: once `#11308` is resolved, atomic assignee injection at creation will replace this post-hoc call).
+- **Ownership disposition — exactly one arm, every ticket:** a non-empty `assignees` (you are taking it), an explicit named addressee (you are handing it over), or a one-line `unowned-rationale:` in the body (you are parking it, and you say why). Unowned is allowed; *silently* unowned is not — the rationale is what lets the next reader tell parked from dropped. Taking it is **`manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])`**, **MANDATORY before editing any tracked file** (AGENTS.md §0 Invariant 7). No intent-to-start condition: a **finding** never satisfies one, and findings are what orphans (`#34`). (Once `#11308` lands atomic assignee injection, the arms attach to the tool contract and this collapses to a pointer.)
 - **`manage_issue_labels(action: 'add', ...)`** — only if the label set needs adjustment post-creation (e.g., label list was incomplete at `create_issue` time). Prefer getting labels right in the initial call.
 - **`update_issue_relationship(parent_id: N, child_id: M, type: 'SUB_ISSUE')`** — required when filing sub-issues under an Epic. Native graph linkage only; do NOT rely on inline `- [ ] #N` markdown checkboxes (see §6).
 - **Ticket body edits:** Update GitHub directly with `gh issue edit N --body-file <path>` (or the equivalent live GitHub write surface). GitHub remains canonical; scheduled mirroring may lag.
