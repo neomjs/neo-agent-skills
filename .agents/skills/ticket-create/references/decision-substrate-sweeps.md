@@ -1,4 +1,4 @@
-# Decision-substrate sweeps — arms `(iii)` and `(iv)` of §1a
+# Decision-substrate sweeps — arms `(iii)`, `(iv)` and `(v)` of §1a
 
 `ticket-create-workflow.md` §1a arms `(i)` and `(ii)`, and the `resources/content` greps beside them, are all **artifact** substrates. They answer *"does a ticket exist?"* None answers *"was this already decided, and why?"*
 
@@ -36,6 +36,22 @@ Then read the **bodies** of the two or three touching the same surface — not t
 
 Neither `(i)` (recency-bounded) nor a closed-issue search reaches an **open, old, self-assigned** parent. A defect found *while measuring something else* is the high-risk shape: it feels like discovery precisely because no retrieval preceded it.
 
+## (v) Epic-layer outcome-authority sweep
+
+Fires only on **epic-labeled** filings.
+
+```bash
+gh issue list --repo <r> --label epic --state open --json number,title
+```
+
+Read **every** row — there are few — plus one semantic outcome-overlap query. Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
+
+**Why `(i)` cannot reach these.** An outcome authority is defined by not churning: it is filed once, then supervises for weeks. That places it permanently outside a latest-20 window, so the recency axis is not merely unlucky here — it is **structurally** blind. And its title is written in the vocabulary of the outcome (*"An external plane cannot recover itself…"*), which shares no keywords with a newcomer's framing of the same outcome, so title search misses it too. Both existing artifact axes fail on the same filing for different reasons.
+
+**Why the cost is topology, not tidiness.** A duplicate leaf is one closure. Competing Epic roots split *sub-attachment, review attention and closure authority* until someone reconciles them — and each sub filed under the wrong root deepens the split.
+
+> **Empirical anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** `#38` was filed as a parentless root duplicating `#54`'s outcome authority: two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep was run honestly and **passed** — latest-20 open, title-keyword search, A2A claim scan. A peer's Stage-1 epic review caught it after filing, and the fold cost more than the filing saved.
+
 ## Attestation
 
 Record what ran, in the body, beside the live-open attestation:
@@ -43,6 +59,7 @@ Record what ran, in the body, beside the live-open attestation:
 ```
 MC sweep: <queries>, <n> results, no prior decision found
 Own-assignment sweep: <n> open, none overlapping
+Epic sweep: <n> open epics read, no shared terminal predicate    # epic-labeled filings only
 ```
 
 Prose discipline that leaves no artifact cannot be checked, and these arms exist because prose discipline failed.
@@ -62,9 +79,12 @@ Three blind spots, one root — the sweep searched for artifacts, never for deci
 | recency-shaped | the standing parent is older than the latest-20 window |
 | open/closed-shaped | the decline lives in a closed issue; `(i)` reads open |
 | ownership-shaped | the parent is open, old, and already assigned to the filer |
+| authority-shaped | the standing Epic is open, old, owned by **someone else**, and titled in the outcome's vocabulary — arm `(v)` |
 
-A fourth artifact query would have caught none of them.
+Another artifact query would have caught none of them.
+
+**And the herd anchor, for why the sweeps run LAST rather than first.** `#12856`, 2026-06-10: four agents raced an operator's *"one (not all!)"* prompt into three duplicate tickets, every one of them having run the GitHub sweep honestly. The single agent who used a two-phase *claim → re-check → execute* filed zero. Check-at-start freshness decays across a multi-minute protocol; check-at-last collapses the stale window to the create-call gap.
 
 ## Sunset
 
-When `ticket-create` gains a mechanical pre-flight that runs the sweeps itself, arms `(i)`–`(iv)` collapse into that runner and this payload retires with them.
+When `ticket-create` gains a mechanical pre-flight that runs the sweeps itself, arms `(i)`–`(iv)` collapse into that runner and this payload retires with them. Arm `(v)` is the exception and survives it: a runner can list open Epics, but *"do these two finish the same sentence?"* is a judgement no lint makes. Expect `(v)` to become a prompt the runner asks, not a check it performs.

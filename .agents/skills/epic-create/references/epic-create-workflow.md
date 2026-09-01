@@ -47,7 +47,7 @@ Each sub the decomposition creates MUST be a **leaf that a single PR can FULLY d
 
 ## Procedure
 
-1. **Confirm Epic-shape.** The work needs ≥2 coordinated subs. A single bounded artifact (≈1 PR's worth) is a standalone ticket (`ticket-create`), not an Epic.
+1. **Confirm Epic-shape, then run the epic-layer sweep.** The work needs ≥2 coordinated subs; a single bounded artifact (≈1 PR's worth) is a standalone ticket (`ticket-create`), not an Epic. Then run `ticket-create-workflow.md` §1a arm `(v)` before authoring — read every open `label:epic` issue and compare **terminal predicates**, not titles. An outcome authority does not churn, so §1a's recency and title axes are both structurally blind to it, and competing roots split sub-attachment, review attention and closure authority until someone folds them.
 2. **Run the Agent OS structure map.** Before authoring the body, run `npm run --silent ai:structure-map -- --files --loc`; use it for Agent OS / architecture placement claims or record N/A.
 3. **Graduation gate (if from a Discussion).** High-blast Epics require the §6.2 family-keyed quorum + the §5.1 divergence matrix in the source Discussion before filing (per `ideation-sandbox-workflow.md` + `ideation-sandbox/audits/double-diamond-divergence-guard.md`). Carry the `Signal Ledger` / dissent / liveness / criteria-mapping sections into the body.
 4. **Author the body** = problem-scope + intended-solution (+ ledger if graduated). NO ACs, NO sub-list.

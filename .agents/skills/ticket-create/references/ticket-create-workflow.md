@@ -17,8 +17,6 @@ Verify no equivalent ticket already exists. Redundant tickets pollute the Knowle
 
 Duplicates hide in **two substrates**, and you MUST sweep **both as the LAST step immediately before `create_issue`** — not at turn-start, not when you begin drafting. A sweep run before authoring goes stale while you write the Fat Ticket: in a thundering herd (multiple agents booting on the same prompt), a peer's ticket can land in the minutes between your sweep and your create call. The turn-start mailbox check (`§mailbox_check_protocol`) is for general coordination — it is **not** the dup gate.
 
-> **Empirical anchor (`#12856`, 2026-06-10):** four agents raced an operator's "one (not all!)" prompt → three duplicate tickets, despite every agent running the GitHub sweep honestly. The one agent who used a two-phase *claim → re-check → execute* filed zero. Check-at-start freshness decays across a multi-minute protocol; check-at-last collapses the stale window to the create-call gap.
-
 **(i) GitHub live freshness sweep (mandatory) — catches already-FILED duplicates:** read at least the latest 20 open GitHub issues from the live tracker, including issue number, title, author, labels, and URL.
 
 ```bash
@@ -43,7 +41,9 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 **(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)`, `(ii)` and the greps below are all **artifact** substrates — they answer *"does a ticket exist?"*, never *"was this already decided, and why?"* Run one `query_raw_memories` keyed on the **problem's** nouns (the symptom as observed, never the mechanism you are about to build), and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body like `(i)` does.
 
-<!-- trigger: filing a ticket, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, attestation lines, same-turn porting, the #17997 anchor) -->
+**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** outcome authorities do not churn, so `(i)`'s recency axis is blind to them, and their titles share no keywords with a newcomer's framing of the same outcome. Read **every** open `label:epic` issue — one page — plus one outcome-overlap query, and attest beside `(i)`.
+
+<!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
 
 ```
 grep on resources/content/issues/       # active + archived tickets
