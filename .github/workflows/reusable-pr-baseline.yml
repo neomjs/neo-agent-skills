@@ -96,7 +96,7 @@ jobs:
       - name: Install immutable archaeology guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
-          SKILLS_VERSION: '0.1.2'
+          SKILLS_VERSION: '0.1.3'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -135,7 +135,7 @@ jobs:
       - name: Install immutable substrate guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
-          SKILLS_VERSION: '0.1.2'
+          SKILLS_VERSION: '0.1.3'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -180,7 +180,7 @@ jobs:
       - name: Install immutable PR-body guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
-          SKILLS_VERSION: '0.1.2'
+          SKILLS_VERSION: '0.1.3'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
