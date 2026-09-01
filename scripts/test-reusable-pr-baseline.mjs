@@ -321,7 +321,7 @@ expectMutationFailure('substrate runner isolation', source,
     'missing substrate isolated runner root');
 expectMutationFailure('substrate package version', source,
     value => value.replace(
-        "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: '0.1.2'",
+        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: '${pkg.version}'`,
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: 'latest'"),
     'substrate package version drift');
 // Anchored on the STEP NAME rather than the comment that follows it. The archaeology job carries a
