@@ -46,11 +46,9 @@ gh issue list --repo <r> --label epic --state open --json number,title
 
 Read **every** row — there are few — plus one semantic outcome-overlap query. Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
 
-**Why `(i)` cannot reach these.** An outcome authority is defined by not churning — filed once, then supervising for weeks — so it sits permanently outside a latest-20 window: the recency axis is **structurally** blind here, not unlucky. Its title speaks the outcome's vocabulary (*"An external plane cannot recover itself…"*), sharing no keywords with a newcomer's framing of that same outcome, so title search misses it too.
+An outcome authority does not churn, so it sits permanently outside `(i)`'s window and its title speaks the outcome's vocabulary rather than a newcomer's — both artifact axes miss it, for different reasons. The cost is topology: competing roots split sub-attachment, review attention and closure authority until someone folds them.
 
-**Why the cost is topology, not tidiness.** A duplicate leaf is one closure. Competing Epic roots split *sub-attachment, review attention and closure authority* until someone reconciles them — and each sub filed under the wrong root deepens the split.
-
-> **Empirical anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** `#38` was filed as a parentless root duplicating `#54`'s outcome authority: two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep was run honestly and **passed** — latest-20 open, title-keyword search, A2A claim scan. A peer's Stage-1 epic review caught it after filing, and the fold cost more than the filing saved.
+> **Anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** Two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep ran honestly and **passed**; a peer's epic review caught it after filing.
 
 ## Attestation
 
@@ -83,8 +81,8 @@ Three blind spots, one root — the sweep searched for artifacts, never for deci
 
 Another artifact query would have caught none of them.
 
-**And the herd anchor, for why the sweeps run LAST rather than first.** `#12856`, 2026-06-10: four agents raced an operator's *"one (not all!)"* prompt into three duplicate tickets, every one of them having run the GitHub sweep honestly. The single agent who used a two-phase *claim → re-check → execute* filed zero. Check-at-start freshness decays across a multi-minute protocol; check-at-last collapses the stale window to the create-call gap.
+**Why the sweeps run LAST.** `#12856`, 2026-06-10: four agents raced one prompt into three duplicates, each having swept honestly; the one who re-checked immediately before filing produced none. Check-at-start decays across a multi-minute protocol.
 
 ## Sunset
 
-When `ticket-create` gains a mechanical pre-flight that runs the sweeps itself, arms `(i)`–`(iv)` collapse into that runner and this payload retires with them. Arm `(v)` is the exception and survives it: a runner can list open Epics, but *"do these two finish the same sentence?"* is a judgement no lint makes. Expect `(v)` to become a prompt the runner asks, not a check it performs.
+When `ticket-create` gains a mechanical pre-flight that runs the sweeps itself, arms `(i)`–`(iv)` collapse into that runner and this payload retires with them. `(v)` survives it as a prompt rather than a check: a runner can list open Epics, but *"do these two finish the same sentence?"* is not a judgement a lint makes.
