@@ -1,4 +1,4 @@
-# Decision-substrate sweeps — arms `(iii)` and `(iv)` of §1a
+# Decision-substrate sweeps — arms `(iii)`, `(iv)` and `(v)` of §1a
 
 `ticket-create-workflow.md` §1a arms `(i)` and `(ii)`, and the `resources/content` greps beside them, are all **artifact** substrates. They answer *"does a ticket exist?"* None answers *"was this already decided, and why?"*
 
@@ -36,6 +36,27 @@ Then read the **bodies** of the two or three touching the same surface — not t
 
 Neither `(i)` (recency-bounded) nor a closed-issue search reaches an **open, old, self-assigned** parent. A defect found *while measuring something else* is the high-risk shape: it feels like discovery precisely because no retrieval preceded it.
 
+## (v) Epic-layer outcome-authority sweep
+
+Fires only on **epic-labeled** filings.
+
+```bash
+gh issue list --repo <r> --label epic --state open --json number,title
+```
+
+Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
+
+**Read every row, but read one line of it.** `epic-create` requires each Epic body to open with a `Terminal predicate:` line precisely so this sweep is priced in lines, not bodies. Two stages, and the second is bounded by the first:
+
+1. **Predicate scan (every row).** Read each open epic's `Terminal predicate:` line. Cheap enough to be exhaustive, which is the only reason "every" is honest here.
+2. **Body read (the ranked few).** For rows predating the field, or whose predicate is close enough to yours to be arguable, run the semantic outcome-overlap query and read only the bodies it ranks. Retrieval surfaces the candidates; **only a reader can rule** — that is the judgement the arm exists to force, and it is not the part that was expensive.
+
+> **Population anchor, measured 2026-09-02 — do not trust this as a present-tense fact, re-run it.** Open `label:epic`: `neomjs/neo` **29**, `neo-agent-brain` **34**, `neo-agent-institution` 6, `neo-agent-skills` 1; the first five `neomjs/neo` bodies run 4,936–12,575 characters. An unstaged all-bodies read is therefore ~290k characters in one repo — the cost that mutes a gate within a week. A rule that embeds a population as an **adjective** ("there are few") carries a fact that decays silently while its prose stays confident; state the number with its date, or state the query.
+
+An outcome authority does not churn, so it sits permanently outside `(i)`'s window and its title speaks the outcome's vocabulary rather than a newcomer's — both artifact axes miss it, for different reasons. The cost is topology: competing roots split sub-attachment, review attention and closure authority until someone folds them.
+
+> **Anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** Two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep ran honestly and **passed**; a peer's epic review caught it after filing.
+
 ## Attestation
 
 Record what ran, in the body, beside the live-open attestation:
@@ -43,6 +64,7 @@ Record what ran, in the body, beside the live-open attestation:
 ```
 MC sweep: <queries>, <n> results, no prior decision found
 Own-assignment sweep: <n> open, none overlapping
+Epic sweep: <n> open epics read, no shared terminal predicate    # epic-labeled filings only
 ```
 
 Prose discipline that leaves no artifact cannot be checked, and these arms exist because prose discipline failed.
@@ -62,9 +84,12 @@ Three blind spots, one root — the sweep searched for artifacts, never for deci
 | recency-shaped | the standing parent is older than the latest-20 window |
 | open/closed-shaped | the decline lives in a closed issue; `(i)` reads open |
 | ownership-shaped | the parent is open, old, and already assigned to the filer |
+| authority-shaped | the standing Epic is open, old, owned by **someone else**, and titled in the outcome's vocabulary — arm `(v)` |
 
-A fourth artifact query would have caught none of them.
+Another artifact query would have caught none of them.
+
+**Why the sweeps run LAST.** `#12856`, 2026-06-10: four agents raced one prompt into three duplicates, each having swept honestly; the one who re-checked immediately before filing produced none. Check-at-start decays across a multi-minute protocol.
 
 ## Sunset
 
-When `ticket-create` gains a mechanical pre-flight that runs the sweeps itself, arms `(i)`–`(iv)` collapse into that runner and this payload retires with them.
+When `ticket-create` gains a mechanical pre-flight that runs the sweeps itself, arms `(i)`–`(iv)` collapse into that runner and this payload retires with them. `(v)` survives it as a prompt rather than a check: a runner can list open Epics, but *"do these two finish the same sentence?"* is not a judgement a lint makes.
