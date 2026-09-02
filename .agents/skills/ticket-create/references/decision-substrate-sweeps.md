@@ -44,7 +44,14 @@ Fires only on **epic-labeled** filings.
 gh issue list --repo <r> --label epic --state open --json number,title
 ```
 
-Read **every** row — there are few — plus one semantic outcome-overlap query. Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
+Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
+
+**Read every row, but read one line of it.** `epic-create` requires each Epic body to open with a `Terminal predicate:` line precisely so this sweep is priced in lines, not bodies. Two stages, and the second is bounded by the first:
+
+1. **Predicate scan (every row).** Read each open epic's `Terminal predicate:` line. Cheap enough to be exhaustive, which is the only reason "every" is honest here.
+2. **Body read (the ranked few).** For rows predating the field, or whose predicate is close enough to yours to be arguable, run the semantic outcome-overlap query and read only the bodies it ranks. Retrieval surfaces the candidates; **only a reader can rule** — that is the judgement the arm exists to force, and it is not the part that was expensive.
+
+> **Population anchor, measured 2026-09-02 — do not trust this as a present-tense fact, re-run it.** Open `label:epic`: `neomjs/neo` **29**, `neo-agent-brain` **34**, `neo-agent-institution` 6, `neo-agent-skills` 1; the first five `neomjs/neo` bodies run 4,936–12,575 characters. An unstaged all-bodies read is therefore ~290k characters in one repo — the cost that mutes a gate within a week. A rule that embeds a population as an **adjective** ("there are few") carries a fact that decays silently while its prose stays confident; state the number with its date, or state the query.
 
 An outcome authority does not churn, so it sits permanently outside `(i)`'s window and its title speaks the outcome's vocabulary rather than a newcomer's — both artifact axes miss it, for different reasons. The cost is topology: competing roots split sub-attachment, review attention and closure authority until someone folds them.
 

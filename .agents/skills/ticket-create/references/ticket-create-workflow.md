@@ -41,7 +41,7 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 **(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)`, `(ii)` and the greps below are all **artifact** substrates — they answer *"does a ticket exist?"*, never *"was this already decided, and why?"* Run one `query_raw_memories` keyed on the **problem's** nouns (the symptom as observed, never the mechanism you are about to build), and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body like `(i)` does.
 
-**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** outcome authorities do not churn, so `(i)`'s recency axis is blind to them, and their titles share no keywords with a newcomer's framing of the same outcome. Read **every** open `label:epic` issue — one page — plus one outcome-overlap query, and attest beside `(i)`.
+**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** both artifact axes are blind to an outcome authority — the payload says why. Read every open `label:epic` issue's `Terminal predicate:` line, then body-read only what an outcome-overlap query ranks, and attest beside `(i)`.
 
 <!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
 

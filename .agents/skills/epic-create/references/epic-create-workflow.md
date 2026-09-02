@@ -16,6 +16,7 @@ An Epic body is **problem-scope + intended-solution** — the durable "why + wha
 
 Epic creation uses the same importance order as ticket and PR review: the problem/premise and intended placement dominate the verdict. Sub AC detail belongs in leaf tickets; an Epic with exhaustive sub mechanics but a weak premise or wrong owning substrate is not ready.
 
+0. **`Terminal predicate:` — one line, the body's first line, mandatory.** The state of the world this Epic declares finished, in the outcome's own vocabulary: *what sentence does closing this Epic let us write?* This is not a summary of the problem — it is the condition that ends it. It exists to be **addressable**: `ticket-create` §1a arm `(v)` compares predicates, and with this field a filer compares N one-line fields instead of reading N full bodies. A gate priced at the second number is a gate that gets skipped, and a skipped gate still gets its attestation line written.
 1. **Problem scope** — the friction / antipattern-cluster / goal, with empirical anchors. State why this needs an Epic (multi-sub coordination) rather than a single ticket.
 2. **Intended solution shape** — the architectural direction (the "what-shape"), NOT the per-sub task breakdown. Enough that a reader knows the convergent shape the subs will serve.
 3. **(If Discussion-graduated) the §6.6 Signal Ledger** — the graduation consensus record (family-keyed quorum, unresolved dissent / liveness, criteria-mapping) per `ideation-sandbox-workflow.md §6`. This is the one structured matrix that belongs in an Epic body, because it records the graduation event, not the sub-plan.
@@ -47,10 +48,10 @@ Each sub the decomposition creates MUST be a **leaf that a single PR can FULLY d
 
 ## Procedure
 
-1. **Confirm Epic-shape, then run §1a arm `(v)`.** The work needs ≥2 coordinated subs; a single bounded artifact (≈1 PR's worth) is a standalone ticket (`ticket-create`), not an Epic. Arm `(v)` — the epic-layer sweep, mandatory before authoring — reads every open `label:epic` issue and compares **terminal predicates**, not titles.
+1. **Confirm Epic-shape, then run §1a arm `(v)`.** The work needs ≥2 coordinated subs; a single bounded artifact (≈1 PR's worth) is a standalone ticket (`ticket-create`), not an Epic. Arm `(v)` — the epic-layer sweep, mandatory before authoring — compares **terminal predicates**, not titles, reading every open `label:epic` issue's `Terminal predicate:` line and only the bodies an outcome-overlap query ranks.
 2. **Run the Agent OS structure map.** Before authoring the body, run `npm run --silent ai:structure-map -- --files --loc`; use it for Agent OS / architecture placement claims or record N/A.
 3. **Graduation gate (if from a Discussion).** High-blast Epics require the §6.2 family-keyed quorum + the §5.1 divergence matrix in the source Discussion before filing (per `ideation-sandbox-workflow.md` + `ideation-sandbox/audits/double-diamond-divergence-guard.md`). Carry the `Signal Ledger` / dissent / liveness / criteria-mapping sections into the body.
-4. **Author the body** = problem-scope + intended-solution (+ ledger if graduated). NO ACs, NO sub-list.
+4. **Author the body** = the `Terminal predicate:` line, then problem-scope + intended-solution (+ ledger if graduated). NO ACs, NO sub-list.
 5. **Label `epic`** + apply title hygiene (per `ticket-create`).
 6. **Create subs separately** (via `ticket-create` — each with its own ACs + Contract Ledger) and **link each via `update_issue_relationship`** (parent = the Epic). Add subs incrementally as decomposition clarifies; that governs Epic life. Goal-scoping graduation is stricter: full v1 leaves are filed/native-linked, while the Epic body stays sub-list-free.
 7. **Verify** (pre-flight, before `create_issue`):
