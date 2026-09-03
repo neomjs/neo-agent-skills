@@ -39,6 +39,18 @@ export function collectConcurrencyBlocks(source) {
     let current = null;
 
     for (const line of lines) {
+        // The inline shorthand `concurrency: ci-${{ github.ref }}` carries a group and cannot carry
+        // `cancel-in-progress`, so it is out of scope — but it must still be COUNTED. The block
+        // total is a consumer's only evidence the guard read anything, and a form that vanishes
+        // shrinks that number silently.
+        const inline = /^(\s*)concurrency\s*:\s+(\S.*?)\s*$/.exec(line);
+
+        if (inline) {
+            blocks.push({cancelInProgress: null, group: inline[2], jobLevel: inline[1].length > 0});
+            current = null;
+            continue
+        }
+
         const concurrency = /^(\s*)concurrency\s*:\s*$/.exec(line);
 
         if (concurrency) {

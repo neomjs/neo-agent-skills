@@ -112,6 +112,46 @@ jobs:
     assert.match(cancelling.findings[0].violations[0], /carries no ref/)
 }
 
+// ── @neo-opus-ada's direction: the FALSE POSITIVE the old rule produced ───────────────────────
+// A per-ref group that deliberately does not cancel is a serialization fence, not a defect.
+// `neomjs/neo`'s review-admission-mergeability.yml says it outright: "Serialize writes per PR.
+// Cancellation is not a write fence." The old rule graded this and emitted TWO false violations,
+// one of them ("no rerun clause") describing an impossible event when nothing cancels.
+{
+    const queueing = `name: Deploy
+concurrency:
+  group: deploy-\${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+`;
+    const report = collectReport({root: repo({'deploy.yml': queueing})});
+
+    assert.equal(report.blocks, 1, 'the fence is counted');
+    assert.equal(report.scoped, 0, 'and never graded');
+    assert.deepEqual(report.findings, [], 'a serialization fence is not a defect')
+}
+
+// ── the inline shorthand is out of scope but must still be COUNTED ────────────────────────────
+// `concurrency: ci-${{ github.ref }}` cannot carry `cancel-in-progress`, so it is correctly not
+// graded — but the block total is a consumer's only evidence the guard read anything, and a form
+// that parses to nothing shrinks that number in silence. @neo-opus-ada, one level down from the
+// negative-space contract above.
+{
+    const shorthand = `name: X
+concurrency: ci-\${{ github.ref }}
+jobs:
+  a:
+    runs-on: ubuntu-latest
+`;
+    const report = collectReport({root: repo({'x.yml': shorthand})});
+
+    assert.equal(report.blocks, 1, 'the shorthand is visible in the count');
+    assert.equal(report.scoped, 0, 'and out of scope, because it cannot cancel');
+    assert.deepEqual(report.findings, [])
+}
+
 // ── the report, and the negative-space contract ───────────────────────────────────────────────
 {
     const report = collectReport({root: repo({'test.yml': CORRECT})});
