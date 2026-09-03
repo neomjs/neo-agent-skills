@@ -18,15 +18,7 @@ import {fileURLToPath}                                     from 'node:url';
 
 export const WORKFLOW_DIR = '.github/workflows';
 
-/**
- * @type {RegExp} The SCOPE selector, not a requirement.
- *
- * A group keyed on the ref has declared itself a per-ref superseding group, and only those owe the
- * rerun clause. Groups keyed on anything else are a different intent and are none of this guard's
- * business: a scheduled pipeline keys on nothing (one run at a time, and a new cron tick must NOT
- * kill an in-flight sync), and a cross-PR sweep keys on its matrix element. Grading those was this
- * guard's first shape, and it reddened three correct workflows in `neomjs/neo`.
- */
+/** @type {RegExp} Whether a group is keyed on the ref, i.e. shared only across heads of one ref. */
 export const REF_PATTERN = /github\.(ref|head_ref)|pull_request\.head\.ref/;
 
 /** @type {RegExp} The rerun clause: an attempt test that falls back to the run's own id. */
@@ -75,24 +67,40 @@ export function collectConcurrencyBlocks(source) {
 }
 
 /**
- * @summary Whether this block is in scope — a per-ref superseding group.
+ * @summary Whether this block is in scope — it cancels, so its group decides what it cancels.
+ *
+ * `cancel-in-progress: true` is a DECLARATION, not a judgement inferred from an expression: a block
+ * that cancels nothing cannot cancel the wrong thing, whatever its group says. Selecting on the
+ * group instead — "is it ref-keyed?" — picks a proxy for the hazard and misses its worst shape, a
+ * STATIC group that cancels across every branch and rerun rather than only across heads of one ref.
+ * In `neomjs/neo` the two selectors are indistinguishable (15 ref-keyed, 15 cancelling, identical
+ * sets), so no green run can tell them apart; the discriminating case is one character away.
  * @param {Object} block
  * @returns {Boolean}
  */
-export function isRefKeyed(block) {
-    return !!block.group && REF_PATTERN.test(block.group)
+export function isInScope(block) {
+    return block.cancelInProgress === true
 }
 
 /**
- * @summary Grades one in-scope concurrency block. Out-of-scope blocks are never passed here.
+ * @summary Grades one cancelling block. Non-cancelling blocks are never passed here.
  * @param {Object} block
  * @returns {String[]} Violations, empty when the block is contract-clean.
  */
 export function gradeBlock(block) {
     const errors = [];
 
+    if (!block.group) {
+        errors.push('cancels with no `group`');
+        return errors
+    }
+
+    if (!REF_PATTERN.test(block.group)) {
+        errors.push('cancels on a group that carries no ref, so one run cancels across every branch');
+        return errors
+    }
+
     RERUN_PATTERN.test(block.group) || errors.push('group has no rerun clause — a rerun of an older head can cancel the newer run that superseded it');
-    block.cancelInProgress === true || errors.push('`cancel-in-progress` is not `true`, so a superseded run is never cancelled');
 
     return errors
 }
@@ -135,7 +143,7 @@ export function collectReport({root = process.cwd()} = {}) {
         for (const block of collectConcurrencyBlocks(readFileSync(join(dir, name), 'utf8'))) {
             blocks++;
 
-            if (!isRefKeyed(block)) {
+            if (!isInScope(block)) {
                 continue
             }
 
@@ -170,11 +178,11 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
     });
 
     if (report.findings.length) {
-        error(`check-workflow-concurrency: ${report.findings.length} of ${report.scoped} ref-keyed concurrency block(s) are not rerun-safe.`);
+        error(`check-workflow-concurrency: ${report.findings.length} of ${report.scoped} cancelling concurrency block(s) are not rerun-safe.`);
         return 1
     }
 
-    out(`check-workflow-concurrency: ${report.scoped} ref-keyed block(s) of ${report.blocks} across ${report.files} workflow file(s), all rerun-safe.`);
+    out(`check-workflow-concurrency: ${report.scoped} cancelling block(s) of ${report.blocks} across ${report.files} workflow file(s), all rerun-safe.`);
     return 0
 }
 

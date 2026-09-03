@@ -5,7 +5,7 @@ import assert                                          from 'node:assert/strict'
 import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                        from 'node:os';
 import {join}                                          from 'node:path';
-import {collectConcurrencyBlocks, collectReport, gradeBlock, isRefKeyed, run} from './check-workflow-concurrency.mjs';
+import {collectConcurrencyBlocks, collectReport, gradeBlock, isInScope, run} from './check-workflow-concurrency.mjs';
 
 const fixtures = [];
 
@@ -68,22 +68,26 @@ const silent = {error() {}, out() {}};
     assert.match(violations[0], /rerun clause/);
 }
 
+// ── scope: a block that CANCELS is in scope; its group decides what it cancels ────────────────
+// Selecting on "is the group ref-keyed?" picks a proxy for the hazard and misses its worst shape.
+// In `neomjs/neo` the two selectors are indistinguishable — 15 ref-keyed, 15 cancelling, identical
+// sets — so no green run separates them. Found by @neo-opus-vega, who located the discriminating
+// case one character away in the tree.
 {
-    const violations = gradeBlock({cancelInProgress: false, group: "\${{ github.run_attempt == '1' && github.ref || github.run_id }}"});
-
-    assert.equal(violations.length, 1);
-    assert.match(violations[0], /cancel-in-progress/, 'a group that supersedes nothing is a violation on its own');
+    assert.equal(isInScope({cancelInProgress: true,  group: 'anything'}), true);
+    assert.equal(isInScope({cancelInProgress: false, group: "${{ github.ref }}"}), false,
+        'a block that cancels nothing cannot cancel the wrong thing');
+    assert.equal(isInScope({cancelInProgress: null,  group: 'x'}), false)
 }
 
-// ── scope: only ref-keyed groups owe the rerun clause ──────────────────────────────────────────
-// The first shape of this guard graded every block and reddened three CORRECT workflows in
-// `neomjs/neo`: two scheduled pipelines keyed on nothing (one run at a time, and a new cron tick
-// must not kill an in-flight sync) and a cross-PR sweep keyed on its matrix element.
 {
-    assert.equal(isRefKeyed({group: 'data-sync-pipeline'}), false, 'a scheduled singleton is out of scope');
-    assert.equal(isRefKeyed({group: 'review-admission-mergeability-\${{ matrix.pr }}'}), false, 'a cross-PR sweep is out of scope');
-    assert.equal(isRefKeyed({group: null}), false);
-    assert.equal(isRefKeyed(collectConcurrencyBlocks(CORRECT)[0]), true, 'a ref-keyed group is in scope')
+    // THE COUNTER-EXAMPLE: a static group that cancels is strictly worse than any ref-keyed block —
+    // it cancels across every branch, not only across heads of one ref — and the ref-keyed selector
+    // skipped it silently.
+    const violations = gradeBlock({cancelInProgress: true, group: 'data-sync-pipeline'});
+
+    assert.equal(violations.length, 1);
+    assert.match(violations[0], /carries no ref/)
 }
 
 {
@@ -97,9 +101,15 @@ jobs:
 `;
     const report = collectReport({root: repo({'nightly.yml': scheduled})});
 
-    assert.deepEqual(report.findings, [], 'an out-of-scope group produces no finding');
+    assert.deepEqual(report.findings, [], 'a non-cancelling block produces no finding');
     assert.equal(report.blocks, 1, 'it is still counted');
-    assert.equal(report.scoped, 0, 'but it is not graded')
+    assert.equal(report.scoped, 0, 'but it is not graded');
+
+    // …and the same file with cancelling ON is graded and red. One character apart.
+    const cancelling = collectReport({root: repo({'nightly.yml': scheduled.replace('false', 'true')})});
+
+    assert.equal(cancelling.findings.length, 1, 'flipping the flag makes it the worst shape, not an invisible one');
+    assert.match(cancelling.findings[0].violations[0], /carries no ref/)
 }
 
 // ── the report, and the negative-space contract ───────────────────────────────────────────────
