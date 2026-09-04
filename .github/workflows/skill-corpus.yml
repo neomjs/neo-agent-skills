@@ -61,6 +61,9 @@ jobs:
       - name: PR-body anchor contract
         run: node scripts/test-check-pr-body.mjs
 
+      - name: Workflow concurrency contract
+        run: node scripts/test-workflow-concurrency.mjs
+
       - name: Package contents — what actually ships
         run: |
           TARBALL=$(npm pack --silent | tail -1)
@@ -80,8 +83,10 @@ jobs:
             || { echo "substrate-size CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-pr-body.mjs' \
             || { echo "PR-body CLI missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-workflow-concurrency.mjs' \
+            || { echo "workflow-concurrency CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
