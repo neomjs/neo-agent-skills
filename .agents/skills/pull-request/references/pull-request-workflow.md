@@ -274,6 +274,8 @@ until the shape is correct.
 
 Do not copy ticket bodies or the optional external-contributor `.github/PULL_REQUEST_TEMPLATE.md` into agent PRs; summarize the implementation delta below.
 
+Knowingly leaving something unfixed in a file you touched costs one line where it happened — `out of scope, noted in <defect-note|#N>` — with the note filed first (`ticket-create` §1e). No section and no placeholder: a PR with nothing to declare declares nothing.
+
 ### 9.1 Reference Hygiene
 
 Before PR prose, read the [reference-hygiene guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/reference-hygiene.md): relationships stay bare; descriptive tokens use backticks.
