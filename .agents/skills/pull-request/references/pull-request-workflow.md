@@ -20,6 +20,30 @@ before handoff add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>`
 subjects; the body run also rejects stacked commit tickets missing from
 `Resolves`/`Refs`/`Related`.
 
+**`agent-preflight` is Brain-hosted and does not resolve everywhere this corpus
+does** — a consumer with no `ai/` tree has no such script. **Check the exit
+code, and never add `--silent`**: it suppresses npm's `Missing script` line,
+leaving an empty exit-1 that a missing binary and a clean run produce
+identically. An empty result is not a pass.
+
+Where it is absent the §3.1 class declaration still binds (it is the author's,
+not the tool's) and stands unverified; say so — `agent-preflight: not hosted
+here; baseline <jobs> ran` — so a reader can tell an unrunnable gate from a
+skipped one. The properties it would have checked are carried by this corpus'
+`.github/workflows/reusable-pr-baseline.yml`, which the consumer calls from its
+own repository: `pr-body` for the §9 anchors and close-target rules,
+`substrate-size` for the §1.1 byte budget. That trade is CI-shaped, not free —
+the baseline reports on the PR rather than blocking the commit, and gates only
+where the consumer bound it as a required context.
+
+*Rejected, so the custody question is not re-derived:* having the seat invoke a
+Brain root fails wherever no Brain checkout exists, consumer CI most of all,
+since consumers do not depend on the Brain. Publishing the runner here founders
+on one arm — `collectStaleOverlayFindings` reads `ai/config.mjs` and
+`ai/configBase.mjs`; the rest is portable, and that arm is inert without an
+`ai/` tree. **Retire this whole block if either is ever resolved** — it exists
+only while the tool's reach is narrower than the corpus'.
+
 ### 1.1 The Substrate-Mutation Pre-Flight Gate
 
 If your PR touches memory substrate per `/turn-memory-pre-flight` (`AGENTS.md`,
@@ -97,7 +121,9 @@ Classify the delivered delta in order; the first match wins:
    declaration stays the class authority.
 
 Ticket labels, filenames, and diff size do not decide the class. The author
-declares it; `agent-preflight` verifies the supplied subjects without inference.
+declares it; where `agent-preflight` is hosted it verifies the supplied subjects
+without inference, and where it is not the declaration stands unverified — which
+is why §1 asks you to say so rather than leave the step blank.
 
 ### 3.2 Commit Message Hygiene
 
