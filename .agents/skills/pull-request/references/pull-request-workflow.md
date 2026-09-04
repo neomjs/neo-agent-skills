@@ -20,6 +20,24 @@ before handoff add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>`
 subjects; the body run also rejects stacked commit tickets missing from
 `Resolves`/`Refs`/`Related`.
 
+**It is Brain-hosted and does not resolve everywhere this corpus does.** A
+consumer with no `ai/` tree has no such script. **Check the exit code, never add
+`--silent`** — it hides npm's `Missing script`, leaving a missing script and a
+tool that failed quietly indistinguishable: both exit non-zero with no output.
+Silence is not a pass; only exit 0 is.
+
+Absent, the §3.1 class declaration still binds and stands unverified; say
+`agent-preflight: not hosted here; baseline <jobs> ran`, so a reader can tell an
+unrunnable gate from a skipped one. Its checks are carried by this corpus'
+`reusable-pr-baseline.yml`, which the consumer calls: `pr-body` for the §9
+anchors, `substrate-size` for §1.1. CI-shaped, not free — it reports rather than
+blocks, and gates only where bound as a required context.
+
+*Rejected:* invoking a Brain root fails wherever no Brain checkout exists, CI
+most of all; shipping the runner here founders on `collectStaleOverlayFindings`
+alone, which reads `ai/config*.mjs` — the rest is portable and that arm is inert
+without an `ai/` tree. **Retire this block if either is resolved.**
+
 ### 1.1 The Substrate-Mutation Pre-Flight Gate
 
 If your PR touches memory substrate per `/turn-memory-pre-flight` (`AGENTS.md`,
@@ -97,7 +115,9 @@ Classify the delivered delta in order; the first match wins:
    declaration stays the class authority.
 
 Ticket labels, filenames, and diff size do not decide the class. The author
-declares it; `agent-preflight` verifies the supplied subjects without inference.
+declares it; where `agent-preflight` is hosted it verifies the supplied subjects
+without inference, and where it is not the declaration stands unverified — which
+is why §1 asks you to say so rather than leave the step blank.
 
 ### 3.2 Commit Message Hygiene
 
@@ -343,7 +363,9 @@ The shared `PR body` job enforces six **unconditional** anchors (PR #14465), eac
 
 Code (fenced/indented) is not content; `Resolves #N` must be standalone. A `##` anchor in prose is a mention, not the section (`neomjs/neo#17917`: heading gone, 3 mentions left, gate green). Prefixes stay substring: tightening re-opens `neomjs/neo#14344`. AC-Evidence: Brain preflight (`#24`).
 
-**Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md); `## AC Evidence` is the author's machine-checked coverage claim, which `pr-review` audits rather than reconstructs.
+**Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md).
+
+**Where the `## AC Evidence` claim is checked, and where it is only asserted.** The shared job enforces **anchor presence** — that the heading opens a content line. It does not read the rows. Whether the table covers every AC on the close target, whether each row's evidence matches its AC, and whether the residual owner is an issue that survives the merge are checked by the Brain preflight, and **only where that tool resolves**. In a consumer without it the certificate is the author's assertion and the reviewer's audit, machine-checked for shape alone. Reviewers: a green anchor job is not a covered AC table, so count the close target's ACs yourself.
 
 ## 10. Authorship Respect
 

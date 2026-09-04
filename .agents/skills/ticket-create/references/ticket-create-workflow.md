@@ -61,7 +61,7 @@ If the proposed ticket involves modifying any agent skill (i.e., any file within
 
 ### 1c. Agent OS Structure Map Gate (Architecture-Creation Mandatory)
 
-Before creating any Epic, architecture/substrate ticket, or ticket touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement, run `npm run --silent ai:structure-map -- --files --loc`; cite the owning folder/sibling precedent or record N/A.
+Before creating any Epic, architecture/substrate ticket, or ticket touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement, run `npm run ai:structure-map -- --files --loc`; cite the owning folder/sibling precedent or record N/A. Brain-hosted; never `--silent` (empty exit-1 ≠ pass).
 
 ### 1d. The Ungraduated-Discussion Cross-Check (High-Blast-Radius Mandatory)
 

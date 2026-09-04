@@ -37,7 +37,7 @@ If you write a GitHub PR review, step out of Driver mode and follow this reviewe
 5. **Scope discipline:** polish minor misses inside the PR; ticket out-of-scope superior refactors instead of cramming them into the active close-target.
 6. **V-B-A:** falsify every factual/review claim before asserting it. Token presence is not meaning; use source reads for semantic claims.
 7. **Execution:** `manage_pr_review` is the sole fail-closed pre-submit budget gate. Direct `gh pr review` / UI is bypass-with-telemetry: run the meter and add `[review-budget-bypass] reason: ...`; post-submit lint cannot undo it.
-8. **Structure map:** before verdict, run `npm run --silent ai:structure-map -- --files --loc` for PRs touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement; otherwise record N/A.
+8. **Structure map:** before verdict, run `npm run ai:structure-map -- --files --loc` for PRs touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement; otherwise record N/A. Brain-hosted, so absent elsewhere — never add `--silent`, which hides npm's `Missing script` and leaves an empty exit-1 that reads as a pass.
 
 ## 3. Structural Evaluation Metrics
 Every PR review MUST score the work across the following categories on a scale of `0` to `100`:
@@ -171,7 +171,7 @@ At RC2 or >24KB, load the payload. **A demand round is a `CHANGES_REQUESTED`** �
 
 **Payload Pointer:** `view_file` `.agents/skills/pr-review/audits/review-cost-circuit-breaker.md`
 
-**Byte gate:** this file + the payload load together; their combined size is gated. Owner: `COMBINED_BUDGETS` in `ai/scripts/diagnostics/check-substrate-size.mjs` (`ai:check-substrate-size`) — run it before growing either.
+**Byte gate:** this file + the payload load together; their combined size is gated. Owner: `COMBINED_BUDGETS` in `neo-agent-skills:scripts/lint-skill-corpus.mjs` §3b — run `npm run lint` from a Skills checkout before growing either. It is **enforced in CI**, not advisory: `.github/workflows/skill-corpus.yml:41` runs `node scripts/lint-skill-corpus.mjs --base "$BASE"` on every PR, so a breach reds there rather than waiting to be noticed.
 
 ### 6.4 Micro-Review — the blast-scaled Cycle-1 light path
 
