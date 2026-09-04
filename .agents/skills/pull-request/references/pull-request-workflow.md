@@ -20,29 +20,22 @@ before handoff add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>`
 subjects; the body run also rejects stacked commit tickets missing from
 `Resolves`/`Refs`/`Related`.
 
-**`agent-preflight` is Brain-hosted and does not resolve everywhere this corpus
-does** — a consumer with no `ai/` tree has no such script. **Check the exit
-code, and never add `--silent`**: it suppresses npm's `Missing script` line,
-leaving an empty exit-1 that a missing binary and a clean run produce
-identically. An empty result is not a pass.
+**It is Brain-hosted and does not resolve everywhere this corpus does.** A
+consumer with no `ai/` tree has no such script. **Check the exit code, never add
+`--silent`** — it hides npm's `Missing script`, so a missing binary and a clean
+run both give an empty exit-1. An empty result is not a pass.
 
-Where it is absent the §3.1 class declaration still binds (it is the author's,
-not the tool's) and stands unverified; say so — `agent-preflight: not hosted
-here; baseline <jobs> ran` — so a reader can tell an unrunnable gate from a
-skipped one. The properties it would have checked are carried by this corpus'
-`.github/workflows/reusable-pr-baseline.yml`, which the consumer calls from its
-own repository: `pr-body` for the §9 anchors and close-target rules,
-`substrate-size` for the §1.1 byte budget. That trade is CI-shaped, not free —
-the baseline reports on the PR rather than blocking the commit, and gates only
-where the consumer bound it as a required context.
+Absent, the §3.1 class declaration still binds and stands unverified; say
+`agent-preflight: not hosted here; baseline <jobs> ran`, so a reader can tell an
+unrunnable gate from a skipped one. Its checks are carried by this corpus'
+`reusable-pr-baseline.yml`, which the consumer calls: `pr-body` for the §9
+anchors, `substrate-size` for §1.1. CI-shaped, not free — it reports rather than
+blocks, and gates only where bound as a required context.
 
-*Rejected, so the custody question is not re-derived:* having the seat invoke a
-Brain root fails wherever no Brain checkout exists, consumer CI most of all,
-since consumers do not depend on the Brain. Publishing the runner here founders
-on one arm — `collectStaleOverlayFindings` reads `ai/config.mjs` and
-`ai/configBase.mjs`; the rest is portable, and that arm is inert without an
-`ai/` tree. **Retire this whole block if either is ever resolved** — it exists
-only while the tool's reach is narrower than the corpus'.
+*Rejected:* invoking a Brain root fails wherever no Brain checkout exists, CI
+most of all; shipping the runner here founders on `collectStaleOverlayFindings`
+alone, which reads `ai/config*.mjs` — the rest is portable and that arm is inert
+without an `ai/` tree. **Retire this block if either is resolved.**
 
 ### 1.1 The Substrate-Mutation Pre-Flight Gate
 
