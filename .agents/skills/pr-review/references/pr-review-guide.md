@@ -171,7 +171,7 @@ At RC2 or >24KB, load the payload. **A demand round is a `CHANGES_REQUESTED`** �
 
 **Payload Pointer:** `view_file` `.agents/skills/pr-review/audits/review-cost-circuit-breaker.md`
 
-**Byte gate:** this file + the payload load together; their combined size is gated. Owner: `COMBINED_BUDGETS` in `ai/scripts/diagnostics/check-substrate-size.mjs` (`ai:check-substrate-size`) — run it before growing either. That script is hosted in **no** repository today, so treat the gate as CI-side: this corpus' `reusable-pr-baseline.yml` runs a `substrate-size` job against a consumer's entry points, and `scripts/check-substrate-size.mjs` here measures its own. Record which one you ran; a mandate you could not execute is not a mandate you met.
+**Byte gate:** this file + the payload load together; their combined size is gated. Owner: `COMBINED_BUDGETS` in `neo-agent-skills:scripts/lint-skill-corpus.mjs` §3b — run `npm run lint` from a Skills checkout before growing either. It is **enforced in CI**, not advisory: `.github/workflows/skill-corpus.yml:41` runs `node scripts/lint-skill-corpus.mjs --base "$BASE"` on every PR, so a breach reds there rather than waiting to be noticed.
 
 ### 6.4 Micro-Review — the blast-scaled Cycle-1 light path
 

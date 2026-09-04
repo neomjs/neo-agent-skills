@@ -22,8 +22,9 @@ subjects; the body run also rejects stacked commit tickets missing from
 
 **It is Brain-hosted and does not resolve everywhere this corpus does.** A
 consumer with no `ai/` tree has no such script. **Check the exit code, never add
-`--silent`** — it hides npm's `Missing script`, so a missing binary and a clean
-run both give an empty exit-1. An empty result is not a pass.
+`--silent`** — it hides npm's `Missing script`, leaving a missing script and a
+tool that failed quietly indistinguishable: both exit non-zero with no output.
+Silence is not a pass; only exit 0 is.
 
 Absent, the §3.1 class declaration still binds and stands unverified; say
 `agent-preflight: not hosted here; baseline <jobs> ran`, so a reader can tell an
@@ -362,7 +363,9 @@ The shared `PR body` job enforces six **unconditional** anchors (PR #14465), eac
 
 Code (fenced/indented) is not content; `Resolves #N` must be standalone. A `##` anchor in prose is a mention, not the section (`neomjs/neo#17917`: heading gone, 3 mentions left, gate green). Prefixes stay substring: tightening re-opens `neomjs/neo#14344`. AC-Evidence: Brain preflight (`#24`).
 
-**Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md); `## AC Evidence` is the author's machine-checked coverage claim, which `pr-review` audits rather than reconstructs.
+**Evidence discipline (`#10698`):** `Evidence:` declares achieved vs required for sandbox-unreachable runtime/substrate/harness/UI/host effects. Put unavailable-environment residuals in `Evidence:` + `## Post-Merge Validation`. See the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md).
+
+**Where the `## AC Evidence` claim is checked, and where it is only asserted.** The shared job enforces **anchor presence** — that the heading opens a content line. It does not read the rows. Whether the table covers every AC on the close target, whether each row's evidence matches its AC, and whether the residual owner is an issue that survives the merge are checked by the Brain preflight, and **only where that tool resolves**. In a consumer without it the certificate is the author's assertion and the reviewer's audit, machine-checked for shape alone. Reviewers: a green anchor job is not a covered AC table, so count the close target's ACs yourself.
 
 ## 10. Authorship Respect
 
