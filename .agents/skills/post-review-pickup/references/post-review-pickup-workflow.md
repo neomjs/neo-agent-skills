@@ -31,6 +31,8 @@ file or route the bug, then continue picking the next lane.
 
 ## 2. Sibling payloads (read on trigger only)
 
+<!-- trigger: lane selection or a wake turn on a weekly-capped seat → read ./seat-budget-discipline.md -->
+
 <!-- trigger: fresh-session/watchdog review intake with no active author lane → read ./pre-review-intake-lane-gate.md before loading /pr-review -->
 - [`./pre-review-intake-lane-gate.md`](./pre-review-intake-lane-gate.md) — when
   role payloads must be read before lane choice, and when review-first is

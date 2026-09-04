@@ -36,7 +36,7 @@ change it. Activation uses live `mergeable`; elsewhere
 
 All required checks for the current head passed.
 
-1. Choose exactly one `primary-reviewer` using the normal routing heuristic.
+1. Choose exactly one `primary-reviewer` using the normal routing heuristic — family default: Opus seats review GPT-authored PRs, GPT seats review Claude-authored PRs; the exception and its rationale: `../../post-review-pickup/references/seat-budget-discipline.md` §3.6.
 2. Call `manage_pr_reviewers({action: 'add', pr_number, reviewers: ['<reviewer>']})`.
 3. Send one targeted A2A DM to the same reviewer.
 4. Include:

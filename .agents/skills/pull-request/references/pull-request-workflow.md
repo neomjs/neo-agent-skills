@@ -4,6 +4,8 @@ This is the authoritative PR protocol for every agent. PR creation is an archite
 
 ## 1. The "Stepping Back" Reflection Protocol (Pre-Commit Gate)
 
+<!-- trigger: composing a PR on a weekly-capped seat → read ../../post-review-pickup/references/seat-budget-discipline.md before the PR opens -->
+
 Before the final `git commit` and `gh pr create`—an irreversible handoff—step back and act as an Architect.
 
 **Scope Creep vs. Iteration:**
