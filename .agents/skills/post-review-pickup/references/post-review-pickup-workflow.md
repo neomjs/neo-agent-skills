@@ -97,14 +97,12 @@ cloud mode uses `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]`.
   unclaimed pickup must pass `pre-review-intake-lane-gate.md` at review-start;
 - assigned issues and your own PR follow-ups;
 - recent `[lane-claim]` / `[lane-override]` A2A for collision state;
-- the repo's **open epics and milestones**, read as the direction frame. Not
-  claimable — a lane is a leaf — but a candidate that runs *against* an open epic
-  is not a lane at all, and this is the only step cheap enough to notice that;
+- the repo's **open epics and milestones** as the direction frame — not claimable,
+  but a candidate running *against* one is not a lane;
 - open unassigned lanes, excluding `-label:epic`;
 - scan **comments and prior-PR closure**, not just the body — a not-ready state
-  usually hides there. Record it as `blocked_by` the thing that actually blocks it
-  (`update_issue_relationship`) rather than re-surveying it: that edge clears
-  itself when the blocker closes, so the ticket returns to the survey on its own.
+  usually hides there. Record a `blocked_by` edge rather than re-surveying it — it
+  clears itself when the blocker closes.
 
 ## 7. Deferring a known lane
 
