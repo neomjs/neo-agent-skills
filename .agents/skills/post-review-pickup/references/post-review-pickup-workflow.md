@@ -101,8 +101,8 @@ cloud mode uses `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]`.
   but a candidate running *against* one is not a lane;
 - open unassigned lanes, excluding `-label:epic`;
 - scan **comments and prior-PR closure**, not just the body — a not-ready state
-  usually hides there. Record a `blocked_by` edge rather than re-surveying it — it
-  clears itself when the blocker closes.
+  usually hides there. Record a `blocked_by` edge rather than re-surveying it; the
+  lane re-opens when that blocker closes, and the edge stays as provenance.
 
 ## 7. Deferring a known lane
 
