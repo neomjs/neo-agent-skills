@@ -18,18 +18,25 @@ facts about the codebase. It **inverts** for stage 2, **Prescription**: that sta
 *you* chose, so "the chain ran in this same context" means it was run by the author of the thing under
 challenge. Same-session authorship removes stage 2's independence rather than supplying it.
 
-This stays a gate rather than a judgment because it discharges as a **read, not an opinion**:
+The read is the **prerequisite**. What discharges the gate is stage 2's own question, answered where
+a reader can see the answer:
 
 1. Name the mechanism the ticket prescribes — the class, module or layer you would subclass, extend,
    or place beside.
 2. Open it.
-3. Cite it: `Prescription checked: <path>`.
+3. Answer, in the intake record: *is the stated fix the right substrate, or does it treat a symptom —
+   could a different layer (config, service, daemon, schema) solve it better?*
 
-A ticket naming no mechanism has nothing to build yet, and that absence is the finding. Stricter,
-never looser — see the failure mode below.
+   `Prescription checked: <path> — owns the concern`
+   `Prescription checked: <path> — better owner: <path>`
+
+A path on its own would prove only that a file was opened, and an unopened file is not what fails
+this stage. A ticket naming no mechanism has nothing to build yet, and that absence is the finding.
+Stricter, never looser.
 
 Anchor: `neomjs/neo#18460` → `#18473`, dropped after three review cycles. Premise real, ticket hours
-old, prescription wrong; one read of `src/controller/Component.mjs` would have shown it.
+old, prescription wrong — with `src/controller/Component.mjs` one open away the whole time. What
+survived three cycles was not an unread file but an unasked question.
 
 ## The drift probe
 
@@ -57,7 +64,13 @@ ticket whose surface nobody touched. The probe measures what the gate actually c
 Every input above is externally checkable — session identity, the issue's GitHub author, `git log`.
 The moment an exemption rests on *"I judged this ticket still valid"*, the carve has become the
 loophole it was written to replace: **a gate you can talk yourself out of is not a gate.** If you
-find yourself adding a judgment call, that is the signal to run the full workflow.
+find yourself adding a judgment call *that lets you skip something*, that is the signal to run the
+full workflow.
+
+Stage 2's comparison is the other kind, and the distinction is the direction it points. A judgment
+that widens the exemption is the loophole; a judgment the gate obliges you to make and write down is
+the gate doing its work. The check is not whether an opinion is involved — it is whether skipping
+leaves a visible hole. An unanswered stage 2 does.
 
 ## Same-session is not the same as same-context
 
