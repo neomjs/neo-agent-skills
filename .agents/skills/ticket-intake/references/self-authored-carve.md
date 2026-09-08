@@ -8,8 +8,28 @@ learning you may skip the gate costs ~1KB rather than the 31KB workflow it may r
 | What you hold | Action |
 |---|---|
 | Neither artifact nor reasoning — **another agent authored it** | **Full gate.** Unchanged, and the majority case. This is what intake is for. |
-| Artifact **and** reasoning — **you authored it this session** | **Exempt.** `ticket-create`'s six-stage chain ran in this same context window. |
+| Artifact **and** reasoning — **you authored it this session** | **Exempt, except stage 2** — see below. `ticket-create`'s six-stage chain ran in this same context window. |
 | Artifact but not reasoning — **you authored it in an earlier session** | **Drift probe below.** Full gate only if it fires. |
+
+## Stage 2 is never exempt
+
+The exemption rests on the chain having run in this context window. That holds for every stage testing
+facts about the codebase. It **inverts** for stage 2, **Prescription**: that stage challenges the fix
+*you* chose, so "the chain ran in this same context" means it was run by the author of the thing under
+challenge. Same-session authorship removes stage 2's independence rather than supplying it.
+
+This stays a gate rather than a judgment because it discharges as a **read, not an opinion**:
+
+1. Name the mechanism the ticket prescribes — the class, module or layer you would subclass, extend,
+   or place beside.
+2. Open it.
+3. Cite it: `Prescription checked: <path>`.
+
+A ticket naming no mechanism has nothing to build yet, and that absence is the finding. Stricter,
+never looser — see the failure mode below.
+
+Anchor: `neomjs/neo#18460` → `#18473`, dropped after three review cycles. Premise real, ticket hours
+old, prescription wrong; one read of `src/controller/Component.mjs` would have shown it.
 
 ## The drift probe
 
