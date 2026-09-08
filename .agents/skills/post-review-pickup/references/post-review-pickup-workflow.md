@@ -97,9 +97,12 @@ cloud mode uses `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]`.
   unclaimed pickup must pass `pre-review-intake-lane-gate.md` at review-start;
 - assigned issues and your own PR follow-ups;
 - recent `[lane-claim]` / `[lane-override]` A2A for collision state;
-- open unassigned lanes, excluding `-label:not-code-ready -label:epic`;
+- the repo's **open epics and milestones** as the direction frame — not claimable,
+  but a candidate running *against* one is not a lane;
+- open unassigned lanes, excluding `-label:epic`;
 - scan **comments and prior-PR closure**, not just the body — a not-ready state
-  usually hides there. Mark it `not-code-ready` rather than re-surveying it.
+  usually hides there. Record a `blocked_by` edge rather than re-surveying it; the
+  lane re-opens when that blocker closes, and the edge stays as provenance.
 
 ## 7. Deferring a known lane
 
