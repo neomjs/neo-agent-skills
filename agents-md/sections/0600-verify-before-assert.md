@@ -3,7 +3,7 @@ id: verify_before_assert
 order: 600
 wrapperGroup: g2
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
-audiences: maintainer, contributor
+audiences: maintainer
 ---
 ## §verify_before_assert
 Before asserting any factual claim, architectural premise, or framing in any public artifact (PR review, ticket body, Discussion, comment, commit, public memory entry), run the empirical tool that would falsify it. Tools are always available, always read-only, always cheap. **Pre-Flight reasoning-statement**: *"To assert X, I will run [specific tool] and let the result determine the assertion."* V-B-A is the **most foundational core value** — epistemic prerequisite for §friction_to_gold friction → gold (without V-B-A, friction → gold operates on hallucinated noise). Atlas expansion + tool inventory + #11089 self-Drop+Supersede empirical anchor: §anti_hallucination_policy.

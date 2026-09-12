@@ -2,10 +2,14 @@
 /** @summary Mutation-sensitive contract checks for the AGENTS.md generator. */
 
 import assert                                      from 'node:assert/strict';
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {execFileSync}                              from 'node:child_process';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                    from 'node:os';
-import {join}                                      from 'node:path';
-import {PER_FILE_LIMIT_BYTES, assemble, generate, parseSection, run} from './generate-agents-md.mjs';
+import {dirname, join}                             from 'node:path';
+import {fileURLToPath}                             from 'node:url';
+import {PER_FILE_LIMIT_BYTES, assemble, generate, parseSection, readSupported, run} from './generate-agents-md.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 const fixtures = [];
 
@@ -175,6 +179,114 @@ function capture(argv) {
     // Every gate the engine DOES keep must still carry its own number.
     [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(n =>
         assert.ok(engine.includes(`\n${n}. `), `engine keeps gate ${n} at its declared number`));
+}
+
+// ── The REAL variant matrix: five repositories × two audiences ──────────────────────────────────
+// Fixtures prove the rendering rules; this proves the shipped source actually emits every variant
+// within budget. A generator whose fixtures all pass and whose real output breaches is the failure
+// this file exists to make impossible.
+{
+    const {audiences, repos} = readSupported();
+
+    assert.equal(repos.size, 5, 'the source declares all five consumer repositories');
+    assert.equal(audiences.size, 2, 'and both audiences');
+
+    for (const repo of repos) {
+        for (const audience of audiences) {
+            const {bytes, text} = generate({audience, repo});
+
+            assert.ok(bytes > 0, `${repo}/${audience} emits something`);
+            assert.ok(bytes <= PER_FILE_LIMIT_BYTES,
+                `${repo}/${audience} is ${bytes} B, over the ${PER_FILE_LIMIT_BYTES} B budget`);
+            assert.match(text, /^# AI Agent Per-Turn Operational Mandates/, `${repo}/${audience} keeps the preamble`);
+            assert.ok(!text.includes('TODO'), `${repo}/${audience} ships no undecided declaration`);
+        }
+    }
+
+    // Applicability, asserted on the real output rather than on the declarations that produced it.
+    const GATE = /No AiConfig work without reading ADR-0019/;
+
+    assert.match(generate({audience: 'maintainer', repo: 'neo-agent-brain'}).text, GATE,
+        'the AiConfig gate ships where its governed surface lives');
+
+    for (const repo of ['neo', 'neo-agent-skills', 'neo-agent-institution', 'devindex']) {
+        assert.doesNotMatch(generate({audience: 'maintainer', repo}).text, GATE,
+            `${repo} does not carry a gate governing a surface it does not have`);
+    }
+}
+
+// ── Contributor output carries no internal-only mandate ─────────────────────────────────────────
+// Every one of these names a tool or surface a fork contributor cannot reach. Asserted against the
+// REAL contributor variants, because the leak was a declaration mistake and a fixture cannot catch
+// a mistake in the declarations. Found by @neo-gpt in review.
+{
+    const forbidden = [
+        [/create_issue/,        'the internal ticket-creation tool'],
+        [/query_raw_memories/,  'a Memory Core query'],
+        [/query_summaries/,     'a Memory Core query'],
+        [/add_memory/,          'a Memory Core write'],
+        [/add_message/,         'the A2A mailbox'],
+        [/ask_knowledge_base/,  'the internal Knowledge Base']
+    ];
+
+    for (const repo of readSupported().repos) {
+        const text = generate({audience: 'contributor', repo}).text;
+
+        for (const [pattern, what] of forbidden) {
+            assert.doesNotMatch(text, pattern, `${repo}/contributor must not mandate ${what}`);
+        }
+    }
+
+    // …while keeping the guidance that DOES apply to a fork.
+    const contributor = generate({audience: 'contributor', repo: 'neo'}).text;
+
+    assert.match(contributor, /§verify_before_assert/, 'verify-before-assert still reaches contributors');
+    assert.match(contributor, /§pre_commit_gates/,     'and so does the commit-completeness gate');
+    assert.match(contributor, /JSDoc/,                 'including the documentation requirement');
+}
+
+// ── The packed artifact actually ships the generator ────────────────────────────────────────────
+// `npm pack` respects `files`; a script absent from it is a feature that exists only in this
+// checkout. An existing binary runs as the control, so a failure here means THIS entry, not the
+// packing.
+{
+    const distribution = mkdtempSync(join(tmpdir(), 'agents-md-pack-'));
+
+    fixtures.push(distribution);
+
+    const root     = join(here, '..'),
+          packDir  = join(distribution, 'pack'),
+          consumer = join(distribution, 'consumer'),
+          npmEnv   = {...process.env, npm_config_cache: join(distribution, 'npm-cache')};
+
+    mkdirSync(packDir,  {recursive: true});
+    mkdirSync(consumer, {recursive: true});
+
+    const packed  = JSON.parse(execFileSync('npm', ['pack', '--pack-destination', packDir, '--json'],
+              {cwd: root, encoding: 'utf8', env: npmEnv})),
+          tarball = join(packDir, packed[0].filename);
+
+    writeFileSync(join(consumer, 'package.json'), JSON.stringify({name: 'agents-md-consumer', private: true}, null, 2));
+    execFileSync('npm', ['install', '--ignore-scripts', '--package-lock=false', '--no-save', tarball],
+        {cwd: consumer, encoding: 'utf8', env: npmEnv});
+
+    const binDir  = join(consumer, 'node_modules', '.bin'),
+          control = join(binDir, 'neo-agent-skills-substrate-size'),
+          bin     = join(binDir, 'neo-agent-skills-agents-md'),
+          out     = join(consumer, 'AGENTS.md');
+
+    assert.ok(existsSync(control), 'control: an already-shipped binary is installed, so packing works');
+    assert.ok(existsSync(bin),     'the generator is registered as a consumer binary');
+
+    execFileSync(process.execPath, [bin, '--repo', 'neo', '--audience', 'maintainer', '--out', out],
+        {cwd: consumer, encoding: 'utf8'});
+
+    const emitted = readFileSync(out, 'utf8');
+
+    assert.match(emitted, /^# AI Agent Per-Turn Operational Mandates/,
+        'the PACKED artifact emits a real variant — `agents-md/` shipped with it');
+    assert.doesNotMatch(emitted, /No AiConfig work without reading ADR-0019/,
+        'and the packed source carries the same declarations, not a stale copy');
 }
 
 // ── CLI contract ────────────────────────────────────────────────────────────────────────────────

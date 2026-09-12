@@ -2,7 +2,7 @@
 id: pre_commit_gates
 order: 500
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
-audiences: maintainer, contributor
+audiences: maintainer
 ---
 ## §pre_commit_gates
 For any actionable request modifying the repository, you **MUST** pass two critical gating protocols *before* executing `git commit`.

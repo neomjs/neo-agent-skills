@@ -152,6 +152,25 @@ export function assemble({audience, preamble, repo, sections}) {
 }
 
 /**
+ * @summary Every repository and audience the source declares, derived rather than listed.
+ *
+ * The declarations ARE the supported set: a hardcoded list would be a second place to update and a
+ * silent way for the two to disagree. Used to refuse unknown input BEFORE any output is produced —
+ * without it a typo emits the preamble alone, reports success, and overwrites the destination file
+ * it was pointed at. Found by @neo-gpt in review.
+ * @param {String} [root=sourceRoot]
+ * @returns {{audiences: Set<String>, repos: Set<String>}}
+ */
+export function readSupported(root = sourceRoot) {
+    const sections = readSections(root);
+
+    return {
+        audiences: new Set(sections.flatMap(section => section.audiences)),
+        repos    : new Set(sections.flatMap(section => section.repos))
+    }
+}
+
+/**
  * @summary Emits one repository/audience variant.
  * @param {Object} options
  * @param {String} options.audience
@@ -213,8 +232,24 @@ export function run(argv = process.argv.slice(2), {
         return 1
     }
 
-    if (!['contributor', 'maintainer'].includes(audience)) {
-        error(`generate-agents-md: --audience must be maintainer or contributor, received ${audience}`);
+    let supported;
+
+    try {
+        supported = readSupported(root)
+    } catch (cause) {
+        error(`generate-agents-md: ${cause.message}`);
+        return 1
+    }
+
+    // Refused BEFORE `generate`, so an unknown repository never reaches the write. A filter that
+    // matches nothing is not an empty variant, it is a question the source cannot answer.
+    if (!supported.repos.has(repo)) {
+        error(`generate-agents-md: no section declares the repository "${repo}". Declared: ${[...supported.repos].sort().join(', ')}`);
+        return 1
+    }
+
+    if (!supported.audiences.has(audience)) {
+        error(`generate-agents-md: no section declares the audience "${audience}". Declared: ${[...supported.audiences].sort().join(', ')}`);
         return 1
     }
 
