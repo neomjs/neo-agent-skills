@@ -55,6 +55,9 @@ jobs:
       - name: Substrate budget contract and packed CLI
         run: node scripts/test-substrate-size.mjs
 
+      - name: AGENTS.md generator contract, variant matrix and packed CLI
+        run: node scripts/test-generate-agents-md.mjs
+
       # Wired HERE as well as in `package.json#test`, because this job runs each suite BY NAME
       # rather than through `npm test`: a contract added to the package script alone would still
       # never be selected here, which is exactly how the PR-body contract shipped unexecuted.
