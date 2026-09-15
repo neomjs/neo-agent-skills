@@ -61,7 +61,10 @@ export function validateReusablePrBaseline(source) {
               ['required_base default', /^      required_base:\n[\s\S]*?^        default: dev\n/m],
               ['PR-base non-PR refusal', /github\.event_name != 'pull_request'/, prBaseJob],
               ['base mismatch refusal', /github\.event\.pull_request\.base\.ref != inputs\.required_base/, prBaseJob],
-              ['caller checkout', /uses: actions\/checkout@v4/, skillsJob],
+              // `@v\d+` and not a bare `checkout`: the contract is that the job checks out the
+              // caller, so it must survive a major bump — but a version-free match would also
+              // accept a commented-out line or another action whose name contains the word.
+              ['caller checkout', /uses: actions\/checkout@v\d+/, skillsJob],
               ['Node input', /node-version: \$\{\{ inputs\.node_version \}\}/],
               ['lockfile install', /run: npm ci/, skillsJob],
               ['materializer check', /run: npx --no-install neo-agent-skills-materialize --check/, skillsJob],
@@ -262,8 +265,14 @@ expectMutationFailure('Skills job', source,
     value => value.replace('  skills-materialized:', '  removed-skills:'),
     'missing Skills job id');
 expectMutationFailure('caller checkout', source,
-    value => value.replace('      - uses: actions/checkout@v4', '      - uses: actions/checkout@v4\n        with:\n          repository: neomjs/neo-agent-skills'),
+    value => value.replace(/( +- uses: actions\/checkout@v\d+)/, '$1\n        with:\n          repository: neomjs/neo-agent-skills'),
     'checkout repository override present');
+// The negative half of the `caller checkout` assertion, which nothing covered: with the version
+// loosened to any major, a regex that matched too much would still pass the canonical check and
+// every bump. Deleting the step is the only thing that proves the assertion can still fail.
+expectMutationFailure('caller checkout removed', source,
+    value => value.replace(/\n +- uses: actions\/checkout@v\d+\n/, '\n'),
+    'missing caller checkout');
 expectMutationFailure('materializer command', source,
     value => value.replace('neo-agent-skills-materialize --check', 'neo-agent-skills-materialize'),
     'missing materializer check');
@@ -312,9 +321,11 @@ expectMutationFailure('substrate non-PR refusal', source,
         '      # The head tree'),
     'missing substrate non-PR refusal');
 expectMutationFailure('substrate caller head', source,
+    // The trailing context disambiguates which job's `ref:` block is dropped; only the action's
+    // major is loosened, so the arm survives a bump without losing that precision.
     value => value.replace(
-        '        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n\n      - uses: actions/setup-node@v4\n        with:\n          node-version: ${{ inputs.node_version }}\n\n      # The guard runs from runner.temp',
-        '\n      - uses: actions/setup-node@v4\n        with:\n          node-version: ${{ inputs.node_version }}\n\n      # The guard runs from runner.temp'),
+        /        with:\n          ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\n\n(      - uses: actions\/setup-node@v\d+\n        with:\n          node-version: \$\{\{ inputs\.node_version \}\}\n\n      # The guard runs from runner\.temp)/,
+        '\n$1'),
     'missing substrate caller head');
 expectMutationFailure('substrate runner isolation', source,
     value => value.replace(/\$\{\{ runner\.temp \}\}\/neo-agent-skills-substrate-size/g, '${{ github.workspace }}/guard'),
@@ -388,7 +399,9 @@ expectMutationFailure('PR-body mutable install', source,
     'PR-body guard install is not pinned to an exact version');
 
 expectMutationFailure('PR-body author boundary dropped from one step', source,
-    value => value.replace("        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}\n        uses: actions/github-script@v7", '        uses: actions/github-script@v7'),
+    value => value.replace(
+        /        if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\) \|\| contains\(github\.event\.pull_request\.labels\.\*\.name, 'ai'\) \}\}\n(        uses: actions\/github-script@v\d+)/,
+        '$1'),
     'PR-body author boundary missing from a judging step');
 expectMutationFailure('PR-body ai-label opt-in dropped', source,
     value => value.split(" || contains(github.event.pull_request.labels.*.name, 'ai')").join(''),
