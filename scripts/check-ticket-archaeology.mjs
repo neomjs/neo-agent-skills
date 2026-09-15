@@ -38,7 +38,7 @@ const
     CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})['"`]?\s*\[not-ticket-ref:\s*css-color\]/gi,
     CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-?color)?|border(?:-?color)?|color|fill(?:style)?|stroke(?:style)?)_?\s*(?::|=)\s*['"`]?)\s*$/i,
     CSS_COLOR_LENGTHS = new Set([3, 4, 6, 8]),
-    REF_ESCAPE_RE = /#(\d+)['"`)\]]{0,3}\s*\[not-ticket-ref:(?!\s*css-color\s*\])[^\]]*\]/g,
+    REF_ESCAPE_RE = /#(\d+)['"`)\]]{0,3}\s*\[not-ticket-ref:(?!\s*css-color\s*\])\s*[^\]\s][^\]]*\]/g,
     ANY_TYPED_ESCAPE_RE = /\[not-ticket-ref:[^\]]*\]/gi,
     LEGACY_ESCAPE_RE = /\bticket-ref-ok\b/i,
     __filename = fileURLToPath(import.meta.url);
@@ -59,8 +59,10 @@ function escapedColorOffsets(comment) {
 
 /**
  * @summary Numeric hashes carrying a typed escape whose reason is not `css-color`.
- * The author declares this number deliberate; `css-color` is excluded so a colour marker cannot
- * relabel a short ticket, which `escapedColorOffsets` alone decides.
+ * The author declares this number deliberate, so the reason must carry at least one non-blank
+ * character: an empty one declares nothing and costs exactly what the legacy marker cost.
+ * `css-color` is excluded so a colour marker cannot relabel a short ticket, which
+ * `escapedColorOffsets` alone decides.
  */
 function escapedRefOffsets(comment) {
     const offsets = new Set();

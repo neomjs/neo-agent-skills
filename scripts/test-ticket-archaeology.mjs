@@ -113,6 +113,10 @@ assert.deepEqual(hitLines('// Pre-push branch-discipline check (#11133) [not-tic
     'the marker binds through a closing paren, as the color form binds through a closing quote');
 assert.deepEqual(hitLines('// see #16538 [not-ticket-ref: the PR title this fixture samples]'), [],
     'a free-text reason is accepted: the guard requires a justification, not a vocabulary');
+assert.deepEqual(hitLines('// see #11133 [not-ticket-ref: ]'), [1],
+    'an empty reason declares nothing and costs what the legacy marker cost: it must not bind');
+assert.deepEqual(hitLines('// see #11133 [not-ticket-ref:]'), [1], 'no reason at all cannot bind');
+assert.deepEqual(hitLines('// see #11133 [not-ticket-ref:    ]'), [1], 'a whitespace-only reason cannot bind');
 assert.deepEqual(hitLines('// see #11133'), [1],
     'the same reference without a marker stays a tracking reference');
 assert.deepEqual(hitLines('// see #11133 ticket-ref-ok: implementing ticket'), [1],
