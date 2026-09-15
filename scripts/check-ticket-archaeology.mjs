@@ -115,8 +115,8 @@ export function findArchaeology(content) {
     const hits = [];
 
     extractJavaScriptComments(content).forEach(row => {
-        const comment = row.text,
-              kinds   = new Set(),
+        const comment  = row.text,
+              kinds    = new Set(),
               colors   = colorContextOffsets(comment),
               entities = htmlEntityOffsets(comment),
               escaped  = escapedColorOffsets(comment),
