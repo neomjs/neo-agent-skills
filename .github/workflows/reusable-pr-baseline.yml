@@ -57,9 +57,9 @@ jobs:
     steps:
       # With no repository override, checkout resolves the caller repository. The reusable workflow
       # must inspect the consumer lockfile and projection, never its own source checkout.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm
@@ -79,12 +79,12 @@ jobs:
         run: exit 1
 
       - name: Checkout exact caller head
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
 
@@ -120,11 +120,11 @@ jobs:
       # The head tree is the whole input: this guard measures what a seat loads at this commit and
       # compares nothing against the base, so it needs no history.
       - name: Checkout exact caller head
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
 
@@ -169,7 +169,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: exit 1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
 
@@ -201,7 +201,7 @@ jobs:
       # needs these to become.
       - name: Read the live pull-request body
         if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           BODY_FILE: ${{ runner.temp }}/pr-body.md
         with:
