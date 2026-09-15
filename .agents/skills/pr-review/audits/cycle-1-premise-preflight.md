@@ -20,7 +20,10 @@ If any trigger below fires, default to Drop+Supersede framing: one close/restart
 | Anti-pattern instantiation | Does the change instantiate a pattern Neo doctrine forbids, such as named-maintainer orchestrator/worker mapping, framework-category drift, or banned shell editing? |
 | Strategic-misalignment | Does the work conflict with active roadmap direction, reserved lane ownership, deprecated subsystem direction, or an operator halt? |
 | Better-existing-substrate | Does existing code, Memory Core, or KB evidence already solve the problem, making the PR reinvention? |
-| Source-ticket stale/currency-risk | Is the linked ticket older than the stale workflow threshold, stale, `no auto close`, or plausibly superseded, and did the reviewer check newer tickets, newer PRs, merged PRs without close keywords, active epics, recent Discussions, and current source/docs/tests before accepting it as authority? |
+| Source-ticket stale/currency-risk | Is the linked ticket stale, `no auto close`, or plausibly superseded, and did the reviewer prove its authority is still current rather than assume it? Procedure: §Source-Ticket Currency Rule. |
+| Graduated-decision reversal | Does the diff amend or reverse a graduated decision — an ADR election, a Discussion-ratified target, a merged authority model — without a reopened graduation or consensus record? Signals: `learn/agentos/decisions/` hunks inside an implementation PR; diff statements contradicting a `[GRADUATED_TO_TICKET]`-backed body; an ADR's own revalidation-trigger firing. |
+
+Graduated-decision reversal checks for the **record**, not the change. An ADR or Discussion amendment carrying a reopened graduation or consensus record passes the row; elections are amendable through reopened authority, and this is not an ADR-edit ban.
 
 ## Source-Ticket Currency Rule
 
@@ -44,6 +47,8 @@ The cost is normalizing process violations as iteratable rather than abandonable
 ## Empirical Anchor
 
 PR #11083, closed unmerged on 2026-05-10, is the anchor. Review comment `IC_kwDODSospM8AAAABBxjTZw` documented five iterative Required Actions, while RA1 pointed at upstream Discussion graduation. That mismatch between RA shape and Request Changes framing is what this audit prevents.
+
+Graduated-decision reversal is anchored on PR #16188. Nominally a config-default change, its 28-file surface amended an ADR to elect "No host-edge Orchestrator runs after the cut" — reversing a two-role authority model ratified the same day and merged at 13:08Z. It was approved at 21:15Z and merged at 21:16Z: one minute, by a review that validated diff internals and CI and never ran the premise against the authority the diff was reversing. A reviewer with a green checklist is exactly who this row is for.
 
 ## Disposition
 
