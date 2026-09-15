@@ -91,8 +91,8 @@ assert.deepEqual(hitLines('// defaults to #000000'), [], 'a leading zero is neve
 assert.deepEqual(hitLines('// see #16538'), [1], 'a five-digit ref in prose stays a ticket');
 assert.deepEqual(hitLines("// 'see #16538'"), [1], 'a quoted ref in prose stays a ticket');
 assert.deepEqual(hitLines('// #9473'), [1], 'a bare four-digit ref stays a ticket');
-assert.deepEqual(hitLines('// tracked in #123456'), [1], 'a six-digit number outside colour context stays a ticket');
-assert.deepEqual(hitLines("// issue='#9473'"), [1], 'a quoted assignment to a non-colour name stays a ticket');
+assert.deepEqual(hitLines('// tracked in #123456'), [1], 'a six-digit number outside color context stays a ticket');
+assert.deepEqual(hitLines("// issue='#9473'"), [1], 'a quoted assignment to a non-color name stays a ticket');
 
 assert.deepEqual(hitLines('// ref #14 ticket-ref-ok: implementation history'), [1],
     'a legacy escape marker must not suppress a real tracking reference');
