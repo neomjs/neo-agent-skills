@@ -232,7 +232,14 @@ if (/context\.payload\.pull_request\.body/.test(prBodyCode)) failures.push('PR-b
     return failures
 }
 
-/** @summary Requires one mutation to violate the named semantic contract. */
+/**
+ * @summary Requires one mutation to both CHANGE the source and violate the named semantic contract.
+ *
+ * The `notEqual` is the half a caller cannot see: a `mutate` whose target no longer exists returns
+ * the source untouched, and without it the arm would report on an unmutated fixture. Two reviewers
+ * independently read the call sites, inferred that a stale mutation passes silently, and proposed
+ * adding exactly this guard — so the assertion is named here rather than left to be rediscovered.
+ */
 function expectMutationFailure(label, source, mutate, expectedFailure) {
     const mutated  = mutate(source),
           failures = validateReusablePrBaseline(mutated);
