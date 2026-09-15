@@ -34,8 +34,10 @@ const
         /\b(?:earlier|previous|prior)\s+rounds?\b/i
     ]),
     NUMERIC_REF_RE = /#(\d+)(?![A-Za-z0-9_])/g,
+    HTML_ENTITY_RE = /&#\d+;/g,
     CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})['"`]?\s*\[not-ticket-ref:\s*css-color\]/gi,
     CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-?color)?|border(?:-?color)?|color|fill(?:style)?|stroke(?:style)?)_?\s*(?::|=)\s*['"`]?)\s*$/i,
+    CSS_COLOR_LENGTHS = new Set([3, 4, 6, 8]),
     ANY_TYPED_ESCAPE_RE = /\[not-ticket-ref:[^\]]*\]/gi,
     LEGACY_ESCAPE_RE = /\bticket-ref-ok\b/i,
     __filename = fileURLToPath(import.meta.url);
@@ -47,6 +49,32 @@ function escapedColorOffsets(comment) {
     CSS_COLOR_ESCAPE_RE.lastIndex = 0;
     for (const match of comment.matchAll(CSS_COLOR_ESCAPE_RE)) {
         if (CSS_COLOR_CONTEXT_RE.test(comment.slice(Math.max(0, match.index - 48), match.index))) {
+            offsets.add(match.index)
+        }
+    }
+
+    return offsets
+}
+
+/** @summary Numeric hashes inside an HTML entity: the digits are a codepoint, never an issue number. */
+function htmlEntityOffsets(comment) {
+    const offsets = new Set();
+
+    HTML_ENTITY_RE.lastIndex = 0;
+    for (const match of comment.matchAll(HTML_ENTITY_RE)) {
+        offsets.add(match.index + 1)
+    }
+
+    return offsets
+}
+
+/** @summary Color-length numeric hashes directly after color syntax: colors, with or without the typed marker. */
+function colorContextOffsets(comment) {
+    const offsets = new Set();
+
+    NUMERIC_REF_RE.lastIndex = 0;
+    for (const match of comment.matchAll(NUMERIC_REF_RE)) {
+        if (CSS_COLOR_LENGTHS.has(match[1].length) && CSS_COLOR_CONTEXT_RE.test(comment.slice(Math.max(0, match.index - 48), match.index))) {
             offsets.add(match.index)
         }
     }
@@ -87,10 +115,12 @@ export function findArchaeology(content) {
     const hits = [];
 
     extractJavaScriptComments(content).forEach(row => {
-        const comment = row.text,
-              kinds   = new Set(),
-              escaped = escapedColorOffsets(comment),
-              markers = typedEscapeMarkers(comment);
+        const comment  = row.text,
+              kinds    = new Set(),
+              colors   = colorContextOffsets(comment),
+              entities = htmlEntityOffsets(comment),
+              escaped  = escapedColorOffsets(comment),
+              markers  = typedEscapeMarkers(comment);
 
         if (!comment) return;
 
@@ -100,7 +130,9 @@ export function findArchaeology(content) {
 
         NUMERIC_REF_RE.lastIndex = 0;
         for (const match of comment.matchAll(NUMERIC_REF_RE)) {
-            if (!escaped.has(match.index)) kinds.add('tracking-reference')
+            // A color in color syntax, a codepoint inside an HTML entity, or a number with a
+            // leading zero is never a ticket
+            if (!colors.has(match.index) && !entities.has(match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
         }
 
         if (kinds.size) hits.push({line: row.line, text: comment.trim(), kinds: [...kinds]})

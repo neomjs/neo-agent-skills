@@ -61,7 +61,11 @@ npx --no-install neo-agent-skills-ticket-archaeology --base origin/dev
 
 The guard scans every changed tracked `.mjs` file in full. Repository-local issue numbers of any
 length and review-history markers fail only in comments or JSDoc; executable strings remain valid.
-Ambiguous numeric CSS colors require the token-scoped `[not-ticket-ref: css-color]` marker. Consumer
+A numeric CSS color of 3, 4, 6 or 8 digits passes directly after color syntax (`color:`,
+`backgroundColor_=`, `fillStyle=`, `CSS color`), a number with a leading zero is never a ticket, and a
+numeric HTML entity (`&#39;`) is a codepoint rather than a reference;
+anywhere else a bare number stays a ref. The token-scoped `[not-ticket-ref: css-color]` marker is still
+accepted on such a color, and nowhere else. Consumer
 repositories call the stable `Source comment archaeology` job in
 `.github/workflows/reusable-pr-baseline.yml` through an immutable Skills revision. That job installs
 its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by

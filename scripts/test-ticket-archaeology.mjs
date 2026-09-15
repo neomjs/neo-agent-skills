@@ -64,6 +64,17 @@ assert.deepEqual(findArchaeology([
     '// theme token #1234ff'
 ].join('\n')), []);
 
+assert.deepEqual(hitLines("// publishes as <p>&#39;beta&#39;</p>"), [],
+    'a numeric HTML entity is a codepoint, not a ticket — the & before the # is the discriminator');
+assert.deepEqual(hitLines('// renders &#8212; between the columns'), [],
+    'an entity with nothing quoting it reads the same way');
+assert.deepEqual(hitLines("// ticket #14 explains why it publishes as &#39;beta&#39;"), [1],
+    'an entity on the line cannot hide a real reference beside it');
+assert.deepEqual(hitLines('// the hex form &#x27; needs no exemption'), [],
+    'control: a hex entity never matched the numeric rule to begin with');
+assert.deepEqual(hitLines('// see #39 for the entity work'), [1],
+    'control: the same digits without entity syntax stay a ticket');
+
 assert.deepEqual(hitLines('// CSS color #000000 [not-ticket-ref: css-color]'), [],
     'a typed marker exempts exactly one ambiguous numeric CSS token');
 assert.deepEqual(hitLines("// @member {String} backgroundColor_='#000000' [not-ticket-ref: css-color]"), [],
@@ -81,6 +92,18 @@ assert.deepEqual(hitLines("// issue='#9473' [not-ticket-ref: css-color]"), [1],
 assert.deepEqual(hitLines('// [not-ticket-ref: css-color]'), [1], 'an unused marker fails closed');
 assert.deepEqual(hitLines('// token #242'), [1], 'generic token wording cannot make a short ticket green');
 assert.deepEqual(hitLines('// theme #242'), [1], 'generic theme wording cannot make a short ticket green');
+
+assert.deepEqual(hitLines("// @member {String} backgroundColor_='#000000'"), [],
+    'color context needs no marker: a camelCase color property is a color');
+assert.deepEqual(hitLines('// borderColor="#111111"'), [], 'a quoted color assignment is a color without a marker');
+assert.deepEqual(hitLines('// fillStyle=`#123456`'), [], 'a canvas color property is a color without a marker');
+assert.deepEqual(hitLines('// CSS color #123456'), [], 'CSS color wording is color context without a marker');
+assert.deepEqual(hitLines('// defaults to #000000'), [], 'a leading zero is never a ticket number');
+assert.deepEqual(hitLines('// see #16538'), [1], 'a five-digit ref in prose stays a ticket');
+assert.deepEqual(hitLines("// 'see #16538'"), [1], 'a quoted ref in prose stays a ticket');
+assert.deepEqual(hitLines('// #9473'), [1], 'a bare four-digit ref stays a ticket');
+assert.deepEqual(hitLines('// tracked in #123456'), [1], 'a six-digit number outside color context stays a ticket');
+assert.deepEqual(hitLines("// issue='#9473'"), [1], 'a quoted assignment to a non-color name stays a ticket');
 
 assert.deepEqual(hitLines('// ref #14 ticket-ref-ok: implementation history'), [1],
     'a legacy escape marker must not suppress a real tracking reference');
