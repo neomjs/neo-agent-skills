@@ -1,7 +1,7 @@
 {
   "name": "neo-agent-skills",
   "version": "0.1.4",
-  "description": "The canonical agent skill substrate for the neomjs organization. Consumers depend on it; they never copy it.",
+  "description": "Install the workflow substrate a cross-model AI team actually runs on: ticket intake, PR review gates, lane coordination and guards, versioned as a package. The skills Neo.mjs maintainers load every session — materialized into your repo, not copied.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -48,9 +48,16 @@
     "generate-agents-md": "node scripts/generate-agents-md.mjs"
   },
   "keywords": [
-    "neo.mjs",
+    "neo-mjs",
     "agent-skills",
-    "agent-os"
+    "agent-os",
+    "ai-agents",
+    "agent-workflows",
+    "pr-review",
+    "code-review",
+    "lint-gates",
+    "multi-agent-systems",
+    "model-experience"
   ],
   "publishConfig": {
     "access": "public"
