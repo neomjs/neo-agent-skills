@@ -1,0 +1,31 @@
+# Version updates. Security updates are a separate surface that needs no config and already runs.
+#
+# MAJORS ARE INCLUDED BY NOT BEING EXCLUDED: Dependabot's default spans every SemVer level, and you
+# opt out with `ignore: [{update-types: ["version-update:semver-major"]}]`. The absence of that key
+# is deliberate — do not add one without changing the policy it encodes.
+#
+# GROUPED, because ungrouped daily updates open a PR per dependency and the queue stops being read.
+# `github-actions` is here because nothing else updates the pinned action versions — and this is the
+# repository whose workflows every other one calls.
+#
+# NO EXCLUSIONS, unlike the Engine's copy: it carves out `monaco-editor` and `neo-agent-skills`, and
+# this repository depends on neither. A pattern naming an absent package reads as a governing rule
+# while governing nothing.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: daily
+    groups:
+      all-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+    groups:
+      actions:
+        patterns: ["*"]
