@@ -38,6 +38,7 @@ const
     CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})['"`]?\s*\[not-ticket-ref:\s*css-color\]/gi,
     CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-?color)?|border(?:-?color)?|color|fill(?:style)?|stroke(?:style)?)_?\s*(?::|=)\s*['"`]?)\s*$/i,
     CSS_COLOR_LENGTHS = new Set([3, 4, 6, 8]),
+    REF_ESCAPE_RE = /#(\d+)['"`)\]]{0,3}\s*\[not-ticket-ref:(?!\s*css-color\s*\])\s*[^\]\s][^\]]*\]/g,
     ANY_TYPED_ESCAPE_RE = /\[not-ticket-ref:[^\]]*\]/gi,
     LEGACY_ESCAPE_RE = /\bticket-ref-ok\b/i,
     __filename = fileURLToPath(import.meta.url);
@@ -52,6 +53,22 @@ function escapedColorOffsets(comment) {
             offsets.add(match.index)
         }
     }
+
+    return offsets
+}
+
+/**
+ * @summary Numeric hashes carrying a typed escape whose reason is not `css-color`.
+ * The author declares this number deliberate, so the reason must carry at least one non-blank
+ * character: an empty one declares nothing and costs exactly what the legacy marker cost.
+ * `css-color` is excluded so a colour marker cannot relabel a short ticket, which
+ * `escapedColorOffsets` alone decides.
+ */
+function escapedRefOffsets(comment) {
+    const offsets = new Set();
+
+    REF_ESCAPE_RE.lastIndex = 0;
+    for (const match of comment.matchAll(REF_ESCAPE_RE)) offsets.add(match.index);
 
     return offsets
 }
@@ -120,19 +137,20 @@ export function findArchaeology(content) {
               colors   = colorContextOffsets(comment),
               entities = htmlEntityOffsets(comment),
               escaped  = escapedColorOffsets(comment),
+              refs     = escapedRefOffsets(comment),
               markers  = typedEscapeMarkers(comment);
 
         if (!comment) return;
 
         if (NAMED_TRACKING_PATTERNS.some(pattern => pattern.test(comment))) kinds.add('tracking-reference');
         if (REVIEW_ARCHAEOLOGY_PATTERNS.some(pattern => pattern.test(comment))) kinds.add('review-archaeology');
-        if (LEGACY_ESCAPE_RE.test(comment) || markers.length !== escaped.size) kinds.add('invalid-escape');
+        if (LEGACY_ESCAPE_RE.test(comment) || markers.length !== escaped.size + refs.size) kinds.add('invalid-escape');
 
         NUMERIC_REF_RE.lastIndex = 0;
         for (const match of comment.matchAll(NUMERIC_REF_RE)) {
             // A color in color syntax, a codepoint inside an HTML entity, or a number with a
             // leading zero is never a ticket
-            if (!colors.has(match.index) && !entities.has(match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
+            if (!colors.has(match.index) && !entities.has(match.index) && !refs.has(match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
         }
 
         if (kinds.size) hits.push({line: row.line, text: comment.trim(), kinds: [...kinds]})

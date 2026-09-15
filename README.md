@@ -64,9 +64,10 @@ length and review-history markers fail only in comments or JSDoc; executable str
 A numeric CSS color of 3, 4, 6 or 8 digits passes directly after color syntax (`color:`,
 `backgroundColor_=`, `fillStyle=`, `CSS color`), a number with a leading zero is never a ticket, and a
 numeric HTML entity (`&#39;`) is a codepoint rather than a reference;
-anywhere else a bare number stays a ref. The token-scoped `[not-ticket-ref: css-color]` marker is still
-accepted on such a color, and nowhere else. Consumer
-repositories call the stable `Source comment archaeology` job in
+anywhere else a bare number stays a ref. A token-scoped `[not-ticket-ref: …]` marker binds to the one
+token it follows: `css-color` on such a color, or any other non-blank reason on a numeric reference
+the author declares deliberate. A marker binding to neither, or carrying no reason, fails closed.
+Consumer repositories call the stable `Source comment archaeology` job in
 `.github/workflows/reusable-pr-baseline.yml` through an immutable Skills revision. That job installs
 its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by
 changing the caller lockfile or local binary.
