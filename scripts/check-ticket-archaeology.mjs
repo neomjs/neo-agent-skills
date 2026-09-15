@@ -34,6 +34,7 @@ const
         /\b(?:earlier|previous|prior)\s+rounds?\b/i
     ]),
     NUMERIC_REF_RE = /#(\d+)(?![A-Za-z0-9_])/g,
+    HTML_ENTITY_RE = /&#\d+;/g,
     CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})['"`]?\s*\[not-ticket-ref:\s*css-color\]/gi,
     CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-?color)?|border(?:-?color)?|color|fill(?:style)?|stroke(?:style)?)_?\s*(?::|=)\s*['"`]?)\s*$/i,
     CSS_COLOR_LENGTHS = new Set([3, 4, 6, 8]),
@@ -50,6 +51,18 @@ function escapedColorOffsets(comment) {
         if (CSS_COLOR_CONTEXT_RE.test(comment.slice(Math.max(0, match.index - 48), match.index))) {
             offsets.add(match.index)
         }
+    }
+
+    return offsets
+}
+
+/** @summary Numeric hashes inside an HTML entity: the digits are a codepoint, never an issue number. */
+function htmlEntityOffsets(comment) {
+    const offsets = new Set();
+
+    HTML_ENTITY_RE.lastIndex = 0;
+    for (const match of comment.matchAll(HTML_ENTITY_RE)) {
+        offsets.add(match.index + 1)
     }
 
     return offsets
@@ -104,9 +117,10 @@ export function findArchaeology(content) {
     extractJavaScriptComments(content).forEach(row => {
         const comment = row.text,
               kinds   = new Set(),
-              colors  = colorContextOffsets(comment),
-              escaped = escapedColorOffsets(comment),
-              markers = typedEscapeMarkers(comment);
+              colors   = colorContextOffsets(comment),
+              entities = htmlEntityOffsets(comment),
+              escaped  = escapedColorOffsets(comment),
+              markers  = typedEscapeMarkers(comment);
 
         if (!comment) return;
 
@@ -116,8 +130,9 @@ export function findArchaeology(content) {
 
         NUMERIC_REF_RE.lastIndex = 0;
         for (const match of comment.matchAll(NUMERIC_REF_RE)) {
-            // A color in color syntax, or a number with a leading zero, is never a ticket
-            if (!colors.has(match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
+            // A color in color syntax, a codepoint inside an HTML entity, or a number with a
+            // leading zero is never a ticket
+            if (!colors.has(match.index) && !entities.has(match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
         }
 
         if (kinds.size) hits.push({line: row.line, text: comment.trim(), kinds: [...kinds]})

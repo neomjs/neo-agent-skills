@@ -64,6 +64,17 @@ assert.deepEqual(findArchaeology([
     '// theme token #1234ff'
 ].join('\n')), []);
 
+assert.deepEqual(hitLines("// publishes as <p>&#39;beta&#39;</p>"), [],
+    'a numeric HTML entity is a codepoint, not a ticket — the & before the # is the discriminator');
+assert.deepEqual(hitLines('// renders &#8212; between the columns'), [],
+    'an entity with nothing quoting it reads the same way');
+assert.deepEqual(hitLines("// ticket #14 explains why it publishes as &#39;beta&#39;"), [1],
+    'an entity on the line cannot hide a real reference beside it');
+assert.deepEqual(hitLines('// the hex form &#x27; needs no exemption'), [],
+    'control: a hex entity never matched the numeric rule to begin with');
+assert.deepEqual(hitLines('// see #39 for the entity work'), [1],
+    'control: the same digits without entity syntax stay a ticket');
+
 assert.deepEqual(hitLines('// CSS color #000000 [not-ticket-ref: css-color]'), [],
     'a typed marker exempts exactly one ambiguous numeric CSS token');
 assert.deepEqual(hitLines("// @member {String} backgroundColor_='#000000' [not-ticket-ref: css-color]"), [],
