@@ -105,6 +105,30 @@ assert.deepEqual(hitLines('// #9473'), [1], 'a bare four-digit ref stays a ticke
 assert.deepEqual(hitLines('// tracked in #123456'), [1], 'a six-digit number outside color context stays a ticket');
 assert.deepEqual(hitLines("// issue='#9473'"), [1], 'a quoted assignment to a non-color name stays a ticket');
 
+// A typed marker binds to a REFERENCE as it binds to a color: the author declares, visibly and
+// greppably, that this number is deliberate. The reason text is not graded — only the binding is.
+assert.deepEqual(hitLines('// @see #11133 [not-ticket-ref: implementing ticket]'), [],
+    'a typed marker on the reference token excuses a deliberate reference');
+assert.deepEqual(hitLines('// Pre-push branch-discipline check (#11133) [not-ticket-ref: implementing ticket]'), [],
+    'the marker binds through a closing paren, as the color form binds through a closing quote');
+assert.deepEqual(hitLines('// see #16538 [not-ticket-ref: the PR title this fixture samples]'), [],
+    'a free-text reason is accepted: the guard requires a justification, not a vocabulary');
+assert.deepEqual(hitLines('// see #11133'), [1],
+    'the same reference without a marker stays a tracking reference');
+assert.deepEqual(hitLines('// see #11133 ticket-ref-ok: implementing ticket'), [1],
+    'the legacy form gains nothing: it carries no binding');
+assert.deepEqual(hitLines('// [not-ticket-ref: implementing ticket]'), [1],
+    'a reference marker binding to no token fails closed, as the color marker does');
+assert.deepEqual(hitLines('// "fix(build): bypass hooks (#11590)" [not-ticket-ref: illustrative PR-title sample]'), [],
+    'the binding survives a short run of closing punctuation between the token and the marker');
+assert.deepEqual(hitLines('// see #242 and some words [not-ticket-ref: nope]'), [1],
+    'prose between the token and the marker breaks the binding: adjacency is what makes it a declaration');
+assert.deepEqual(hitLines('// see #242 [not-ticket-ref: css-color]'), [1],
+    'the color reason never binds to a reference, so a color marker still cannot relabel a short ticket');
+
+assert.deepEqual(hitLines('// ticket #14 beside #11133 [not-ticket-ref: implementing ticket]'), [1],
+    'the marker excuses its own token only, never the row');
+
 assert.deepEqual(hitLines('// ref #14 ticket-ref-ok: implementation history'), [1],
     'a legacy escape marker must not suppress a real tracking reference');
 assert.deepEqual(hitLines('// ticket-ref-ok: stale escape'), [1], 'a legacy marker is itself invalid');
