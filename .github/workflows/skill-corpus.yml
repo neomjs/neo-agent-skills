@@ -22,13 +22,13 @@ jobs:
   corpus:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Full history: the net-growth arm compares this tree against the merge base, and a shallow
           # clone cannot reach it. The arm fails loudly rather than skipping when the base is absent.
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
 
