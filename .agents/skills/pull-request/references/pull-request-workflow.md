@@ -138,7 +138,7 @@ is why §1 asks you to say so rather than leave the step blank.
 
 ## 4. Pull Request Creation
 
-**Pre-open AC re-anchor:** re-read the LIVE ticket. Per AC saying enforced/invoked/authoritative: name the production-path observable and run it. A test injecting state proves the unit, not the AC.
+**Pre-open AC re-anchor:** re-read the LIVE ticket. Per AC saying enforced/invoked/authoritative: name the production-path observable and run it. A test injecting state proves the unit, not the AC. Diff touching a consumed surface (public method, config, MCP tool)? Re-read its Contract Ledger too: a row per surface the diff adds, every row still true of what ships.
 
 You MUST use the GitHub CLI to open a Pull Request targeting the `dev` branch.
 
