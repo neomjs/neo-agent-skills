@@ -21,9 +21,17 @@ export const DEFAULT_IGNORES = Object.freeze([
 ]);
 
 const
+    // The two named ref shapes, as SOURCE, so the detection patterns below and the escape pattern that
+    // excuses them are built from one spelling and cannot disagree about what a named ref looks like.
+    NAMED_WORD_REF_SOURCE = '\\b(?:issue|ticket|bug|PR|pull[ -]request|Epic|Discussion)\\s*(?:[:=]\\s*)?#?\\s*\\d+',
+    NAMED_ADR_REF_SOURCE  = '\\bADR[-\\s]?\\d+',
+    // Global, because these are matched PER TOKEN rather than tested against the whole comment. A
+    // boolean carries no position, and a typed escape is bound to the position of the ref it excuses —
+    // so while these were booleans, every named form was inescapable, and writing `Epic #1234` instead
+    // of `#1234` silently removed the author's only way to declare a reference deliberate.
     NAMED_TRACKING_PATTERNS = Object.freeze([
-        /\b(?:issue|ticket|bug|PR|pull[ -]request|Epic|Discussion)\s*(?:[:=]\s*)?#?\s*\d+\b/i,
-        /\bADR[-\s]?\d+\b/i
+        new RegExp(`${NAMED_WORD_REF_SOURCE}\\b`, 'gi'),
+        new RegExp(`${NAMED_ADR_REF_SOURCE}\\b`, 'gi')
     ]),
     REVIEW_ARCHAEOLOGY_PATTERNS = Object.freeze([
         /\bRA[-\s]?\d+\b/i,
@@ -38,7 +46,13 @@ const
     CSS_COLOR_ESCAPE_RE = /#(\d{3}|\d{4}|\d{6}|\d{8})['"`]?\s*\[not-ticket-ref:\s*css-color\]/gi,
     CSS_COLOR_CONTEXT_RE = /(?:\bCSS\s+color\b|\b(?:background(?:-?color)?|border(?:-?color)?|color|fill(?:style)?|stroke(?:style)?)_?\s*(?::|=)\s*['"`]?)\s*$/i,
     CSS_COLOR_LENGTHS = new Set([3, 4, 6, 8]),
-    REF_ESCAPE_RE = /#(\d+)['"`)\]]{0,3}\s*\[not-ticket-ref:(?!\s*css-color\s*\])\s*[^\]\s][^\]]*\]/g,
+    // A typed escape binds to the token before it, and the token may be any ref shape this guard
+    // detects — a bare `#N`, a named `Epic #N`, or an `ADR NNNN`, which carries no `#` at all. The
+    // earlier `#(\d+)` form is why an ADR reference could be reported and never excused.
+    REF_ESCAPE_RE = new RegExp(
+        `(?:${NAMED_WORD_REF_SOURCE}|${NAMED_ADR_REF_SOURCE}|#\\d+)['"\`)\\]]{0,3}\\s*\\[not-ticket-ref:(?!\\s*css-color\\s*\\])\\s*[^\\]\\s][^\\]]*\\]`,
+        'gi'
+    ),
     ANY_TYPED_ESCAPE_RE = /\[not-ticket-ref:[^\]]*\]/gi,
     LEGACY_ESCAPE_RE = /\bticket-ref-ok\b/i,
     __filename = fileURLToPath(import.meta.url);
@@ -64,13 +78,29 @@ function escapedColorOffsets(comment) {
  * `css-color` is excluded so a colour marker cannot relabel a short ticket, which
  * `escapedColorOffsets` alone decides.
  */
-function escapedRefOffsets(comment) {
-    const offsets = new Set();
+function escapedRefRanges(comment) {
+    const ranges = [];
 
     REF_ESCAPE_RE.lastIndex = 0;
-    for (const match of comment.matchAll(REF_ESCAPE_RE)) offsets.add(match.index);
+    for (const match of comment.matchAll(REF_ESCAPE_RE)) ranges.push([match.index, match.index + match[0].length]);
 
-    return offsets
+    return ranges
+}
+
+/**
+ * @summary Does a detected ref sit inside an escape that already excused it?
+ *
+ * RANGES rather than start offsets, because one escape now covers tokens its consumers index
+ * differently: the named branch reports `Epic #1234` at the `E`, the numeric loop reports the same ref
+ * at the `#`. Both fall inside the one escape, and a point comparison would excuse whichever consumer
+ * happened to agree with the escape's own start.
+ *
+ * @param {Array<Number[]>} ranges
+ * @param {Number} index
+ * @returns {Boolean}
+ */
+function withinEscape(ranges, index) {
+    return ranges.some(([start, end]) => index >= start && index < end)
 }
 
 /** @summary Numeric hashes inside an HTML entity: the digits are a codepoint, never an issue number. */
@@ -137,20 +167,29 @@ export function findArchaeology(content) {
               colors   = colorContextOffsets(comment),
               entities = htmlEntityOffsets(comment),
               escaped  = escapedColorOffsets(comment),
-              refs     = escapedRefOffsets(comment),
+              refs     = escapedRefRanges(comment),
               markers  = typedEscapeMarkers(comment);
 
         if (!comment) return;
 
-        if (NAMED_TRACKING_PATTERNS.some(pattern => pattern.test(comment))) kinds.add('tracking-reference');
+        // Per token, so an escape can excuse the ref it is bound to and only that one. A comment
+        // carrying an escaped ref AND a bare one still reports the bare one.
+        NAMED_TRACKING_PATTERNS.forEach(pattern => {
+            pattern.lastIndex = 0;
+
+            for (const match of comment.matchAll(pattern)) {
+                if (!withinEscape(refs, match.index)) kinds.add('tracking-reference')
+            }
+        });
+
         if (REVIEW_ARCHAEOLOGY_PATTERNS.some(pattern => pattern.test(comment))) kinds.add('review-archaeology');
-        if (LEGACY_ESCAPE_RE.test(comment) || markers.length !== escaped.size + refs.size) kinds.add('invalid-escape');
+        if (LEGACY_ESCAPE_RE.test(comment) || markers.length !== escaped.size + refs.length) kinds.add('invalid-escape');
 
         NUMERIC_REF_RE.lastIndex = 0;
         for (const match of comment.matchAll(NUMERIC_REF_RE)) {
             // A color in color syntax, a codepoint inside an HTML entity, or a number with a
             // leading zero is never a ticket
-            if (!colors.has(match.index) && !entities.has(match.index) && !refs.has(match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
+            if (!colors.has(match.index) && !entities.has(match.index) && !withinEscape(refs, match.index) && !match[1].startsWith('0')) kinds.add('tracking-reference')
         }
 
         if (kinds.size) hits.push({line: row.line, text: comment.trim(), kinds: [...kinds]})
