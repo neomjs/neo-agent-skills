@@ -130,6 +130,19 @@ assert.deepEqual(hitLines(`// Epic #1234 ${ESCAPE} and Epic #5678 without one`),
 assert.deepEqual(hitLines(`// #1234 ${ESCAPE} beside a bare #5678`), [1],
     'and the same holds for the bare form the escape already covered');
 
+// The marker's reason is free prose the author writes. An excused range reaching the closing bracket
+// would turn it into a place to hide references, which is the line-wide bypass the token scoping
+// exists to prevent — arriving through the one door an escape has to leave open.
+assert.deepEqual(hitLines('// #1234 [not-ticket-ref: supersedes #5678]'), [1],
+    'a ref written INSIDE the reason is still reported: the escape ends at its token');
+assert.deepEqual(hitLines('// #1234 [not-ticket-ref: see issue 5678]'), [1],
+    'and a named ref inside the reason is reported too');
+assert.deepEqual(hitLines(`// Epic #1234 [not-ticket-ref: supersedes Epic #5678]`), [1],
+    'the same holds when both the escaped token and the hidden one are named forms');
+
+assert.deepEqual(hitLines(`// #1234 [NOT-TICKET-REF: the contract this implements]`), [],
+    'the marker is matched case-insensitively, as ANY_TYPED_ESCAPE_RE already counted it');
+
 assert.deepEqual(hitLines("// @member {String} backgroundColor_='#000000'"), [],
     'color context needs no marker: a camelCase color property is a color');
 assert.deepEqual(hitLines('// borderColor="#111111"'), [], 'a quoted color assignment is a color without a marker');

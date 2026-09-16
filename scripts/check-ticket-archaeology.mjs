@@ -49,8 +49,12 @@ const
     // A typed escape binds to the token before it, and the token may be any ref shape this guard
     // detects — a bare `#N`, a named `Epic #N`, or an `ADR NNNN`, which carries no `#` at all. The
     // earlier `#(\d+)` form is why an ADR reference could be reported and never excused.
+    // The token is CAPTURED so the excused range can end where it ends. Spanning the whole match
+    // would put the marker's reason inside the range, and that reason is free prose the author
+    // writes — `#1234 [not-ticket-ref: supersedes #5678]` would then excuse `#5678` as well, which
+    // is the line-wide bypass this escape is scoped to prevent, arriving through the back door.
     REF_ESCAPE_RE = new RegExp(
-        `(?:${NAMED_WORD_REF_SOURCE}|${NAMED_ADR_REF_SOURCE}|#\\d+)['"\`)\\]]{0,3}\\s*\\[not-ticket-ref:(?!\\s*css-color\\s*\\])\\s*[^\\]\\s][^\\]]*\\]`,
+        `(${NAMED_WORD_REF_SOURCE}|${NAMED_ADR_REF_SOURCE}|#\\d+)['"\`)\\]]{0,3}\\s*\\[not-ticket-ref:(?!\\s*css-color\\s*\\])\\s*[^\\]\\s][^\\]]*\\]`,
         'gi'
     ),
     ANY_TYPED_ESCAPE_RE = /\[not-ticket-ref:[^\]]*\]/gi,
@@ -82,18 +86,25 @@ function escapedRefRanges(comment) {
     const ranges = [];
 
     REF_ESCAPE_RE.lastIndex = 0;
-    for (const match of comment.matchAll(REF_ESCAPE_RE)) ranges.push([match.index, match.index + match[0].length]);
+    // Ends at the TOKEN, never at the end of the match: the marker's reason is free prose, so a range
+    // covering it would excuse every ref the author happened to write inside the justification.
+    for (const match of comment.matchAll(REF_ESCAPE_RE)) ranges.push([match.index, match.index + match[1].length]);
 
     return ranges
 }
 
 /**
- * @summary Does a detected ref sit inside an escape that already excused it?
+ * @summary Does a detected ref sit inside an escaped TOKEN?
  *
- * RANGES rather than start offsets, because one escape now covers tokens its consumers index
+ * RANGES rather than start offsets, because one escape covers a token its consumers index
  * differently: the named branch reports `Epic #1234` at the `E`, the numeric loop reports the same ref
- * at the `#`. Both fall inside the one escape, and a point comparison would excuse whichever consumer
+ * at the `#`. Both fall inside the one token, and a point comparison would excuse whichever consumer
  * happened to agree with the escape's own start.
+ *
+ * The range spans the **token only**, never the marker that follows it. The marker's reason is free
+ * prose, so a range reaching the closing bracket would excuse any ref the author wrote inside the
+ * justification — `#1234 [not-ticket-ref: supersedes #5678]` excusing `#5678` too. That is the
+ * line-wide bypass this escape is scoped to prevent, arriving through the one door left open.
  *
  * @param {Array<Number[]>} ranges
  * @param {Number} index
