@@ -93,6 +93,56 @@ assert.deepEqual(hitLines('// [not-ticket-ref: css-color]'), [1], 'an unused mar
 assert.deepEqual(hitLines('// token #242'), [1], 'generic token wording cannot make a short ticket green');
 assert.deepEqual(hitLines('// theme #242'), [1], 'generic theme wording cannot make a short ticket green');
 
+// A typed escape binds to the token before it, and that token may be any ref shape this guard
+// detects. While the named patterns were whole-comment booleans they consulted no escape at all, so
+// naming the ref you cite — `Epic #1234` rather than `#1234` — removed your only way to declare it
+// deliberate, and on an `ADR NNNN` the attempt was counted as `invalid-escape` on top.
+const ESCAPE = '[not-ticket-ref: the contract this implements]';
+
+assert.deepEqual(hitLines([
+    `// issue #1234 ${ESCAPE}`,
+    `// Ticket #1234 ${ESCAPE}`,
+    `// PR #1234 ${ESCAPE}`,
+    `// pull request #1234 ${ESCAPE}`,
+    `// Epic #1234 ${ESCAPE}`,
+    `// Discussion #1234 ${ESCAPE}`,
+    `// ADR 0004 ${ESCAPE}`,
+    `// ADR-3 ${ESCAPE}`,
+    `// #1234 ${ESCAPE}`
+].join('\n')), [], 'every detected ref shape can carry the escape the failure message prescribes');
+
+assert.deepEqual(hitLines([
+    '// Epic #1234 groups it',
+    '// Discussion #1234 explored it',
+    '// ADR 0004 settled it'
+].join('\n')), [1, 2, 3], 'RED: the same refs without a marker are still reported');
+
+assert.deepEqual(findArchaeology('// Epic #1234 [not-ticket-ref: ]')[0].kinds.sort(),
+    ['invalid-escape', 'tracking-reference'],
+    'a blank reason declares nothing on a named ref, exactly as on a bare one');
+
+assert.deepEqual(findArchaeology(`// ADR 0004 ${ESCAPE}`), [],
+    'a valid escape on an ADR no longer manufactures an invalid-escape beside the reference');
+
+assert.deepEqual(hitLines(`// Epic #1234 ${ESCAPE} and Epic #5678 without one`), [1],
+    'the escape stays bound to ITS token: the unescaped ref on the same line is still reported');
+
+assert.deepEqual(hitLines(`// #1234 ${ESCAPE} beside a bare #5678`), [1],
+    'and the same holds for the bare form the escape already covered');
+
+// The marker's reason is free prose the author writes. An excused range reaching the closing bracket
+// would turn it into a place to hide references, which is the line-wide bypass the token scoping
+// exists to prevent — arriving through the one door an escape has to leave open.
+assert.deepEqual(hitLines('// #1234 [not-ticket-ref: supersedes #5678]'), [1],
+    'a ref written INSIDE the reason is still reported: the escape ends at its token');
+assert.deepEqual(hitLines('// #1234 [not-ticket-ref: see issue 5678]'), [1],
+    'and a named ref inside the reason is reported too');
+assert.deepEqual(hitLines(`// Epic #1234 [not-ticket-ref: supersedes Epic #5678]`), [1],
+    'the same holds when both the escaped token and the hidden one are named forms');
+
+assert.deepEqual(hitLines(`// #1234 [NOT-TICKET-REF: the contract this implements]`), [],
+    'the marker is matched case-insensitively, as ANY_TYPED_ESCAPE_RE already counted it');
+
 assert.deepEqual(hitLines("// @member {String} backgroundColor_='#000000'"), [],
     'color context needs no marker: a camelCase color property is a color');
 assert.deepEqual(hitLines('// borderColor="#111111"'), [], 'a quoted color assignment is a color without a marker');
