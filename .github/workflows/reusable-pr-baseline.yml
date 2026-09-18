@@ -194,6 +194,45 @@ jobs:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
         run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-npm-overrides"
 
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      # Every tracked file at the head is the input, not only the diff: a credential already on the base still
+      # fails, because it is one to revoke whichever pull request finds it.
+      - name: Checkout exact caller head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      # From runner.temp, like the substrate guard: a checked-out copy is the diff under review, so a pull request
+      # could relax the patterns it is judged by.
+      - name: Install immutable credential guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
+          SKILLS_VERSION: '0.1.10'
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      # Pinned to the checkout and given only `--all`: `git ls-files` there is the caller's whole tree, and a
+      # file list or another directory would scan less of it.
+      - name: Scan every tracked file for credential-shaped literals
+        working-directory: ${{ github.workspace }}
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
+        run: >-
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"
+          --all
+
   pr-body:
     name: PR body
     runs-on: ubuntu-latest
