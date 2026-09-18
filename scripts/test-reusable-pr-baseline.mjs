@@ -48,6 +48,7 @@ export function validateReusablePrBaseline(source) {
           skillsJob      = jobSource(source, 'skills-materialized'),
           archaeologyJob = jobSource(source, 'source-comment-archaeology'),
           substrateJob   = jobSource(source, 'substrate-size'),
+          overridesJob   = jobSource(source, 'npm-overrides'),
           prBodyJob      = jobSource(source, 'pr-body'),
           required = [
               ['workflow-call trigger', /^on:\n  workflow_call:\n/m],
@@ -98,7 +99,19 @@ export function validateReusablePrBaseline(source) {
               // (RA-2, PR #26). A suffix on a PATH value silently redirects; substring presence can
               // never express "and nothing follows".
               ['substrate measurement pinned to the caller workspace',
-                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, substrateJob]
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, substrateJob],
+              ['overrides job id', /^  npm-overrides:\n/m],
+              ['overrides stable name', /^    name: npm overrides\n/m],
+              ['overrides non-PR refusal', /github\.event_name != 'pull_request'/, overridesJob],
+              ['overrides caller head', /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m, overridesJob],
+              ['overrides isolated exact install',
+                  /npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/, overridesJob],
+              ['overrides exact package spec', /"neo-agent-skills@\$\{SKILLS_VERSION\}"/, overridesJob],
+              ['overrides isolated absolute bin',
+                  /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-npm-overrides"/, overridesJob],
+              // Anchored for the substrate pin's reason: a suffixed root is a different manifest.
+              ['overrides judged in the caller workspace',
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, overridesJob]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -146,6 +159,15 @@ export function validateReusablePrBaseline(source) {
     // point the measurement somewhere other than the caller head.
     if (/neo-agent-skills-substrate-size"[^\n]*\S/.test(substrateJob)) {
         failures.push('substrate guard invoked with arguments')
+    }
+
+    if (!overridesJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('overrides package version drift');
+    if ((overridesJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-npm-overrides\s*$/gm) || []).length !== 2) {
+        failures.push('missing overrides isolated runner root')
+    }
+    // Bare for the same reason: `--root` would judge a manifest other than the caller's.
+    if (/neo-agent-skills-npm-overrides"[^\n]*\S/.test(overridesJob)) {
+        failures.push('overrides guard invoked with arguments')
     }
 
 
@@ -388,6 +410,36 @@ expectMutationFailure('archaeology runner root — suffixed root', source,
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology',
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology-shadow'),
     'missing isolated runner root');
+
+// ── The npm-overrides job: the substrate job's isolation contract, restated for its own step ──────
+expectMutationFailure('overrides job removed', source,
+    value => value.replace('  npm-overrides:\n', '  removed-npm-overrides:\n'),
+    'missing overrides job id');
+expectMutationFailure('overrides package version', source,
+    value => value.replace(
+        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-npm-overrides\n          SKILLS_VERSION: '${pkg.version}'`,
+        "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides\n          SKILLS_VERSION: 'latest'"),
+    'overrides package version drift');
+expectMutationFailure('overrides isolated install', source,
+    value => value.replace(
+        /(      - name: Install immutable npm-overrides guard\n[\s\S]*?)          npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save\n          "neo-agent-skills@\$\{SKILLS_VERSION\}"/,
+        '$1          npm install "neo-agent-skills@${SKILLS_VERSION}"'),
+    'missing overrides isolated exact install');
+expectMutationFailure('overrides steered invocation', source,
+    value => value.replace(
+        'run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-npm-overrides"',
+        'run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-npm-overrides" --root docs'),
+    'overrides guard invoked with arguments');
+expectMutationFailure('overrides workspace pin — suffixed root', source,
+    value => value.replace(
+        /(      - name: Judge every override against the ranges its dependents declare\n        working-directory: \$\{\{ github\.workspace \}\})/,
+        '$1/docs'),
+    'missing overrides judged in the caller workspace');
+expectMutationFailure('overrides runner root — suffixed root', source,
+    value => value.replace(
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides',
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides-shadow'),
+    'missing overrides isolated runner root');
 
 
 expectMutationFailure('PR-body decorative live fetch', source,

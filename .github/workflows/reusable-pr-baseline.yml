@@ -96,7 +96,7 @@ jobs:
       - name: Install immutable archaeology guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
-          SKILLS_VERSION: '0.1.9'
+          SKILLS_VERSION: '0.1.10'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -135,7 +135,7 @@ jobs:
       - name: Install immutable substrate guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
-          SKILLS_VERSION: '0.1.9'
+          SKILLS_VERSION: '0.1.10'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -155,6 +155,44 @@ jobs:
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
         run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"
+
+  npm-overrides:
+    name: npm overrides
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      # The head's package.json and package-lock.json are the whole input. The verdict can only change
+      # in a pull request that changes one of them, so it runs on every pull request without upstream
+      # releases ever reddening one that touches neither.
+      - name: Checkout exact caller head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      # From runner.temp, like the substrate guard: a checked-out copy is the diff under review, so a
+      # pull request could relax the verdicts it is judged by.
+      - name: Install immutable npm-overrides guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
+          SKILLS_VERSION: '0.1.10'
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      # Pinned and invoked bare: any other directory, or a `--root`, can point the guard at a nested
+      # package.json that is not the consumer's, and judge that manifest instead.
+      - name: Judge every override against the ranges its dependents declare
+        working-directory: ${{ github.workspace }}
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
+        run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-npm-overrides"
 
   pr-body:
     name: PR body
@@ -180,7 +218,7 @@ jobs:
       - name: Install immutable PR-body guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
-          SKILLS_VERSION: '0.1.9'
+          SKILLS_VERSION: '0.1.10'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"

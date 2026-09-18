@@ -1,6 +1,6 @@
 {
   "name": "neo-agent-skills",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Install the workflow substrate a cross-model AI team actually runs on: ticket intake, PR review gates, lane coordination and guards, versioned as a package. The skills Neo.mjs maintainers load every session — materialized into your repo, not copied.",
   "type": "module",
   "license": "MIT",
@@ -16,7 +16,8 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "acorn": "^8.18.0"
+    "acorn": "^8.18.0",
+    "semver": "^7.8.5"
   },
   "bin": {
     "neo-agent-skills-materialize": "./scripts/materialize-harness-skills.mjs",
@@ -24,7 +25,8 @@
     "neo-agent-skills-substrate-size": "./scripts/check-substrate-size.mjs",
     "neo-agent-skills-ticket-archaeology": "./scripts/check-ticket-archaeology.mjs",
     "neo-agent-skills-workflow-concurrency": "./scripts/check-workflow-concurrency.mjs",
-    "neo-agent-skills-agents-md": "./scripts/generate-agents-md.mjs"
+    "neo-agent-skills-agents-md": "./scripts/generate-agents-md.mjs",
+    "neo-agent-skills-npm-overrides": "./scripts/check-npm-overrides.mjs"
   },
   "exports": {
     "./manifest": "./.agents/skills/skills.manifest.json",
@@ -34,6 +36,7 @@
     ".agents/skills",
     "README.md",
     "agents-md",
+    "scripts/check-npm-overrides.mjs",
     "scripts/check-pr-body.mjs",
     "scripts/check-substrate-size.mjs",
     "scripts/check-ticket-archaeology.mjs",
@@ -44,7 +47,7 @@
   "scripts": {
     "materialize": "node scripts/materialize-harness-skills.mjs",
     "lint": "node scripts/lint-skill-corpus.mjs",
-    "test": "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs && node scripts/test-check-pr-body.mjs && node scripts/test-workflow-concurrency.mjs && node scripts/test-generate-agents-md.mjs",
+    "test": "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs && node scripts/test-check-pr-body.mjs && node scripts/test-workflow-concurrency.mjs && node scripts/test-generate-agents-md.mjs && node scripts/test-npm-overrides.mjs",
     "generate-agents-md": "node scripts/generate-agents-md.mjs"
   },
   "keywords": [
