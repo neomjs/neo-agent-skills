@@ -117,6 +117,11 @@ function makeRule(scope, target, value, manifest) {
         return {...rule, error: `\`${range}\` is not a semver range, so it has no floor to judge`}
     }
 
+    // Parses, yet admits nothing: a typo'd raise such as `>=3.15.2 <3.0.0` lands here.
+    if (!semver.minVersion(range)) {
+        return {...rule, error: `\`${range}\` matches no version, so it has no floor to judge`}
+    }
+
     return {...rule, range}
 }
 
@@ -218,21 +223,22 @@ export function scopeLocations(packages, scope) {
  *
  * - `FIGHTING`: some declared range starts above every version the override permits, so the rule
  *   forces that dependent BELOW what it requires.
- * - `needed`: some declared range still admits a version under the override's floor, or is not a
- *   semver range at all, which the override replaces outright.
+ * - `needed`: some declared range still admits a version under the override's floor, or is
+ *   incomparable — not a semver range, or one matching nothing — which the override replaces outright.
  * - `REDUNDANT`: nothing in scope can resolve below the floor, or nothing in scope declares it.
  *
  * Above an exact pin is the deliberate security direction (`dompurify: "3.4.8"` held at `^3.4.13`),
  * so it reads `needed`, never `FIGHTING`.
  * @param {Object} rule
  * @param {Object} packages
- * @returns {{verdict: String, below: Object[], fighting: Object[], edges: Number}}
+ * @returns {{verdict: String, below: Object[], incomparable: Object[], fighting: Object[], edges: Number}}
  */
 export function classify(rule, packages) {
     const
-        floor    = semver.minVersion(rule.range),
-        below    = [],
-        fighting = [];
+        floor        = semver.minVersion(rule.range),
+        below        = [],
+        incomparable = [],
+        fighting     = [];
 
     let edges = 0;
 
@@ -254,14 +260,11 @@ export function classify(rule, packages) {
                 dependent = location === '' ? '(root)' : `${nameOf(location, entry)}@${entry.version}`,
                 edge      = {declared, dependent};
 
-            if (!semver.validRange(declared)) {
-                below.push(edge);
-                continue
-            }
+            const lowest = semver.validRange(declared) && semver.minVersion(declared);
 
-            const lowest = semver.minVersion(declared);
-
-            if (semver.gtr(lowest, rule.range)) {
+            if (!lowest) {
+                incomparable.push(edge)
+            } else if (semver.gtr(lowest, rule.range)) {
                 fighting.push(edge)
             } else if (semver.lt(lowest, floor)) {
                 below.push(edge)
@@ -269,7 +272,10 @@ export function classify(rule, packages) {
         }
     }
 
-    return {below, edges, fighting, verdict: fighting.length ? 'FIGHTING' : below.length ? 'needed' : 'REDUNDANT'}
+    return {
+        below, edges, fighting, incomparable,
+        verdict: fighting.length ? 'FIGHTING' : below.length || incomparable.length ? 'needed' : 'REDUNDANT'
+    }
 }
 
 /**
@@ -338,7 +344,8 @@ function printHelp(out) {
         '',
         '  needed     a dependent in scope still admits a version below the floor',
         '  REDUNDANT  nothing in scope can resolve below the floor — delete the rule',
-        '  FIGHTING   the rule forces a dependent below what it requires — delete or raise it',
+        '  FIGHTING   the rule forces a dependent below what it requires — delete or raise it, or',
+        '             narrow it when another dependent still needs the floor',
         '',
         '  --root, -r   Tree to read. Defaults to the current working directory.',
         '  --help,  -h  Print this help.',
@@ -386,11 +393,19 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
 
     const {errors, rules} = collectReport({root: resolve(cwd, parsed.values.root ?? '.')});
 
-    rules.forEach(({label, verdict, below, fighting, edges}) => {
+    rules.forEach(({label, verdict, below, incomparable, fighting, edges}) => {
+        // A spec that is not a comparable range is replaced by the rule, not "below" its floor.
+        const holding = [
+            below.length        && `below the floor: ${below.map(describe).join(', ')}`,
+            incomparable.length && `replaced outright, no comparable range: ${incomparable.map(describe).join(', ')}`
+        ].filter(Boolean).join('; ');
+
         if (verdict === 'needed') {
-            out(`✅ ${label} · needed — below the floor: ${below.map(describe).join(', ')}`)
+            out(`✅ ${label} · needed — ${holding}`)
         } else if (verdict === 'FIGHTING') {
-            error(`❌ ${label} · FIGHTING — forces a dependent below its own range: ${fighting.map(describe).join(', ')}. Delete or raise the rule.`)
+            // Deleting a rule that another dependent still needs trades one defect for another.
+            error(`❌ ${label} · FIGHTING — forces a dependent below its own range: ${fighting.map(describe).join(', ')}. ` +
+                (holding ? `Other dependents still need it (${holding}), so narrow the rule to them.` : 'Delete or raise the rule.'))
         } else {
             error(`❌ ${label} · REDUNDANT — ${edges ? `all ${edges} dependent range(s) in scope start at or above its floor` : 'nothing in scope declares it'}. Delete the rule.`)
         }

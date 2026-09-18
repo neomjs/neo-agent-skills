@@ -198,6 +198,35 @@ function verdictOf(manifest, packages) {
     const unreadable = consumer({...NESTED, overrides: {'gray-matter': {'js-yaml': 'github:nodeca/js-yaml'}}}, grayMatter('^3.13.1'));
 
     assert.equal(run([], {...silent, cwd: unreadable}), 1, 'an override with no readable floor is reported, not skipped');
+
+    // A range that parses but matches nothing has no floor either, and a typo'd raise is how one
+    // arrives: it must reach the error channel, never throw out of the comparison.
+    for (const range of ['>2.0.0 <1.0.0', '>=3.15.2 <3.0.0']) {
+        const empty = consumer({...NESTED, overrides: {'gray-matter': {'js-yaml': range}}}, grayMatter('^3.13.1'));
+
+        assert.equal(run([], {...silent, cwd: empty}), 1, `${range}: reported, not thrown`);
+        assert.match(collectReport({root: empty}).errors[0], /matches no version/)
+    }
+}
+
+// ── What the report tells the reader to do ─────────────────────────────────────────────────────
+{
+    const lines = [], capture = {error: line => lines.push(line), out: line => lines.push(line)};
+
+    // A spec that is no comparable range is replaced by the rule, not "below" its floor.
+    run([], {...capture, cwd: consumer(NESTED, grayMatter('github:nodeca/js-yaml'))});
+    assert.match(lines.join('\n'), /replaced outright, no comparable range: gray-matter@4\.0\.3/);
+    assert.doesNotMatch(lines.join('\n'), /below the floor/);
+
+    // One dependent fought and another still below the floor: deleting the rule unprotects the
+    // second, so the remedy is to narrow it.
+    lines.length = 0;
+    run([], {...capture, cwd: consumer({...NESTED, overrides: {'js-yaml': '^3.15.2'}}, {
+        ...grayMatter('^4.1.0'),
+        'node_modules/other': {version: '1.0.0', dependencies: {'js-yaml': '^3.13.1'}}
+    })});
+    assert.match(lines.join('\n'), /FIGHTING[\s\S]*Other dependents still need it \(below the floor: other@1\.0\.0[\s\S]*narrow the rule/);
+    assert.doesNotMatch(lines.join('\n'), /Delete or raise the rule/)
 }
 
 // Only ENOENT means absent: a permission denial is a failed observation and must not pass as a

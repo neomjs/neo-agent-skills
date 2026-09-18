@@ -121,7 +121,7 @@ resolved subtree, hoisted ones included:
 |---|---|
 | `needed` | a dependent in scope still admits a version below the floor; the offending ranges are printed |
 | `REDUNDANT` | nothing in scope can resolve below the floor, or nothing declares the package any more: delete the rule |
-| `FIGHTING` | a dependent's range starts above everything the rule permits: delete or raise the rule |
+| `FIGHTING` | a dependent's range starts above everything the rule permits: delete or raise the rule, or narrow it when another dependent still needs the floor |
 
 Holding a package above an exact pin (`dompurify: "3.4.8"` held at `^3.4.13`) is the deliberate
 security direction, so it reads `needed`. No `overrides` is N/A. A missing `package.json`, or
