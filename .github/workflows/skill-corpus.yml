@@ -70,6 +70,9 @@ jobs:
       - name: npm-overrides contract and packed CLI
         run: node scripts/test-npm-overrides.mjs
 
+      - name: Credential guard contract
+        run: node scripts/test-secrets.mjs
+
       - name: Package contents — what actually ships
         run: |
           TARBALL=$(npm pack --silent | tail -1)
@@ -93,8 +96,10 @@ jobs:
             || { echo "workflow-concurrency CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-npm-overrides.mjs' \
             || { echo "npm-overrides CLI missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-secrets.mjs' \
+            || { echo "credential guard CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done

@@ -49,6 +49,7 @@ export function validateReusablePrBaseline(source) {
           archaeologyJob = jobSource(source, 'source-comment-archaeology'),
           substrateJob   = jobSource(source, 'substrate-size'),
           overridesJob   = jobSource(source, 'npm-overrides'),
+          secretsJob     = jobSource(source, 'secrets'),
           prBodyJob      = jobSource(source, 'pr-body'),
           required = [
               ['workflow-call trigger', /^on:\n  workflow_call:\n/m],
@@ -111,7 +112,20 @@ export function validateReusablePrBaseline(source) {
                   /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-npm-overrides"/, overridesJob],
               // Anchored for the substrate pin's reason: a suffixed root is a different manifest.
               ['overrides judged in the caller workspace',
-                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, overridesJob]
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, overridesJob],
+              ['secrets job id', /^  secrets:\n/m],
+              ['secrets stable name', /^    name: Secrets\n/m],
+              ['secrets non-PR refusal', /github\.event_name != 'pull_request'/, secretsJob],
+              ['secrets caller head', /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m, secretsJob],
+              ['secrets isolated exact install',
+                  /npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/, secretsJob],
+              ['secrets exact package spec', /"neo-agent-skills@\$\{SKILLS_VERSION\}"/, secretsJob],
+              ['secrets isolated absolute bin',
+                  /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-secrets"/, secretsJob],
+              // `--all` and nothing after it: a file list, or any narrowing, scans less of the caller's tree
+              ['secrets scans every tracked file', /neo-agent-skills-secrets"\n\s+--all\s*$/m, secretsJob],
+              ['secrets scanned in the caller workspace',
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, secretsJob]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -168,6 +182,11 @@ export function validateReusablePrBaseline(source) {
     // Bare for the same reason: `--root` would judge a manifest other than the caller's.
     if (/neo-agent-skills-npm-overrides"[^\n]*\S/.test(overridesJob)) {
         failures.push('overrides guard invoked with arguments')
+    }
+
+    if (!secretsJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('secrets package version drift');
+    if ((secretsJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-secrets\s*$/gm) || []).length !== 2) {
+        failures.push('missing secrets isolated runner root')
     }
 
 
@@ -440,6 +459,36 @@ expectMutationFailure('overrides runner root — suffixed root', source,
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides',
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides-shadow'),
     'missing overrides isolated runner root');
+
+// ── The secrets job: the same isolation, and a scan that cannot be narrowed ────────────────────
+expectMutationFailure('secrets job removed', source,
+    value => value.replace('  secrets:\n', '  removed-secrets:\n'),
+    'missing secrets job id');
+expectMutationFailure('secrets package version', source,
+    value => value.replace(
+        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-secrets\n          SKILLS_VERSION: '${pkg.version}'`,
+        "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets\n          SKILLS_VERSION: 'latest'"),
+    'secrets package version drift');
+expectMutationFailure('secrets isolated install', source,
+    value => value.replace(
+        /(      - name: Install immutable credential guard\n[\s\S]*?)          npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save\n          "neo-agent-skills@\$\{SKILLS_VERSION\}"/,
+        '$1          npm install "neo-agent-skills@${SKILLS_VERSION}"'),
+    'missing secrets isolated exact install');
+expectMutationFailure('secrets narrowed scan', source,
+    value => value.replace(
+        '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"\n          --all',
+        '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"\n          --all README.md'),
+    'missing secrets scans every tracked file');
+expectMutationFailure('secrets workspace pin — suffixed root', source,
+    value => value.replace(
+        /(      - name: Scan every tracked file for credential-shaped literals\n        working-directory: \$\{\{ github\.workspace \}\})/,
+        '$1/docs'),
+    'missing secrets scanned in the caller workspace');
+expectMutationFailure('secrets runner root — suffixed root', source,
+    value => value.replace(
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets',
+        'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets-shadow'),
+    'missing secrets isolated runner root');
 
 
 expectMutationFailure('PR-body decorative live fetch', source,

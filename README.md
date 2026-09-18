@@ -131,6 +131,30 @@ Consumer repositories call the stable `npm overrides` job in `.github/workflows/
 The verdict can only change in a pull request that edits `package.json` or `package-lock.json`, so
 the job runs on every pull request and never reddens one for an upstream release.
 
+## Shared credential guard
+
+```bash
+npx --no-install neo-agent-skills-secrets --all
+npx --no-install neo-agent-skills-secrets path/to/file.mjs other/file.md
+```
+
+A committed credential is unrecallable one `npm publish` later, and a scanner that finds it after
+the push finds it too late. This guard knows Google API keys and OAuth tokens, OpenAI, Anthropic and
+GitHub tokens (classic and fine-grained), and AWS access key ids. Each pattern is anchored to the
+credential's real length, so prose that describes one (`AIza…`, a placeholder, a short sample) passes.
+
+**A finding names file, line and kind, never the match**: CI logs are published, and echoing a
+finding would publish it.
+
+A line that must keep such a literal carries `secret-scan-ok: <reason>` in whatever comment syntax
+the file has. The reason runs to the end of the line or to the comment's closer, and it has to say
+something: `<!-- secret-scan-ok: -->` is a finding, because a closer is no reason, and so is the
+credential itself written after the marker. A marker covers its own line only.
+
+Consumer repositories call the stable `Secrets` job in `.github/workflows/reusable-pr-baseline.yml`. It
+scans **every tracked file** at the pull request's head, not only the diff: a credential already on
+the base branch still fails, because it is one to revoke whichever pull request finds it.
+
 ## What is in the package
 
 | path | what |
