@@ -102,6 +102,35 @@ and pins the measurement to the checked-out tree, so a pull request cannot widen
 by, drop an entry from the target roster, or move the measurement to a directory where every target is
 absent and the check greens on nothing.
 
+## Shared npm-overrides guard
+
+```bash
+npx --no-install neo-agent-skills-npm-overrides
+```
+
+An npm `overrides` rule is a floor: it keeps a dependent whose declared range still admits a
+vulnerable version from resolving beneath the patched one. **Dependabot neither bumps nor removes
+`overrides`**, so a rule outlives its reason silently. Worse, when a dependent moves to a new major,
+the stale rule forces it back onto the old one.
+
+The guard judges each rule against the ranges its dependents **declare** in `package-lock.json`, with
+no network. A nested rule (`"parent": {"pkg": …}`) counts only dependents inside `parent`'s
+resolved subtree, hoisted ones included:
+
+| verdict | meaning |
+|---|---|
+| `needed` | a dependent in scope still admits a version below the floor; the offending ranges are printed |
+| `REDUNDANT` | nothing in scope can resolve below the floor, or nothing declares the package any more: delete the rule |
+| `FIGHTING` | a dependent's range starts above everything the rule permits: delete or raise the rule |
+
+Holding a package above an exact pin (`dompurify: "3.4.8"` held at `^3.4.13`) is the deliberate
+security direction, so it reads `needed`. No `overrides` is N/A. A missing `package.json`, or
+overrides with no v2/v3 lock, is a failed observation and exits 1.
+
+Consumer repositories call the stable `npm overrides` job in `.github/workflows/reusable-pr-baseline.yml`.
+The verdict can only change in a pull request that edits `package.json` or `package-lock.json`, so
+the job runs on every pull request and never reddens one for an upstream release.
+
 ## What is in the package
 
 | path | what |
@@ -109,6 +138,7 @@ absent and the check greens on nothing.
 | `.agents/skills/` | the substrate — skills plus `skills.manifest.json` and its schema |
 | `scripts/materialize-harness-skills.mjs` | the postinstall linker and its `--check` arm |
 | `scripts/check-ticket-archaeology.mjs` | the portable comment/JSDoc archaeology guard |
+| `scripts/check-npm-overrides.mjs` | the portable stale-`overrides` guard |
 | `scripts/check-substrate-size.mjs` | the portable per-turn substrate byte-budget guard |
 
 The manifest governs **projection**: a skill declaring `claudeSymlinkRequired: false` is a declared
