@@ -36,6 +36,23 @@ on:
         required: false
         type: string
         default: '24'
+      team_roster_repository:
+        description: >-
+          Repository holding the caller team's roster module, which exports registryAgentLogins() and
+          rosterEmailForLogin(login). Empty means no team, and the commit-authorship job checks no trailer.
+        required: false
+        type: string
+        default: ''
+      team_roster_ref:
+        description: Ref the roster is read at. A branch of the roster repository, never the pull request under review.
+        required: false
+        type: string
+        default: dev
+      team_roster_path:
+        description: Path of the roster module inside the roster repository.
+        required: false
+        type: string
+        default: ''
 
 jobs:
   pr-base:
@@ -232,6 +249,64 @@ jobs:
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"
           --all
+
+  commit-authorship:
+    name: Commit authorship
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      # The commits the pull request adds are the input, so the history from its base to its head
+      - name: Checkout exact caller head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch pull-request base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags origin "${BASE_SHA}"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      # From runner.temp, like the substrate guard: a checked-out copy is the diff under review, so a pull request
+      # could relax the checks it is judged by.
+      - name: Install immutable authorship guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
+          SKILLS_VERSION: '0.1.12'
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      # The roster says who the caller's team is, so it is read from the roster repository at the caller's ref and
+      # never from the pull request: a diff that could edit the roster could add its own author to the team.
+      - name: Checkout the team roster
+        if: ${{ inputs.team_roster_repository != '' }}
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ inputs.team_roster_repository }}
+          ref: ${{ inputs.team_roster_ref }}
+          path: .team-roster
+
+      # The PR author is the GitHub-authenticated login, which no commit in the pull request can forge, so it decides
+      # whether these commits are an agent's. Without a roster the guard says there is no team to check.
+      - name: Check the authorship of every commit the pull request adds
+        working-directory: ${{ github.workspace }}
+        env:
+          AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ROSTER: ${{ inputs.team_roster_repository != '' && format('.team-roster/{0}', inputs.team_roster_path) || '' }}
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
+        run: |
+          args=(--base "${BASE_SHA}" --author-login "${AUTHOR_LOGIN}")
+          [ -n "${ROSTER}" ] && args+=(--roster "${ROSTER}")
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-commit-authorship" "${args[@]}"
 
   pr-body:
     name: PR body
