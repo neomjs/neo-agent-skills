@@ -177,7 +177,8 @@ At RC2 or >24KB, load the payload. **A demand round is a `CHANGES_REQUESTED`** �
 
 `# PR Micro-Review` — the asset
 (`assets/pr-review-micro-review-template.md`) carries the anchors and classes.
-No premise snapshot, no Depth Floor, no audits.
+No premise snapshot, no Depth Floor, no audits, no metric tags on any cycle. Its
+Round 2 is §6.2's, quoting the `- [ ]` Findings.
 
 **When — a rule, not a permission.** A MECHANICAL PR *gets* this shape — no
 architectural concept to teach (test-only / config-leaf / behavior-preserving /

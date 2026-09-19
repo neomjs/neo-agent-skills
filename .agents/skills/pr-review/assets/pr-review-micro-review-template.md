@@ -6,7 +6,7 @@
 
 **Glance:** [Premise + correctness in one paragraph: the claim, what you verified it against (exact head / receipt / spec), the one thing you looked for and did not find. Bounded repair: confirm NO site the prescription did not name.]
 
-**Findings:** [None, or a short list — discharged in-place, never deferred.]
+**Findings:** [None, or a short `- [ ]` list — discharged in-place, never deferred.]
 
 - **Origin Session ID:** [Memory Core UUID]
 
