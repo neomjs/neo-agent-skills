@@ -50,6 +50,9 @@ export function validateReusablePrBaseline(source) {
           substrateJob   = jobSource(source, 'substrate-size'),
           overridesJob   = jobSource(source, 'npm-overrides'),
           secretsJob     = jobSource(source, 'secrets'),
+          authorshipJob  = jobSource(source, 'commit-authorship'),
+          // The one checkout of another repository: the caller team's roster, read beside the caller's tree
+          rosterStep     = authorshipJob.match(/      - name: Checkout the team roster\n[\s\S]*?(?=\n      - |\s*$)/)?.[0] || '',
           prBodyJob      = jobSource(source, 'pr-body'),
           required = [
               ['workflow-call trigger', /^on:\n  workflow_call:\n/m],
@@ -125,7 +128,25 @@ export function validateReusablePrBaseline(source) {
               // `--all` and nothing after it: a file list, or any narrowing, scans less of the caller's tree
               ['secrets scans every tracked file', /neo-agent-skills-secrets"\n\s+--all\s*$/m, secretsJob],
               ['secrets scanned in the caller workspace',
-                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, secretsJob]
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, secretsJob],
+              ['authorship job id', /^  commit-authorship:\n/m],
+              ['authorship stable name', /^    name: Commit authorship\n/m],
+              ['authorship non-PR refusal', /github\.event_name != 'pull_request'/, authorshipJob],
+              ['authorship caller head', /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m, authorshipJob],
+              // The input is a range of commits, so a shallow checkout would leave the guard nothing to read
+              ['authorship full history', /^\s*fetch-depth: 0\s*$/m, authorshipJob],
+              ['authorship isolated exact install',
+                  /npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/, authorshipJob],
+              ['authorship exact package spec', /"neo-agent-skills@\$\{SKILLS_VERSION\}"/, authorshipJob],
+              ['authorship isolated absolute bin',
+                  /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-commit-authorship"/, authorshipJob],
+              ['authorship checked in the caller workspace',
+                  /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m, authorshipJob],
+              // The one identity a pull request cannot forge decides whether its commits are an agent's
+              ['authorship authenticated PR author',
+                  /^\s*AUTHOR_LOGIN: \$\{\{ github\.event\.pull_request\.user\.login \}\}\s*$/m, authorshipJob],
+              ['authorship roster from the caller inputs',
+                  /repository: \$\{\{ inputs\.team_roster_repository \}\}\n\s*ref: \$\{\{ inputs\.team_roster_ref \}\}\n/, authorshipJob]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -137,7 +158,8 @@ export function validateReusablePrBaseline(source) {
     if (!triggerBlock || /^  (?:pull_request|pull_request_target|push|workflow_dispatch|schedule):/m.test(triggerBlock)) {
         failures.push('direct event trigger present')
     }
-    if (/^\s+repository:/m.test(source)) failures.push('checkout repository override present');
+    if (/^\s+repository:/m.test(source.replace(rosterStep, ''))) failures.push('checkout repository override present');
+    if (rosterStep && !/^\s*path: \.team-roster\s*$/m.test(rosterStep)) failures.push('authorship roster replaces the caller tree');
     if (!/^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m.test(archaeologyJob)) {
         failures.push('missing exact caller head')
     }
@@ -187,6 +209,15 @@ export function validateReusablePrBaseline(source) {
     if (!secretsJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('secrets package version drift');
     if ((secretsJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-secrets\s*$/gm) || []).length !== 2) {
         failures.push('missing secrets isolated runner root')
+    }
+
+    if (!authorshipJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('authorship package version drift');
+    if ((authorshipJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-commit-authorship\s*$/gm) || []).length !== 2) {
+        failures.push('missing authorship isolated runner root')
+    }
+    // The roster decides who the team is, so the step reading it may name nothing of the pull request under review
+    if (/github\.event\.pull_request|github\.head_ref|github\.sha/.test(rosterStep)) {
+        failures.push('authorship roster read from the pull request')
     }
 
 
@@ -489,6 +520,31 @@ expectMutationFailure('secrets runner root — suffixed root', source,
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets',
         'SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets-shadow'),
     'missing secrets isolated runner root');
+
+// ── The commit-authorship job: the same isolation, and a roster the pull request cannot touch ─────
+expectMutationFailure('authorship job removed', source,
+    value => value.replace('  commit-authorship:\n', '  removed-commit-authorship:\n'),
+    'missing authorship job id');
+expectMutationFailure('authorship package version', source,
+    value => value.replace(
+        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-commit-authorship\n          SKILLS_VERSION: '${pkg.version}'`,
+        "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship\n          SKILLS_VERSION: 'latest'"),
+    'authorship package version drift');
+expectMutationFailure('authorship shallow checkout', source,
+    value => value.replace(/(  commit-authorship:\n[\s\S]*?)          fetch-depth: 0\n/, '$1'),
+    'missing authorship full history');
+expectMutationFailure('authorship lane from a forgeable source', source,
+    value => value.replace(
+        'AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}',
+        'AUTHOR_LOGIN: ${{ github.event.pull_request.head.user.login }}'),
+    'missing authorship authenticated PR author');
+expectMutationFailure('authorship roster read at the pull request head', source,
+    value => value.replace('          ref: ${{ inputs.team_roster_ref }}\n',
+        '          ref: ${{ inputs.team_roster_ref || github.event.pull_request.head.sha }}\n'),
+    'authorship roster read from the pull request');
+expectMutationFailure('authorship roster over the caller tree', source,
+    value => value.replace('          path: .team-roster\n', ''),
+    'authorship roster replaces the caller tree');
 
 
 expectMutationFailure('PR-body decorative live fetch', source,
