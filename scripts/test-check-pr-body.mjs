@@ -2,7 +2,7 @@
 /** @summary Mutation-sensitive contract checks for the portable PR-body anchor guard. */
 
 import assert                                   from 'node:assert/strict';
-import {spawnSync}                              from 'node:child_process';
+import {spawn, spawnSync}                       from 'node:child_process';
 import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                 from 'node:os';
 import {dirname, join}                          from 'node:path';
@@ -238,6 +238,35 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
         'a DRAFT may defer the close target with a standalone `Refs #N`');
     assert.ok(findBodyViolations({body: `see Refs #1234 inline\n${withoutResolves}`, isDraft: true})
         .visible.some(v => v.includes('Refs #N')), 'an inline `Refs` is not a declaration either')
+}
+
+// ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────
+//
+// An agent harness spawns its processes with a stdin that is neither a TTY nor a closed pipe. `spawnSync` closes the
+// stdin it creates, so the arms above cannot see what such a stdin does: these spawn the CLI and leave stdin open.
+{
+    const openStdin = (args, timeout = 5000) => new Promise(resolve => {
+        const child = spawn(process.execPath, [CLI_GUARD, ...args], {stdio: ['pipe', 'pipe', 'pipe']}),
+              timer = setTimeout(() => {child.kill(); resolve('hung')}, timeout);
+
+        child.on('exit', code => {clearTimeout(timer); resolve(code)})
+    });
+
+    const bodyFile = body => {
+        const dir = mkdtempSync(join(tmpdir(), 'pr-body-'));
+
+        scratch.push(dir);
+        writeFileSync(join(dir, 'body.md'), body);
+
+        return join(dir, 'body.md')
+    };
+
+    assert.equal(await openStdin(['--body-file', bodyFile(goodBody())]), 0, 'a body file passes with stdin left open');
+    assert.equal(await openStdin([`--body-file=${bodyFile('Resolves #1')}`]), 1, 'and fails on its own merits, in both flag forms');
+
+    assert.equal(spawnSync(process.execPath, [CLI_GUARD], {input: goodBody()}).status, 0, 'a piped body still passes');
+    assert.equal(spawnSync(process.execPath, [CLI_GUARD], {input: ''}).status, 1, 'an empty piped body fails');
+    assert.equal(cli([], '').code, 1, 'an empty body file fails')
 }
 
 // ── The CLI ships with a bin entry, or consumers cannot invoke it ──────────────────────────────
