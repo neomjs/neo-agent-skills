@@ -31,6 +31,7 @@ import process                       from 'node:process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const
+    UNSEEN   = '--not --remotes',
     ZERO_SHA = '0'.repeat(40),
     tryExec  = command => {
         try {
@@ -43,12 +44,13 @@ const
 /**
  * @summary The commit ranges a push sends, read from git's own ref tuples, or `<base>..HEAD` in CI.
  *
- * `remoteSha..localSha` is the exact boundary git applies. A new remote branch reports the zero sha, where everything
- * the branch adds to the trunk is the honest range; a deletion sends no commits. With no payload at all (a manual run)
- * the branch's own range is scanned, never nothing: a guard that no-ops when it cannot see its input fails silently.
+ * `remoteSha..localSha` is the exact boundary git applies to a branch the remote already has; a deletion sends no
+ * commits. A new remote branch reports the zero sha, and a manual run has no payload at all: both scan what no
+ * remote-tracking ref has seen (`<sha> --not --remotes`). That basis names no trunk, so a repository whose trunk is
+ * `main` is covered like one whose trunk is `dev`, and a scan never degrades to nothing.
  * @param {String}      payload The hook's stdin
  * @param {String|null} [base]  A base sha, when there is no push to read
- * @returns {String[]} rev-list ranges
+ * @returns {String[]} `git log` revision arguments, one entry per pushed ref
  */
 export function pendingRanges(payload, base=null) {
     if (base) {
@@ -58,7 +60,7 @@ export function pendingRanges(payload, base=null) {
     const rows = payload.split('\n').map(line => line.trim()).filter(Boolean);
 
     if (rows.length === 0) {
-        return ['origin/dev..HEAD']
+        return [`HEAD ${UNSEEN}`]
     }
 
     return rows.map(row => {
@@ -68,7 +70,7 @@ export function pendingRanges(payload, base=null) {
             return null
         }
 
-        return !remoteSha || remoteSha === ZERO_SHA ? `origin/dev..${localSha}` : `${remoteSha}..${localSha}`
+        return !remoteSha || remoteSha === ZERO_SHA ? `${localSha} ${UNSEEN}` : `${remoteSha}..${localSha}`
     }).filter(Boolean)
 }
 
@@ -155,13 +157,18 @@ export function findUnknownCoAuthors({commits = [], agentLane = false, team}) {
 
 /**
  * @summary The commits in the ranges, with the full message each trailer lives in.
+ *
+ * Throws when git cannot read a range: an unreadable push is not a push without offenders, and both checks read here.
  * @param {String[]} ranges
  * @returns {Object[]} `{sha, authorEmail, subject, body}` each
  */
 function readCommits(ranges) {
     return ranges.flatMap(range => {
         // \x1f between fields and \x1e between records: a body carries newlines, so splitting lines would cut trailers
-        const log = tryExec(`git log ${range} --format=%H%x1f%ae%x1f%s%x1f%B%x1e`);
+        const log = execSync(`git log ${range} --format=%H%x1f%ae%x1f%s%x1f%B%x1e`, {
+            encoding: 'utf8',
+            stdio   : ['pipe', 'pipe', 'pipe']
+        }).trim();
 
         return log ? log.split('\x1e').map(entry => {
             const [sha, authorEmail, subject, body] = entry.replace(/^\n+/, '').split('\x1f');
@@ -209,10 +216,37 @@ export async function run(args, payload) {
         console.log('check-commit-authorship: no team roster supplied, so no commit is checked for its co-author trailers.')
     }
 
+    const
+        agentCheckout = isAgentCheckout(),
+        operator      = tryExec('git config --global user.email').toLowerCase(),
+        // The operator check only exists where an agent pushes, and only when there is a global identity to leak
+        checkOperator = Boolean(operator && agentCheckout);
+
+    if (!team && !checkOperator) {
+        return 0
+    }
+
+    // Unseen commits are measured against the remote-tracking refs, and with none there is no basis to measure against
+    if (ranges.some(range => range.endsWith(UNSEEN)) && !tryExec('git for-each-ref --count=1 refs/remotes')) {
+        console.error('check-commit-authorship: no remote-tracking ref to measure the pushed commits against. ' +
+            'Fetch the remote first, or bypass with git push --no-verify.');
+        return 1
+    }
+
+    let commits;
+
+    try {
+        commits = readCommits(ranges)
+    } catch (error) {
+        console.error(`check-commit-authorship: cannot read the pushed commits (${String(error.stderr || error.message).trim().split('\n')[0]}). ` +
+            'Fetch the remote first, or bypass with git push --no-verify.');
+        return 1
+    }
+
     if (team) {
         const
-            agentLane = isAgentCheckout() || team.isAgentLogin(login),
-            offenders = findUnknownCoAuthors({agentLane, commits: readCommits(ranges), team}),
+            agentLane = agentCheckout || team.isAgentLogin(login),
+            offenders = findUnknownCoAuthors({agentLane, commits, team}),
             blocking  = offenders.filter(offender => offender.agentAuthored),
             advisory  = offenders.filter(offender => !offender.agentAuthored);
 
@@ -233,21 +267,14 @@ export async function run(args, payload) {
         }
     }
 
-    const operator = tryExec('git config --global user.email').toLowerCase();
-
-    // The operator check only exists where an agent pushes, and only when there is a global identity to leak
-    if (!operator || !isAgentCheckout()) {
+    if (!checkOperator) {
         return 0
     }
 
     const offenders = new Map();
 
-    ranges.forEach(range => {
-        tryExec(`git log ${range} --format=%H%x09%ae%x09%s`).split('\n').filter(Boolean)
-            .map(line => line.split('\t'))
-            .forEach(([sha, authorEmail, subject]) => {
-                (authorEmail || '').toLowerCase() === operator && sha && offenders.set(sha, `  ${sha.slice(0, 10)}  ${subject}`)
-            })
+    commits.forEach(({sha, authorEmail, subject}) => {
+        (authorEmail || '').toLowerCase() === operator && offenders.set(sha, `  ${sha.slice(0, 10)}  ${subject}`)
     });
 
     if (offenders.size === 0) {
@@ -260,7 +287,7 @@ export async function run(args, payload) {
 Set this checkout's own identity, then repair the commits:
 
   git config user.email "<your seat's address>"
-  git rebase origin/dev --exec 'git commit --amend --no-edit --reset-author'
+  git rebase <the branch's base> --exec 'git commit --amend --no-edit --reset-author'
 
 Bypass, for an operator genuinely committing from an agent checkout: git push --no-verify`);
 

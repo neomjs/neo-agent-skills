@@ -133,6 +133,58 @@ try {
             'invoked through a symlink, the installed `bin` shape, the guard still runs')
     }
 
+    // ── A new branch is measured against what the remote has seen, whatever the trunk is called ────
+    {
+        const
+            origin = join(root, 'origin.git'),
+            clone  = join(root, 'clone'),
+            zero   = '0'.repeat(40),
+            pinned = {...env, NEO_AGENT_IDENTITY: 'seat-one'},
+            push   = (cwd, sha, args = [], remoteSha = zero) => {
+                const {status, stdout, stderr} = spawnSync(process.execPath, [GUARD, ...args], {
+                    cwd,
+                    encoding: 'utf8',
+                    env     : pinned,
+                    input   : `refs/heads/feature ${sha} refs/heads/feature ${remoteSha}\n`
+                });
+
+                return {status, output: stdout + stderr}
+            };
+
+        // A `main` trunk and no `dev`: the clone's only remote-tracking refs are origin/main and origin/HEAD
+        git(root, 'init', '-q', '--bare', '-b', 'main', origin);
+        git(repo, 'push', '-q', origin, `${base}:refs/heads/main`);
+        git(root, 'clone', '-q', origin, clone);
+        git(clone, 'commit', '-q', '--allow-empty', '-m', 'feature\n\nCo-Authored-By: A Person <person@elsewhere.example>');
+
+        const leaked = git(clone, 'rev-parse', 'HEAD');
+
+        assert.equal(git(clone, 'for-each-ref', '--format=%(refname)', 'refs/remotes/origin/dev'), '', 'the trunk is not dev');
+
+        const operatorOnly = push(clone, leaked);
+
+        assert.equal(operatorOnly.status, 1, 'with no roster, the operator identity on a new main-trunk branch is refused');
+        assert.match(operatorOnly.output, /authored as the operator from an agent checkout/);
+
+        const withRoster = push(clone, leaked, ['--roster', roster]);
+
+        assert.equal(withRoster.status, 1, 'with the roster, its off-team trailer is refused too');
+        assert.match(withRoster.output, /person@elsewhere\.example/);
+
+        assert.equal(push(clone, base).status, 0, 'a new branch the remote has already seen sends nothing new');
+
+        // Nothing to measure against, and nothing to read: both are refusals, never a clean scan
+        const noBasis = push(worktree, commit(worktree, null, 'no remote at all'));
+
+        assert.equal(noBasis.status, 1, 'with no remote-tracking ref, a new branch has no basis');
+        assert.match(noBasis.output, /no remote-tracking ref/);
+
+        const unreadable = push(clone, leaked, [], 'f'.repeat(40));
+
+        assert.equal(unreadable.status, 1, 'a remote sha this clone does not have cannot be read');
+        assert.match(unreadable.output, /cannot read the pushed commits/)
+    }
+
     // ── The pure parts ─────────────────────────────────────────────────────────────────────────────
     {
         const team = teamFromRoster(await import(new URL(`file://${roster}`).href));
@@ -145,10 +197,10 @@ try {
 
         const zero = '0'.repeat(40);
 
-        assert.deepEqual(pendingRanges(`refs/heads/a ${'a'.repeat(40)} refs/heads/a ${zero}\n`), [`origin/dev..${'a'.repeat(40)}`],
-            'a new remote branch is measured against the trunk');
+        assert.deepEqual(pendingRanges(`refs/heads/a ${'a'.repeat(40)} refs/heads/a ${zero}\n`), [`${'a'.repeat(40)} --not --remotes`],
+            'a new remote branch is measured against what no remote-tracking ref has seen');
         assert.deepEqual(pendingRanges(`refs/heads/a ${zero} refs/heads/a ${'b'.repeat(40)}\n`), [], 'a deletion sends nothing');
-        assert.deepEqual(pendingRanges(''), ['origin/dev..HEAD'], 'no payload scans the branch, never nothing');
+        assert.deepEqual(pendingRanges(''), ['HEAD --not --remotes'], 'no payload scans the unpushed commits, never nothing');
         assert.deepEqual(pendingRanges('', 'abc'), ['abc..HEAD'])
     }
 
