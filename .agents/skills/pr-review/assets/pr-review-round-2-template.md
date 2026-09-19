@@ -15,7 +15,7 @@
 
 ### 📋 Disposition
 
-One row per Round-1 required action, **quoted verbatim** — no re-wording, no re-ordering, no additions.
+One row per Round-1 required action (a micro review's Findings too), **quoted verbatim** — no re-wording, no re-ordering, no additions.
 
 | # | Required Action (verbatim from Round 1) | Disposition | Evidence |
 |---|---|---|---|
