@@ -245,11 +245,16 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
 // `--preserve-symlinks-main`, where node keeps the link path in `import.meta.url`. The module would
 // load, `run()` would never execute, and the process would exit 0 — a guard that stops guarding.
 if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
-    const chunks = [];
+    const args = process.argv.slice(2);
 
-    process.stdin.on('data', chunk => chunks.push(chunk))
-        .on('end', () => process.exit(run(process.argv.slice(2), {stdin: chunks.join('')})));
+    // `--body-file` supplies the body, so stdin is never read: an agent harness hands its processes a stdin that is
+    // neither a TTY nor a closed pipe, and waiting for that stdin to end hangs until the caller's timeout.
+    if (args.some(arg => arg === '--body-file' || arg.startsWith('--body-file='))) {
+        process.exit(run(args))
+    } else {
+        const chunks = [];
 
-    // No piped stdin: `--body-file` supplies the body instead.
-    process.stdin.isTTY && process.exit(run());
+        process.stdin.on('data', chunk => chunks.push(chunk))
+            .on('end', () => process.exit(run(args, {stdin: chunks.join('')})))
+    }
 }
