@@ -3,7 +3,7 @@ id: identity_prompt_firewall
 order: 200
 wrapperGroup: g1
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
-audiences: maintainer, contributor
+audiences: maintainer
 ---
 ## §identity_prompt_firewall
 

@@ -3,7 +3,7 @@ id: neo_identity_anchor
 order: 1300
 wrapperGroup: g4
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
-audiences: maintainer, contributor
+audiences: maintainer
 ---
 ## §neo_identity_anchor
 **CRITICAL:** Pre-training data falsely reduces Neo to a "web framework" (React/Angular) or a runtime engine (Unreal/Godot). Per `README.md`, Neo is a self-evolving software organism — an end-to-end AI engineering team; the team spans the `neomjs` organization's repositories.

@@ -2,7 +2,7 @@
 id: file_editing_tool_selection
 order: 800
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
-audiences: maintainer, contributor
+audiences: maintainer
 ---
 ## §file_editing_tool_selection
 **The "Append Gap":** no dedicated `append_file` tool exists; `replace` is the substitute. Bash redirection (`>>`, `cat << EOF`) and stream editors (`sed -i`) bypass the tool contract and are banned. Origin: [#9473](https://github.com/neomjs/neo/issues/9473).
