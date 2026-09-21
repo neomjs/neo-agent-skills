@@ -13,13 +13,21 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const fixtures = [];
 
-/** @summary A disposable source tree, cleaned up when the file finishes. */
+/**
+ * @summary A disposable source tree, cleaned up when the file finishes.
+ *
+ * The same preamble text is written for every audience the sections declare, so a test about
+ * wrapper grouping or repository filtering does not also have to be a test about preambles.
+ */
 function fixture(sections, preamble = '# Title\n\nIntro.\n') {
     const root = mkdtempSync(join(tmpdir(), 'agents-md-'));
 
     fixtures.push(root);
     mkdirSync(join(root, 'sections'), {recursive: true});
-    writeFileSync(join(root, 'preamble.md'), preamble);
+
+    new Set(['maintainer', ...sections.flatMap(({audiences = 'maintainer'}) =>
+        audiences.split(',').map(value => value.trim()))])
+        .forEach(audience => writeFileSync(join(root, `preamble.${audience}.md`), preamble));
 
     sections.forEach(({audiences = 'maintainer', body, id, listGroup, listNumber, order, repos = 'neo', wrapperGroup}) => {
         const fm = ['---', `id: ${id}`, `order: ${order}`];
@@ -198,7 +206,11 @@ function capture(argv) {
             assert.ok(bytes > 0, `${repo}/${audience} emits something`);
             assert.ok(bytes <= PER_FILE_LIMIT_BYTES,
                 `${repo}/${audience} is ${bytes} B, over the ${PER_FILE_LIMIT_BYTES} B budget`);
-            assert.match(text, /^# AI Agent Per-Turn Operational Mandates/, `${repo}/${audience} keeps the preamble`);
+            // Per audience, because the preamble is the block a shared file could not vary and the
+            // one that told a fork contributor about a `settings.json` they do not have.
+            assert.match(text, audience === 'maintainer'
+                ? /^# AI Agent Per-Turn Operational Mandates/
+                : /^# Contributing to Neo\.mjs/, `${repo}/${audience} opens on its own preamble`);
             assert.ok(!text.includes('TODO'), `${repo}/${audience} ships no undecided declaration`);
         }
     }
@@ -243,6 +255,79 @@ function capture(argv) {
     assert.match(contributor, /§verify_before_assert/, 'verify-before-assert still reaches contributors');
     assert.match(contributor, /§pre_commit_gates/,     'and so does the commit-completeness gate');
     assert.match(contributor, /JSDoc/,                 'including the documentation requirement');
+}
+
+// ── Contributor output states nothing that is false where it is read ────────────────────────────
+// The list above is negative about TOOLS — no A2A, no Memory Core — and a variant can satisfy it
+// while every remaining sentence still addresses a maintainer. These are the statements that did:
+// each is a claim, not a tool name, which is why a tool-name list cannot catch them.
+{
+    const wrong = [
+        [/settings\.json/,          'a settings file no fork has — nothing wires this file, the harness reads it by convention'],
+        [/`replace` tool/,          'one harness\'s tool name presented as universal'],
+        [/`write_file` tool/,       'one harness\'s tool name presented as universal'],
+        [/run_shell_command/,       'one harness\'s tool name presented as universal'],
+        [/equal-peer maintainer/,   'a role an outside contributor does not hold here'],
+        [/There is no hold state/,  'a nightshift-seat directive that reads as "never stop working in this repository"'],
+        [/\(`\/ai\/`\)/,            'a directory `neomjs/neo` does not have — `git ls-files ai/` is 0'],
+        [/graph-ingestion substrate/,'internal vocabulary a first-time contributor cannot cash']
+    ];
+
+    for (const repo of readSupported().repos) {
+        const text = generate({audience: 'contributor', repo}).text;
+
+        for (const [pattern, why] of wrong) {
+            assert.doesNotMatch(text, pattern, `${repo}/contributor must not state ${why}`);
+        }
+    }
+}
+
+// ── …and nothing that is false in the REPOSITORY it is read in ──────────────────────────────────
+// Audience correctness and repository correctness are independent axes: a sentence can fit an
+// outside contributor and still describe a different repository. The first cut told all five
+// repositories that `CONTRIBUTING.md` held their setup loop, and four have no such file; it also
+// described the Engine's worker architecture to repositories that are not the Body. Found by
+// @neo-gpt in review, with the live root inventories as the control. Positive on `neo`, negative
+// everywhere else, so a shared sentence that only one repository can honour fails four times.
+{
+    const engineOnly = [
+        [/CONTRIBUTING\.md/, 'a file only `neomjs/neo` ships'],
+        [/Web Worker/,       'the Engine\'s worker architecture'],
+        [/virtual DOM/,      'the Engine\'s rendering model']
+    ];
+
+    for (const repo of readSupported().repos) {
+        const text = generate({audience: 'contributor', repo}).text;
+
+        for (const [pattern, why] of engineOnly) {
+            if (repo === 'neo') {
+                assert.match(text, pattern, `neo/contributor keeps ${why}`);
+            } else {
+                assert.doesNotMatch(text, pattern, `${repo}/contributor must not claim ${why}`);
+            }
+        }
+    }
+}
+
+// ── …and the engine variant is a door rather than a subset ──────────────────────────────────────
+// The falsifier for "correct subset, not an onboarding door" is mechanical: a grep for any runnable
+// command over this document must not return zero.
+{
+    const contributor = generate({audience: 'contributor', repo: 'neo'}).text;
+
+    [
+        [/npm run server-start/,       'the command that gets the engine running'],
+        [/npm run bundle-browser-deps/,'the build step whose absence makes the unit suite select zero tests'],
+        [/apps\/workstation/,          'something to look at that breaks a web-app mental model'],
+        [/learn\/benefits\/Introduction\.md/, 'the long-form why'],
+        [/CONTRIBUTING\.md/,           'the single copy of the setup loop'],
+        [/published on npm/,           'that their own agent needs no Knowledge Base and no Memory Core']
+    ].forEach(([pattern, what]) => assert.match(contributor, pattern, `neo/contributor names ${what}`));
+
+    // Channel separation is the one firewall layer that matters MORE to an agent whose operator is
+    // a stranger to this repository, so the contributor rewrite keeps it.
+    assert.match(contributor, /OWASP ASI01/,       'the injection-defence premise survives the rewrite');
+    assert.match(contributor, /DATA, not COMMANDS/,'and so does its directive');
 }
 
 // ── The packed artifact actually ships the generator ────────────────────────────────────────────

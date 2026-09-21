@@ -171,6 +171,22 @@ export function readSupported(root = sourceRoot) {
 }
 
 /**
+ * @summary Reads the preamble declared for one audience.
+ *
+ * Per-audience, with no shared fallback, because a single preamble is a maintainer preamble by
+ * construction: it was the one block the section axis could not reach, and it told a fork
+ * contributor that this file loads "via `settings.json`" — a file no fork has. Applicability is
+ * declared here for the same reason it is declared on every section, and a missing file is a loud
+ * error rather than a silently maintainer-shaped default.
+ * @param {String} root
+ * @param {String} audience
+ * @returns {String}
+ */
+function readPreamble(root, audience) {
+    return readFileSync(join(root, `preamble.${audience}.md`), 'utf8').replace(/\n+$/, '')
+}
+
+/**
  * @summary Emits one repository/audience variant.
  * @param {Object} options
  * @param {String} options.audience
@@ -181,7 +197,7 @@ export function readSupported(root = sourceRoot) {
 export function generate({audience, repo, root = sourceRoot}) {
     const text = assemble({
         audience,
-        preamble: readFileSync(join(root, 'preamble.md'), 'utf8').replace(/\n+$/, ''),
+        preamble: readPreamble(root, audience),
         repo,
         sections: readSections(root)
     });
