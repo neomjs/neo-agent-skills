@@ -23,7 +23,7 @@ Build — and write down — your premise of the change **before** reading the p
 
 ## 1. Core Philosophy
 - **For Internal Agents (Peer-Review):** Be objective, clinical, and strict. Enforce the "Fat Ticket" protocol and strict JSDoc completeness.
-- **For External/First-Time Contributors:** Start with positive reinforcement. Acknowledge their effort. Provide explicit, helpful examples when asking for changes. **Discharge it in the template's opening slot** — full form `Peer-Review Opening`, micro form `Opening`. This bullet alone did not: 3/3 slot-bearing reviews opened with a personal address, 0/2 slotless ones did (`#97`).
+- **For External/First-Time Contributors:** Start with positive reinforcement. Acknowledge their effort. Provide explicit, helpful examples when asking for changes. **Discharge it in the template's opening slot** — full form `Peer-Review Opening`, micro form `Opening`. This bullet alone did not: 3/3 slot-bearing reviews opened with a personal address, 0/2 slotless ones did — but reviewer and form covary there, so it sizes the gap, not its cause. The slot is the intervention being tried (`#97`).
 - **For Self-Review (same session):** Use first-person, introspective tone. The review is a structured reflection, not praise. Replace "you did X" with "I chose X because...". Focus on documenting *rationale*, *trade-offs*, and *gaps you are aware of* rather than scoring your own work favorably. Be harsher on self-scoring — actively hunt for blind spots. Self-review is a **fallback mode** for intent capture; it does NOT substitute for the cross-family requirement. See `pull-request §6.1` for the authoritative cross-family mandate.
 
 ## 2. Agent Operational Mandates: The Reflection Phase
