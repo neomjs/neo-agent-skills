@@ -143,7 +143,7 @@ const
     DOCUMENT_REFERENCE_EXACT_RE = new RegExp(`^(?:${DOCUMENT_REFERENCE_SELECTOR})$`),
     DOCUMENT_REFERENCE_OWNERS   = new Map([
         ['neomjs/neo-agent-brain', 13],
-        ['neomjs/neo',             10]
+        ['neomjs/neo',             11]
     ]),
     DOCUMENT_REFERENCE_KINDS    = new Set(['load', 'target-write', 'prose']),
     DOCUMENT_REFERENCE_ROOT_KEYS = new Set(['schemaVersion', 'selector', 'rows']),
@@ -188,8 +188,8 @@ if (!Array.isArray(documentReferenceCensus.rows)) {
     errors.push('document-reference census rows must be an array.')
 }
 
-if (documentReferenceRows.length !== 23) {
-    errors.push(`document-reference census must contain exactly 23 rows; found ${documentReferenceRows.length}.`)
+if (documentReferenceRows.length !== 24) {
+    errors.push(`document-reference census must contain exactly 24 rows; found ${documentReferenceRows.length}.`)
 }
 
 for (const [index, row] of documentReferenceRows.entries()) {

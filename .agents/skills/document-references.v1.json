@@ -237,6 +237,17 @@
             ]
         },
         {
+            "token": "learn/benefits/Introduction.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/benefits/Introduction.md",
+            "referencingSkills": [
+                "pr-review"
+            ],
+            "kinds": [
+                "prose"
+            ]
+        },
+        {
             "token": "learn/benefits/body/Speed.md",
             "canonicalOwner": "neomjs/neo",
             "resolution": "https://github.com/neomjs/neo/blob/dev/learn/benefits/body/Speed.md",

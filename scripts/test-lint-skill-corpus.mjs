@@ -285,7 +285,7 @@ const cases = [
 
     ['a document row with the WRONG owner fails', 1, w => editDocumentReferences(w, c => {
         c.rows[0].canonicalOwner = 'neomjs/neo-agent-brain'
-    }), 'owner and resolution must describe the same canonical repository, and the 13/10 custody partition must remain exact'],
+    }), 'owner and resolution must describe the same canonical repository, and the 13/11 custody partition must remain exact'],
 
     ['a document row with the WRONG resolution fails', 1, w => editDocumentReferences(w, c => {
         c.rows[0].resolution = c.rows[0].resolution.replace('/blob/dev/', '/blob/main/')
