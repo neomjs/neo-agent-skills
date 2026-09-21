@@ -2,7 +2,7 @@
 id: neo_identity_anchor_contributor
 order: 1301
 wrapperGroup: g4c
-repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
+repos: neo
 audiences: contributor
 ---
 ## §neo_identity_anchor

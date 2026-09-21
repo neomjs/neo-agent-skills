@@ -282,6 +282,33 @@ function capture(argv) {
     }
 }
 
+// ── …and nothing that is false in the REPOSITORY it is read in ──────────────────────────────────
+// Audience correctness and repository correctness are independent axes: a sentence can fit an
+// outside contributor and still describe a different repository. The first cut told all five
+// repositories that `CONTRIBUTING.md` held their setup loop, and four have no such file; it also
+// described the Engine's worker architecture to repositories that are not the Body. Found by
+// @neo-gpt in review, with the live root inventories as the control. Positive on `neo`, negative
+// everywhere else, so a shared sentence that only one repository can honour fails four times.
+{
+    const engineOnly = [
+        [/CONTRIBUTING\.md/, 'a file only `neomjs/neo` ships'],
+        [/Web Worker/,       'the Engine\'s worker architecture'],
+        [/virtual DOM/,      'the Engine\'s rendering model']
+    ];
+
+    for (const repo of readSupported().repos) {
+        const text = generate({audience: 'contributor', repo}).text;
+
+        for (const [pattern, why] of engineOnly) {
+            if (repo === 'neo') {
+                assert.match(text, pattern, `neo/contributor keeps ${why}`);
+            } else {
+                assert.doesNotMatch(text, pattern, `${repo}/contributor must not claim ${why}`);
+            }
+        }
+    }
+}
+
 // ── …and the engine variant is a door rather than a subset ──────────────────────────────────────
 // The falsifier for "correct subset, not an onboarding door" is mechanical: a grep for any runnable
 // command over this document must not return zero.
