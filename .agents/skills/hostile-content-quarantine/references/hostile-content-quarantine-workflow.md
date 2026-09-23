@@ -42,9 +42,9 @@ Read the artifact ONCE, as evidence (per the `identity-firewall` skill: retrieve
 
 The real blast radius is OWASP ASI06 (Memory & Context Poisoning) — the sync → KB/graph pipeline, not the post itself:
 
-1. Is it in `resources/content/**` yet? (`ls resources/content/discussions/ | grep <number>`, same for issues.)
-2. When did the sync last run? (`git log --oneline -3 origin/dev -- resources/content/` vs the artifact's creation timestamp.)
-3. **Window open** (not yet synced) → preventive mode: moderation before the next sync run means nothing ever ingests. **Already ingested** → remedial mode: purge from `resources/content/**` + chroma, then verify provenance (§7).
+1. Publisher run since the artifact's `createdAt`? (`gh run list --repo neomjs/github-content-sync --limit 1 --json createdAt,conclusion`.)
+2. Tenant swept that run? (`get_deployment_state_snapshot` → `tenantRepoSync.repos[]`, the `github-content-sync` entry's `lastIngestedRev` vs that run's commit.)
+3. **Window open** (unpublished or unswept) → preventive mode: moderation before the next publisher run means nothing ever ingests. **Already ingested** → remedial mode: purge from the corpus repository and chroma, then verify provenance (§7).
 4. The sync paginates GitHub's LIST APIs — content hidden from lists (spam-flagged) does not ingest even if the node still answers direct-by-id fetch (see §6).
 
 ## 6. Moderation matrix — and the verification triangle

@@ -1,6 +1,6 @@
 # Decision-substrate sweeps — arms `(iii)`, `(iv)` and `(v)` of §1a
 
-`ticket-create-workflow.md` §1a arms `(i)` and `(ii)`, and the `resources/content` greps beside them, are all **artifact** substrates. They answer *"does a ticket exist?"* None answers *"was this already decided, and why?"*
+`ticket-create-workflow.md` §1a arms `(i)` and `(ii)`, and the semantic and exact sweeps beside them, are all **artifact** substrates. They answer *"does a ticket exist?"* None answers *"was this already decided, and why?"*
 
 A `NOT_PLANNED` predecessor is a **ruling**. An artifact sweep surfaces its title and never its reason, so it fails silently: a clean sweep, filed with confidence, carrying a fresh-timestamp attestation proving the sweep ran.
 

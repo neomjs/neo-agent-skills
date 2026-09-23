@@ -23,7 +23,7 @@ Duplicates hide in **two substrates**, and you MUST sweep **both as the LAST ste
 gh issue list --state open --limit 20 --json number,title,author,labels,url
 ```
 
-An equivalent MCP call is acceptable only when its page is live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is only supplemental — it buries untouched fresh filings below recently-updated older issues. Failure mode `#15603`: a stale filtered-read path lagged the tracker by days across this herd window. This live sweep is required even when KB and local searches return no duplicates: the most likely active-swarm duplicate can exist on GitHub before Knowledge Base or `resources/content/**` sync has ingested it.
+An equivalent MCP call is acceptable only when its page is live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is only supplemental — it buries untouched fresh filings below recently-updated older issues. Failure mode `#15603`: a stale filtered-read path lagged the tracker by days across this herd window. This live sweep is required even when KB and local searches return no duplicates: the most likely active-swarm duplicate can exist on GitHub before the Knowledge Base has ingested it.
 
 If the live latest-open sweep fails because of sandbox, network, or auth state, retry through the appropriate approved/escalated path. If live GitHub state still cannot be fetched, stop before `create_issue` and report the blocker; do not file from stale-only evidence.
 
@@ -45,13 +45,8 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 <!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
 
-```
-grep on resources/content/issues/       # active + archived tickets
-grep on resources/content/discussions/   # ideation / brainstorming
-```
-
-Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — semantic search surfaces conceptual duplicates that title scanning misses.
-Exact/historical sweep: `grep` / `query_documents` over issues, archived issues, and discussions for exact keyword verification.
+Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — surfaces conceptual duplicates that title scanning misses; its rows come from the `github-content-sync` tenant, not an engine-tree mirror (neomjs/neo#17416).
+Exact/historical sweep: `query_documents` (issues, archived issues, discussions) or a live `gh search issues --owner neomjs "<keyword>"`.
 
 If an equivalent ticket or a prior decision exists: do NOT file a duplicate. Comment on the existing ticket, extend its scope, or reject the new request — and if the content belongs on a parent, comment it onto that parent **in the same turn**.
 

@@ -14,8 +14,8 @@ Question or adjacent Epic is a substrate failure, not a fresh idea.
   type='all')` when the Knowledge Base is available. Do not invent unsupported
   filters; if KB is unavailable, record that and continue with live/local
   evidence.
-- **Local exact sweep:** search `resources/content/discussions/` and
-  `resources/content/issues/` for exact keywords and issue/discussion anchors.
+- **Exact sweep:** `query_documents` (issues, archived issues, discussions) or a
+  live `gh search issues --owner neomjs "<keyword>"` for exact keywords and anchors.
 - **Memory sweep:** use `query_raw_memories` when the concept plausibly appeared
   in your own or team sessions; self-remembering is the failure mode this gate
   exists to counter.
