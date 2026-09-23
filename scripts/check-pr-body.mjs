@@ -145,23 +145,36 @@ export function hasAnchor(body, {anchor, match}) {
 }
 
 /**
+ * Every expression GitHub turns into a close on merge, per its "Linking a pull request to an issue" docs: any
+ * letter case, an optional colon, and a `#N`, `owner/repo#N` or issue-URL target — wherever it sits in content.
+ * @member {RegExp} GITHUB_CLOSING_EXPRESSION
+ */
+export const GITHUB_CLOSING_EXPRESSION =
+    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+(?:[\w.-]+\/[\w.-]+#\d+|#\d+|https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+)/gi;
+
+/**
  * @summary Returns why this body fails the close target: a pull request resolves exactly one ticket.
  *
  * Repository policy for EVERY pull request — any author, draft or ready (@tobiu, 2026-09-21 and
  * 2026-09-23: "a PR MUST ALWAYS resolve ONE ticket. zero exceptions."). A ticket whose ACs one PR
  * cannot deliver is re-scoped; the keyword is never downgraded to `Refs`.
  *
- * The close target is a STANDALONE line. The earlier raw-body search let `This PR Resolves #1234 as a
- * side effect.`, a fenced example and a table cell satisfy a rule that forbids every one of them.
+ * Two jobs, kept apart. The DECLARATION must be one standalone canonical `Resolves #N` line — the earlier
+ * raw-body search let `This PR Resolves #1234 as a side effect.`, a fenced example and a table cell satisfy a
+ * rule that forbids every one of them. And EXCLUSIVITY is judged over everything GitHub acts on: one canonical
+ * line does not make `resolves #2`, `Resolves: #2`, `owner/repo#2`, `Resolved #2` or an inline `fixes #2`
+ * inert, so any such expression outside that line is a second close target.
  * @param {String} [body=''] Pull-request body.
  * @returns {String[]} Violations, most specific first; empty when the close target is valid.
  */
 export function findCloseTargetViolations(body = '') {
     const
         content        = markdownContentLines(body).map(line => line.trim()),
-        resolvesLines  = content.filter(line => /^Resolves #\d+$/.test(line)).length,
+        isCanonical    = line => /^Resolves #\d+$/.test(line),
+        resolvesLines  = content.filter(isCanonical).length,
         forbiddenClose = content.map(line => line.match(/^(Closes|Fixes):?\s+#\d+/i)).find(Boolean),
         commaSeparated = content.some(line => /^Resolves #\d+\s*,/.test(line)),
+        additional     = content.filter(line => !isCanonical(line)).flatMap(line => line.match(GITHUB_CLOSING_EXPRESSION) ?? []),
         violations     = [];
 
     // `Closes` means closed-without-delivery, an outcome that needs no pull request at all;
@@ -174,6 +187,8 @@ export function findCloseTargetViolations(body = '') {
     // the author wrote deliberately, and "missing" would send them looking for the wrong bug.
     if (commaSeparated || resolvesLines > 1) {
         violations.push('a PR resolves exactly ONE ticket — one standalone `Resolves #N` line, no second one and no comma list')
+    } else if (resolvesLines && additional.length) {
+        violations.push(`a PR resolves exactly ONE ticket — \`${additional[0]}\` is a second closing reference GitHub acts on`)
     }
 
     if (!resolvesLines && !commaSeparated) {

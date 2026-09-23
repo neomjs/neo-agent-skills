@@ -265,6 +265,37 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     assert.equal(cli(['--close-target-only'], 'Resolves #1\nResolves #2').code, 1, 'two tickets fail for humans too')
 }
 
+// ── One canonical line does not make a second closing expression inert ──────────────────────────
+//
+// GitHub closes on any-case keywords, an optional colon, a qualified target and inline prose. Each bypass below
+// passed the canonical-line count alone; each must now fail in BOTH scopes, while non-closing references stay green.
+{
+    const bypasses = {
+        'lowercase keyword'  : 'resolves #2',
+        'colon form'         : 'Resolves: #2',
+        'qualified reference': 'Resolves neomjs/neo-agent-skills#2',
+        'past tense'         : 'Resolved #2',
+        'inline prose'       : 'This also fixes #2.',
+        'issue URL'          : 'Closes https://github.com/neomjs/neo/issues/2'
+    };
+
+    Object.entries(bypasses).forEach(([label, line]) => {
+        const human = `Resolves #1\n${line}`;
+
+        assert.equal(cli(['--close-target-only'], human).code, 1, `${label}: a second closing reference fails the close-target scope`);
+        assert.ok(findBodyViolations({body: `${line}\n${goodBody()}`}).visible.some(v => v.includes('exactly ONE ticket')),
+            `${label}: and the full agent scope names the one-ticket rule`)
+    });
+
+    // Controls for the same entry point: the canonical line alone passes, and references GitHub does not act on
+    // never count as a second target.
+    assert.equal(cli(['--close-target-only'], 'Resolves #1').code, 0, 'one canonical line passes');
+    ['Refs #2', 'Related: #2', 'see #2', 'Fixed a bug where #2 misrendered'].forEach(line => {
+        assert.equal(cli(['--close-target-only'], `Resolves #1\n${line}`).code, 0, `"${line}" is not a closing reference`);
+        assert.deepEqual(findBodyViolations({body: `${line}\n${goodBody()}`}).visible, [], `"${line}" keeps the agent scope green`)
+    })
+}
+
 // ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────
 //
 // An agent harness spawns its processes with a stdin that is neither a TTY nor a closed pipe. `spawnSync` closes the
