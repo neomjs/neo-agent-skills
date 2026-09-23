@@ -182,7 +182,45 @@ try {
         const unreadable = push(clone, leaked, [], 'f'.repeat(40));
 
         assert.equal(unreadable.status, 1, 'a remote sha this clone does not have cannot be read');
-        assert.match(unreadable.output, /cannot read the pushed commits/)
+        assert.match(unreadable.output, /cannot read the pushed commits/);
+
+        // After a rebase the old head is no ancestor of the new one, so `remoteSha..localSha` alone also holds the
+        // upstream commits the branch moved onto: here one the operator landed on main
+        git(clone, 'checkout', '-q', '-b', 'lane', 'origin/main');
+        writeFileSync(join(clone, 'lane.txt'), 'lane\n');
+        git(clone, 'add', 'lane.txt');
+        git(clone, 'commit', '-q', '--author', 'Seat One <seat-one@team.example>', '-m', 'lane work');
+        git(clone, 'push', '-q', 'origin', 'lane');
+
+        const oldHead = git(clone, 'rev-parse', 'HEAD'),
+              onMain  = commit(repo, null, 'the operator lands on main');
+
+        git(repo, 'push', '-q', origin, `${onMain}:refs/heads/main`);
+        git(clone, 'fetch', '-q', 'origin');
+        git(clone, 'rebase', '-q', 'origin/main');
+
+        const newHead = git(clone, 'rev-parse', 'HEAD');
+
+        assert.equal(spawnSync('git', ['merge-base', '--is-ancestor', oldHead, newHead], {cwd: clone, env}).status, 1, 'the fixture rebased');
+
+        const rebased = push(clone, newHead, [], oldHead);
+
+        assert.equal(rebased.status, 0, `a rebased branch does not answer for the upstream commits it moved onto\n${rebased.output}`);
+
+        // Controls: a commit the push itself adds is still read, on the rebased branch and on a fast-forward
+        git(clone, 'commit', '-q', '--allow-empty', '-m', 'the operator on the lane');
+
+        const onLane      = git(clone, 'rev-parse', 'HEAD'),
+              afterRebase = push(clone, onLane, [], oldHead);
+
+        assert.equal(afterRebase.status, 1, 'an operator commit the rebased branch adds is refused');
+        assert.ok(afterRebase.output.includes(onLane.slice(0, 10)) && !afterRebase.output.includes(onMain.slice(0, 10)),
+            `the refusal names the lane's commit, never main's\n${afterRebase.output}`);
+
+        git(clone, 'push', '-q', '-f', 'origin', `${newHead}:refs/heads/lane`);
+        git(clone, 'fetch', '-q', 'origin');
+
+        assert.equal(push(clone, onLane, [], newHead).status, 1, 'on a fast-forward too')
     }
 
     // ── The pure parts ─────────────────────────────────────────────────────────────────────────────
@@ -199,6 +237,8 @@ try {
 
         assert.deepEqual(pendingRanges(`refs/heads/a ${'a'.repeat(40)} refs/heads/a ${zero}\n`), [`${'a'.repeat(40)} --not --remotes`],
             'a new remote branch is measured against what no remote-tracking ref has seen');
+        assert.deepEqual(pendingRanges(`refs/heads/a ${'a'.repeat(40)} refs/heads/a ${'b'.repeat(40)}\n`), [`${'b'.repeat(40)}..${'a'.repeat(40)} --not --remotes`],
+            'a branch the remote has is measured from its remote sha, less what any remote-tracking ref has seen');
         assert.deepEqual(pendingRanges(`refs/heads/a ${zero} refs/heads/a ${'b'.repeat(40)}\n`), [], 'a deletion sends nothing');
         assert.deepEqual(pendingRanges(''), ['HEAD --not --remotes'], 'no payload scans the unpushed commits, never nothing');
         assert.deepEqual(pendingRanges('', 'abc'), ['abc..HEAD'])

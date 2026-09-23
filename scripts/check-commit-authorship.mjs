@@ -42,12 +42,14 @@ const
     };
 
 /**
- * @summary The commit ranges a push sends, read from git's own ref tuples, or `<base>..HEAD` in CI.
+ * @summary The commits a push introduces, read from git's own ref tuples, or `<base>..HEAD` in CI.
  *
- * `remoteSha..localSha` is the exact boundary git applies to a branch the remote already has; a deletion sends no
- * commits. A new remote branch reports the zero sha, and a manual run has no payload at all: both scan what no
- * remote-tracking ref has seen (`<sha> --not --remotes`). That basis names no trunk, so a repository whose trunk is
- * `main` is covered like one whose trunk is `dev`, and a scan never degrades to nothing.
+ * A commit some remote-tracking ref has already seen was introduced by someone else, so no range answers for it
+ * (`--not --remotes`). A branch the remote already has is measured from its remote sha as well: after a rebase,
+ * `remoteSha..localSha` alone also holds the upstream commits the branch moved onto. A deletion sends no commits. A new
+ * remote branch reports the zero sha, and a manual run has no payload at all: both are measured against the
+ * remote-tracking refs alone. That basis names no trunk, so a repository whose trunk is `main` is covered like one
+ * whose trunk is `dev`, and a scan never degrades to nothing.
  * @param {String}      payload The hook's stdin
  * @param {String|null} [base]  A base sha, when there is no push to read
  * @returns {String[]} `git log` revision arguments, one entry per pushed ref
@@ -70,7 +72,7 @@ export function pendingRanges(payload, base=null) {
             return null
         }
 
-        return !remoteSha || remoteSha === ZERO_SHA ? `${localSha} ${UNSEEN}` : `${remoteSha}..${localSha}`
+        return !remoteSha || remoteSha === ZERO_SHA ? `${localSha} ${UNSEEN}` : `${remoteSha}..${localSha} ${UNSEEN}`
     }).filter(Boolean)
 }
 
@@ -226,8 +228,9 @@ export async function run(args, payload) {
         return 0
     }
 
-    // Unseen commits are measured against the remote-tracking refs, and with none there is no basis to measure against
-    if (ranges.some(range => range.endsWith(UNSEEN)) && !tryExec('git for-each-ref --count=1 refs/remotes')) {
+    // A range measured against the remote-tracking refs alone has no basis without them; one that also names its
+    // remote sha (`..`) keeps that basis, and merely excludes nothing more
+    if (ranges.some(range => range.endsWith(UNSEEN) && !range.includes('..')) && !tryExec('git for-each-ref --count=1 refs/remotes')) {
         console.error('check-commit-authorship: no remote-tracking ref to measure the pushed commits against. ' +
             'Fetch the remote first, or bypass with git push --no-verify.');
         return 1
