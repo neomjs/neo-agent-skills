@@ -145,51 +145,59 @@ export function hasAnchor(body, {anchor, match}) {
 }
 
 /**
+ * @summary Returns why this body fails the close target: a pull request resolves exactly one ticket.
+ *
+ * Repository policy for EVERY pull request — any author, draft or ready (@tobiu, 2026-09-21 and
+ * 2026-09-23: "a PR MUST ALWAYS resolve ONE ticket. zero exceptions."). A ticket whose ACs one PR
+ * cannot deliver is re-scoped; the keyword is never downgraded to `Refs`.
+ *
+ * The close target is a STANDALONE line. The earlier raw-body search let `This PR Resolves #1234 as a
+ * side effect.`, a fenced example and a table cell satisfy a rule that forbids every one of them.
+ * @param {String} [body=''] Pull-request body.
+ * @returns {String[]} Violations, most specific first; empty when the close target is valid.
+ */
+export function findCloseTargetViolations(body = '') {
+    const
+        content        = markdownContentLines(body).map(line => line.trim()),
+        resolvesLines  = content.filter(line => /^Resolves #\d+$/.test(line)).length,
+        forbiddenClose = content.map(line => line.match(/^(Closes|Fixes):?\s+#\d+/i)).find(Boolean),
+        commaSeparated = content.some(line => /^Resolves #\d+\s*,/.test(line)),
+        violations     = [];
+
+    // `Closes` means closed-without-delivery, an outcome that needs no pull request at all;
+    // `Fixes` is ambiguous. One sanctioned keyword keeps the one-ticket model mechanical.
+    if (forbiddenClose) {
+        violations.push(`\`${forbiddenClose[1]} #N\` is forbidden — use \`Resolves #N\``)
+    }
+
+    // Named before the absence check: `Resolves #1, #2` and a second `Resolves` line are close targets
+    // the author wrote deliberately, and "missing" would send them looking for the wrong bug.
+    if (commaSeparated || resolvesLines > 1) {
+        violations.push('a PR resolves exactly ONE ticket — one standalone `Resolves #N` line, no second one and no comma list')
+    }
+
+    if (!resolvesLines && !commaSeparated) {
+        violations.push('`Resolves #N` on its own line (mandatory for every PR, draft included — `Refs`/`Related` alone is not sufficient, and a mention inside prose, a table cell or a fence is not a declaration)')
+    }
+
+    return violations
+}
+
+/**
  * @summary Returns every reason this body must be refused, in the order a reader should fix them.
  *
  * Pure and transport-free: the same body yields the same findings whether it came from a webhook, a
  * local file, or a test fixture.
  * @param {Object} options
  * @param {String} options.body Pull-request body.
- * @param {Boolean} [options.isDraft=false] Draft pull requests may defer the close target.
  * @returns {{visible: String[], invisible: String[]}} `invisible` is never surfaced in prose.
  */
-export function findBodyViolations({body = '', isDraft = false} = {}) {
+export function findBodyViolations({body = ''} = {}) {
     const
         visible   = VISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
-        invisible = INVISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
+        invisible = INVISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor);
 
-        // The close target is a STANDALONE line, which is what `pull-request-workflow.md` §9.1
-        // has always promised ("standalone Resolves #TICKET_ID"). The previous pattern searched
-        // the raw body, so `This PR Resolves #1234 as a side effect.`, a fenced example, a table
-        // cell and `Resolves #1, #2` all satisfied a rule that forbids every one of them. A close
-        // target is a machine-read declaration; prose that happens to contain the words is not one.
-        content    = markdownContentLines(body).map(line => line.trim()),
-        hasResolves            = content.some(line => /^Resolves #\d+$/.test(line)),
-        hasNonClosingReference = content.some(line => /^(?:Refs #\d+|Related: #\d+)$/.test(line)),
-        forbiddenClose         = content.map(line => line.match(/^(Closes|Fixes):?\s+#\d+/i)).find(Boolean),
-        // §9.1 forbids the comma form explicitly: multiple delivered tickets get one standalone
-        // line each. Reported separately from "absent" so the author is told which rule they hit.
-        commaSeparated         = content.some(line => /^Resolves #\d+\s*,/.test(line));
-
-    // `Closes` means closed-without-delivery, an outcome that needs no pull request at all;
-    // `Fixes` is ambiguous. One sanctioned closing keyword keeps the 1-PR-per-ticket model
-    // mechanical: a ticket needing N pull requests cannot carry N valid `Resolves`.
-    if (forbiddenClose) {
-        visible.push(`\`${forbiddenClose[1]} #N\` is forbidden — use \`Resolves #N\``)
-    }
-
-    // Named before the absence check, because `Resolves #1, #2` IS a close target the author
-    // wrote deliberately — telling them it is "missing" sends them looking for the wrong bug.
-    if (commaSeparated) {
-        visible.push('`Resolves #X, #Y` is forbidden — one standalone `Resolves #N` line per delivered ticket')
-    }
-
-    if (!hasResolves && !(isDraft && hasNonClosingReference)) {
-        visible.push(isDraft
-            ? '`Refs #N` or `Related: #N` on its own line (draft-only non-closing reference, required while `Resolves #N` is absent)'
-            : '`Resolves #N` on its own line (mandatory closing keyword — `Refs`/`Related` alone is not sufficient, and a mention inside prose, a table cell or a fence is not a declaration)')
-    }
+    visible.push(...findCloseTargetViolations(body));
 
     return {invisible, visible}
 }
@@ -208,7 +216,7 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
         args            : argv,
         allowPositionals: false,
         strict          : true,
-        options         : {'body-file': {type: 'string'}, draft: {type: 'boolean', default: false}}
+        options         : {'body-file': {type: 'string'}, 'close-target-only': {type: 'boolean', default: false}}
     });
 
     let body = stdin;
@@ -222,7 +230,22 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
         }
     }
 
-    const {invisible, visible} = findBodyViolations({body, isDraft: parsed.values.draft});
+    // The close target is policy for every PR; the anchors are the agent protocol. A human PR is judged
+    // on the first alone, so its failure never names a template nobody asked it to follow.
+    if (parsed.values['close-target-only']) {
+        const violations = findCloseTargetViolations(body);
+
+        if (!violations.length) {
+            out('✅ PR body resolves exactly one ticket.');
+            return 0
+        }
+
+        error('❌ PR body has no valid close target.');
+        error(`   ${violations[0]}`);
+        return 1
+    }
+
+    const {invisible, visible} = findBodyViolations({body});
 
     if (!visible.length && !invisible.length) {
         out('✅ PR body carries every required anchor.');
