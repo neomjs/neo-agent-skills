@@ -303,13 +303,10 @@ Before PR prose, read the [reference-hygiene guide](https://github.com/neomjs/ne
 **Close-target rules (Mandatory, CI-enforced):**
 - `Resolves #N` only targets the leaf ticket fully delivered by the PR; never an
   Epic. Reference parent epics with `Related: #N` or `Refs #N`.
-- Every agent/`ai` PR body must contain at least one exact standalone
-  `Resolves #N`. `Closes` and `Fixes` are forbidden; comma-separated
-  `Resolves #X, #Y` is forbidden. Multiple delivered tickets get one standalone
-  line each.
-- Draft-only exception: `Refs #N` / `Related: #N` may replace `Resolves #N`
-  only while the PR is draft. Before `ready_for_review`, add the honest delivered
-  leaf close target or split/file the narrow ticket; that event reruns lint.
+- Every PR — any author, draft or ready — resolves exactly ONE ticket: one
+  standalone `Resolves #N`, no second line, no `Resolves #X, #Y`. `Closes` and
+  `Fixes` are forbidden. An AC the PR cannot deliver moves to the ticket's
+  `## Post-Merge Validation` or the ticket is split; `Refs` never replaces it.
 - For referenced tickets that must remain open, branch history must also avoid
   stale magic-close keywords. Before handoff, run:
 

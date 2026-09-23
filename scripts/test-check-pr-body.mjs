@@ -104,10 +104,16 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     const noResolves = goodBody().replace('Resolves #1234', 'Refs #1234');
 
     assert.ok(findBodyViolations({body: noResolves}).visible.some(v => v.includes('Resolves #N')),
-        'a non-draft body without `Resolves #N` must be refused');
+        'a body without `Resolves #N` must be refused');
 
-    assert.deepEqual(findBodyViolations({body: noResolves, isDraft: true}).visible, [],
-        'a DRAFT may defer the close target when it carries `Refs #N`');
+    // No draft exception any more (@tobiu, 2026-09-23: "zero exceptions"): the CLI has no `--draft`
+    // flag, and strict argument parsing refuses one rather than ignoring it.
+    assert.throws(() => run(['--draft'], {stdin: noResolves, out: () => {}, error: () => {}}), /Unknown option '--draft'/,
+        'a draft flag must be refused, never silently honoured');
+
+    // Exactly ONE ticket: a second standalone line is named as the rule it breaks.
+    assert.ok(findBodyViolations({body: `Resolves #5678\n${goodBody()}`}).visible.some(v => v.includes('exactly ONE ticket')),
+        'two standalone `Resolves` lines must be refused');
 
     assert.ok(findBodyViolations({body: goodBody().replace('Resolves #1234', 'Closes #1234')})
         .visible.some(v => v.includes('forbidden')), '`Closes #N` must be refused');
@@ -230,14 +236,64 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     // rather than being reported as absent.
     const comma = `Resolves #1234, #5678\n${withoutResolves}`;
 
-    assert.ok(findBodyViolations({body: comma}).visible.some(v => v.includes('`Resolves #X, #Y` is forbidden')),
-        'the comma form must be named as forbidden, not merely reported missing');
+    assert.ok(findBodyViolations({body: comma}).visible.some(v => v.includes('exactly ONE ticket')),
+        'the comma form must be named as the one-ticket rule, not merely reported missing');
+    assert.ok(!findBodyViolations({body: comma}).visible.some(v => v.startsWith('`Resolves #N` on its own line')),
+        'and must not ALSO be reported as absent');
 
-    // Draft exception survives, and it is standalone too.
-    assert.deepEqual(findBodyViolations({body: `Refs #1234\n${withoutResolves}`, isDraft: true}).visible, [],
-        'a DRAFT may defer the close target with a standalone `Refs #N`');
-    assert.ok(findBodyViolations({body: `see Refs #1234 inline\n${withoutResolves}`, isDraft: true})
-        .visible.some(v => v.includes('Refs #N')), 'an inline `Refs` is not a declaration either')
+    // A standalone `Refs` never stands in for the close target.
+    assert.ok(findBodyViolations({body: `Refs #1234\n${withoutResolves}`}).visible.some(v => v.includes('Resolves #N')),
+        'a standalone `Refs #N` is not a close target')
+}
+
+// ── --close-target-only judges the close target alone (every PR, any author) ──────────────────
+//
+// A human contributor's PR is held to the repository's one rule, not to the agent template: the
+// anchors are absent from this fixture, and the verdict must not mention them either way.
+{
+    const human = 'Adds the missing null check.\n\nResolves #1234';
+
+    assert.equal(cli(['--close-target-only'], human).code, 0, 'a human body with one `Resolves` passes');
+
+    const refsOnly = cli(['--close-target-only'], 'Adds the missing null check.\n\nRefs #1234');
+
+    assert.equal(refsOnly.code, 1, 'a human body with only `Refs` fails');
+    assert.ok(refsOnly.text.includes('Resolves #N'), 'and the failure names the close target');
+    VISIBLE_PR_BODY_ANCHORS.forEach(({anchor}) => assert.ok(!refsOnly.text.includes(anchor),
+        `a close-target failure must not mention the agent anchor ${anchor}`));
+
+    assert.equal(cli(['--close-target-only'], 'Resolves #1\nResolves #2').code, 1, 'two tickets fail for humans too')
+}
+
+// ── One canonical line does not make a second closing expression inert ──────────────────────────
+//
+// GitHub closes on any-case keywords, an optional colon, a qualified target and inline prose. Each bypass below
+// passed the canonical-line count alone; each must now fail in BOTH scopes, while non-closing references stay green.
+{
+    const bypasses = {
+        'lowercase keyword'  : 'resolves #2',
+        'colon form'         : 'Resolves: #2',
+        'qualified reference': 'Resolves neomjs/neo-agent-skills#2',
+        'past tense'         : 'Resolved #2',
+        'inline prose'       : 'This also fixes #2.',
+        'issue URL'          : 'Closes https://github.com/neomjs/neo/issues/2'
+    };
+
+    Object.entries(bypasses).forEach(([label, line]) => {
+        const human = `Resolves #1\n${line}`;
+
+        assert.equal(cli(['--close-target-only'], human).code, 1, `${label}: a second closing reference fails the close-target scope`);
+        assert.ok(findBodyViolations({body: `${line}\n${goodBody()}`}).visible.some(v => v.includes('exactly ONE ticket')),
+            `${label}: and the full agent scope names the one-ticket rule`)
+    });
+
+    // Controls for the same entry point: the canonical line alone passes, and references GitHub does not act on
+    // never count as a second target.
+    assert.equal(cli(['--close-target-only'], 'Resolves #1').code, 0, 'one canonical line passes');
+    ['Refs #2', 'Related: #2', 'see #2', 'Fixed a bug where #2 misrendered'].forEach(line => {
+        assert.equal(cli(['--close-target-only'], `Resolves #1\n${line}`).code, 0, `"${line}" is not a closing reference`);
+        assert.deepEqual(findBodyViolations({body: `${line}\n${goodBody()}`}).visible, [], `"${line}" keeps the agent scope green`)
+    })
 }
 
 // ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────

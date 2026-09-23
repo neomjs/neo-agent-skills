@@ -232,16 +232,23 @@ export function validateReusablePrBaseline(source) {
 //   steps receive only a workflow-owned path. A pull-request body is attacker-controlled text, so
 //   interpolating it into `run:` is a shell-injection primitive. Carried from `neomjs/neo` PR
 //   #17917 AC-4, which was the only place this property had ever been written down.
-// §9 is the AGENT pull-request protocol, so this job judges agent-authored PRs only — the boundary
-// the deleted `agent-pr-body-lint.yml` carried. Widening it to every contributor holds human PRs to
-// a template nobody agreed to, which is a policy change rather than a port.
-//
-// COUNTED, not merely present: the boundary must sit on BOTH judging steps. One gated and one not
-// still runs the agent template against a human PR through whichever half lost its condition, and a
-// presence check passes on a single surviving occurrence.
-if ((prBodyJob.match(/if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/g) || []).length !== 2) {
-    failures.push('PR-body author boundary missing from a judging step')
+// Two claims, two scopes. The close target (exactly one `Resolves`) is policy for EVERY pull request,
+// so the body read and its check run ungated; the §9 anchors are the AGENT protocol, so their step
+// alone carries the `neo-` / `ai` boundary. COUNTED, not merely present: a second gated step would
+// silently exempt human PRs from the close target again, and a presence check passes on one survivor.
+if ((prBodyJob.match(/if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/g) || []).length !== 1) {
+    failures.push('PR-body author boundary must gate exactly one step — the anchors')
 }
+
+const closeTargetStep = prBodyJob.match(/- name: Validate the close target\n([\s\S]*?)(?=\n      - name: |$)/);
+
+if (!closeTargetStep) {
+    failures.push('PR-body job has no close-target step')
+} else if (/^\s+if:/m.test(closeTargetStep[1]) || !/--close-target-only/.test(closeTargetStep[1])) {
+    failures.push('the close-target step must run ungated with --close-target-only')
+}
+
+if (/DRAFT_FLAG|--draft/.test(prBodyJob)) failures.push('PR-body job still carries a draft exception');
 
 if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks out the caller tree');
 
@@ -562,11 +569,20 @@ expectMutationFailure('PR-body mutable install', source,
                            '          "neo-agent-skills@latest"\n\n      # The body is fetched LIVE'),
     'PR-body guard install is not pinned to an exact version');
 
-expectMutationFailure('PR-body author boundary dropped from one step', source,
-    value => value.replace(
-        /        if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\) \|\| contains\(github\.event\.pull_request\.labels\.\*\.name, 'ai'\) \}\}\n(        uses: actions\/github-script@v\d+)/,
-        '$1'),
-    'PR-body author boundary missing from a judging step');
+const AGENT_GATE = "        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}\n";
+
+expectMutationFailure('PR-body anchors ungated', source,
+    value => value.replace(`      - name: Validate the required anchors\n${AGENT_GATE}`, '      - name: Validate the required anchors\n'),
+    'PR-body author boundary must gate exactly one step — the anchors');
+expectMutationFailure('PR-body close target gated to agents again', source,
+    value => value.replace('      - name: Validate the close target\n', `      - name: Validate the close target\n${AGENT_GATE}`),
+    'the close-target step must run ungated with --close-target-only');
+expectMutationFailure('PR-body close-target flag dropped', source,
+    value => value.replace('          --body-file "${BODY_FILE}" --close-target-only', '          --body-file "${BODY_FILE}"'),
+    'the close-target step must run ungated with --close-target-only');
+expectMutationFailure('PR-body draft exception reintroduced', source,
+    value => value.replace('          --body-file "${BODY_FILE}"\n', '          --body-file "${BODY_FILE}" ${DRAFT_FLAG}\n'),
+    'PR-body job still carries a draft exception');
 expectMutationFailure('PR-body ai-label opt-in dropped', source,
     value => value.split(" || contains(github.event.pull_request.labels.*.name, 'ai')").join(''),
     'missing PR-body ai-label opt-in');
@@ -584,7 +600,7 @@ expectMutationFailure('PR-body checkout added', source,
     value => value.replace('      - name: Install immutable PR-body guard', '      - uses: actions/checkout@v4\n\n      - name: Install immutable PR-body guard'),
     'PR-body job checks out the caller tree');
 expectMutationFailure('PR-body reaches a shell', source,
-    value => value.replace('          --body-file "${BODY_FILE}" ${DRAFT_FLAG}', '          --body-file "${{ github.event.pull_request.body }}" ${DRAFT_FLAG}'),
+    value => value.replace('          --body-file "${BODY_FILE}" --close-target-only', '          --body-file "${{ github.event.pull_request.body }}" --close-target-only'),
     'PR-body content reaches a run: block');
 
 expectMutationFailure('continue on error', source,

@@ -12,8 +12,7 @@
 # `edited` is the one that is easy to omit and expensive to miss. This job reads the LIVE body, so a
 # corrected body goes green with no push — but only if the caller fires on the edit. Without it the
 # live fetch buys nothing: the author fixes the body, nothing re-runs, and the red stands until an
-# unrelated commit arrives. `ready_for_review` matters for the same reason on the draft boundary,
-# where the close-target rule changes.
+# unrelated commit arrives. `ready_for_review` re-judges a draft at the moment it becomes reviewable.
 #
 # The trigger cannot be asserted here — a reusable workflow does not see its caller's `on:` block.
 # It is a caller obligation, tracked per repository under #14.
@@ -344,15 +343,14 @@ jobs:
       #
       # It is written to a FILE from JavaScript and never interpolated into a shell. A pull-request
       # body is attacker-controlled text; `run:` steps below receive only a workflow-owned path.
-      # §9 is the AGENT pull-request protocol, so this judges agent-authored PRs only — the same
-      # boundary the deleted `agent-pr-body-lint.yml` carried: a `neo-` login prefix, or an
-      # explicit `ai` label for a human-authored PR opting in. Widening it to every contributor
-      # would hold human PRs to a template nobody agreed they must follow, and that is a policy
-      # change, not a port. The steps are gated rather than the job, so the check still REPORTS on
-      # a human PR: a skipped job cannot serve as a required status context, which is what #14
-      # needs these to become.
+      #
+      # Two claims, two scopes. The close target is repository policy for EVERY pull request — any
+      # author, draft or ready: it resolves exactly one ticket. The anchors are §9, the AGENT
+      # protocol, so they judge only a `neo-` login or an `ai`-labelled PR; holding a human PR to that
+      # template would be a policy nobody agreed to. The anchor step is gated rather than the job, so
+      # the check still REPORTS on a human PR — a skipped job cannot serve as the required status
+      # context #14 needs.
       - name: Read the live pull-request body
-        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
         uses: actions/github-script@v9
         env:
           BODY_FILE: ${{ runner.temp }}/pr-body.md
@@ -366,9 +364,13 @@ jobs:
 
             require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
 
-            // Resolved here so the shell never branches on it: a draft may defer its close target,
-            // and `${VAR:+--draft}` would pass the flag for the string "false" too.
-            core.exportVariable('DRAFT_FLAG', data.draft ? '--draft' : '')
+      - name: Validate the close target
+        env:
+          BODY_FILE  : ${{ runner.temp }}/pr-body.md
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+        run: >-
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
+          --body-file "${BODY_FILE}" --close-target-only
 
       - name: Validate the required anchors
         if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
@@ -377,4 +379,4 @@ jobs:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
-          --body-file "${BODY_FILE}" ${DRAFT_FLAG}
+          --body-file "${BODY_FILE}"

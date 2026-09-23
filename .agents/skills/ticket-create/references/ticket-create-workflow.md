@@ -64,7 +64,7 @@ Before creating any Epic, architecture/substrate ticket, or ticket touching `ai/
 
 **Why:** a pre-quorum ticket creates a premature center-of-gravity; this pairs with the Discussion-side §5.1 gate.
 
-**Three-act boundary:** creation is pre-quorum-blocked by default; marker recording is post-quorum; work-start and merge eligibility are post-marker. Any pre-marker PR stays draft with `Refs #N`, never `Resolves #N`.
+**Three-act boundary:** creation is pre-quorum-blocked by default; marker recording is post-quorum; work-start and merge eligibility are post-marker, so no PR opens before the marker.
 
 **Pre-quorum reservation exception:** the body MUST carry all three:
 
@@ -72,7 +72,7 @@ Before creating any Epic, architecture/substrate ticket, or ticket touching `ai/
 2. an inline divergence matrix: recommendation + 2 alternatives, each with a falsifier;
 3. the sections that must be refreshed after graduation.
 
-The shell also carries `[PROVISIONAL_UNGRADUATED: D#N]`, links the source Discussion, marks scope provisional, and omits final ACs; do not assign, claim, or start it. At quorum, promote the body/graduated-artifact ledger, record `[GRADUATED_TO_TICKET: #N]`, and remove the provisional marker; only then may a PR use `Resolves` and move toward ready/merge eligibility.
+The shell also carries `[PROVISIONAL_UNGRADUATED: D#N]`, links the source Discussion, marks scope provisional, and omits final ACs; do not assign, claim, or start it. At quorum, promote the body/graduated-artifact ledger, record `[GRADUATED_TO_TICKET: #N]`, and remove the provisional marker; only then may a PR open.
 
 For source anchors (`#11078` / `#11082` / `#11083` / `#11084`), Discussion `#11091` authority context, and substrate-decay review, read [`../../ideation-sandbox/audits/double-diamond-divergence-guard.md`](../../ideation-sandbox/audits/double-diamond-divergence-guard.md).
 
