@@ -45,7 +45,7 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 <!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
 
-Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — surfaces conceptual duplicates that title scanning misses; its rows come from the `github-content-sync` tenant, not an engine-tree mirror (neomjs/neo#17416).
+Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — surfaces conceptual duplicates that title scanning misses; its rows come from the `github-content-sync` tenant.
 Exact/historical sweep: `query_documents` (issues, archived issues, discussions) or a live `gh search issues --owner neomjs "<keyword>"`.
 
 If an equivalent ticket or a prior decision exists: do NOT file a duplicate. Comment on the existing ticket, extend its scope, or reject the new request — and if the content belongs on a parent, comment it onto that parent **in the same turn**.
