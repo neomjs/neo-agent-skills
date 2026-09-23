@@ -59,6 +59,6 @@ To understand the macro-architecture this skill serves (Neo as an Application En
 
 - Engine-owned [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) (Left/Right Hemispheres)
 - Brain-owned [Dream Pipeline](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/DreamPipeline.md) (Sensory Input & DreamService)
-- `resources/content/discussions/discussion-10119.md` (Engine-category vs. Framework-category positioning)
-- `resources/content/discussions/discussion-10137.md` (Agent OS context)
+- https://github.com/neomjs/neo/discussions/10119 (Engine-category vs. Framework-category positioning)
+- https://github.com/neomjs/neo/discussions/10137 (Agent OS context)
 - `.agents/skills/ideation-sandbox/references/ideation-sandbox-workflow.md` (Pre-Filing Precedent Sweep): The radar targets *frontier friction* where standards are failing. The `ideation-sandbox` precedent sweep targets *established standards* to avoid reinventing them. They are complementary disciplines.

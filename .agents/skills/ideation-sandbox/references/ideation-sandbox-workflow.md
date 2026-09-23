@@ -88,7 +88,7 @@ Rationale for the closure rule (why a clock, a count, and a consecutive-passes p
 §5.1 is the **divergence-phase** gate (matrix must be in body before convergence). §5.2 is the **convergence-phase** gate (cross-substrate sweep must run before graduation).
 
 **Trigger — high-blast-radius (any ONE qualifies)**:
-- Modifies durable content layout (`resources/content/`, `learn/`, `.agents/`)
+- Modifies durable content layout (`learn/`, `.agents/`)
 - Couples to CI/workflow (`.github/workflows/`)
 - Requires data migration (file moves, schema mutation, ≥10 files affected)
 - Modifies public skill/rule substrate (AGENTS.md sections, skill payloads)

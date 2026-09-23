@@ -20,7 +20,7 @@ A conflict between this guide and those authorities is a bug in THIS guide — t
 ## 3. The Multi-Vectored Sweep
 
 ### A. Ambient Artifact Traversal
-Use `ask_knowledge_base` against the backlog (`resources/content/issues/`): abandoned concepts, incomplete migrations, trailing architectural directives.
+Use `ask_knowledge_base(type: 'ticket')` against the backlog's conversation rows: abandoned concepts, incomplete migrations, trailing architectural directives.
 
 ### B. Episodic Memory Mining
 Heavily use `query_raw_memories` and `query_summaries` for "abandoned loops" (an agent attempted X and rolled back; failed test hypotheses) — past thought-logs carry the *why* behind accrued debt.
