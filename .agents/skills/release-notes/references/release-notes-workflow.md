@@ -17,9 +17,9 @@ Release notes are a **public narrated release**, ingested twice: humans read the
 
 Derive the window from **multiple sources, trusting none alone**:
 
-- `node buildScripts/release/analyzeClosedSinceRelease.mjs <prev-release-date> --format markdown` — cutoff = the previous release commit date (`git log -1 --format=%ai -S '"version"' package.json` or the release tag). Gives merged-PR / closed-issue / epic-closure counts + author/scope/label breakdowns. Re-run at the cut boundary (its own freshness note says local mirrors staleness).
-- The release project board(s) — but **board state ≠ shipped reality in EITHER direction**: a board can look "mostly done" simply because tickets for the remaining work were never filed (v13.1 empirical: 19 todo / 2 in progress / 139 done while an estimated 300–500 changes had no tickets at all), and done-columns can contain deferred-in-substance items.
-- Epic closures in the window (`gh issue list --search "label:epic closed:>DATE"`), milestone views, and **the operator's magnitude estimate** — ask; the human carries the unfiled-work picture no tracker has.
+- **Scope from the corpus, never the engine mirror.** `analyzeClosedSinceRelease.mjs <cutoff> --format markdown` counts merged PRs, resolved tickets and epic closures, with author, title-scope, label and parent-epic tables. The engine's `resources/content` froze on 2026-08-26 and undercounts silently (13.2: 1,365 of 1,953 PRs). Until the script takes a declared root (neomjs/neo#17416), run a copy whose `resources/content/{issues,pulls}` link to a sparse checkout of `neomjs/github-content-sync` `<repo>/`. Cutoff: `gh release view <prev> --json publishedAt`. After the split, a window spans several release lines: count PRs and tickets, never commits, and split lines by title scope and parent epic. Re-run at the cut against a live GitHub count.
+- The release project board(s) — but **board state ≠ shipped reality in EITHER direction**: a board can look "mostly done" simply because tickets for the remaining work were never filed (v13.1: 19 todo / 2 in progress / 139 done, with 300–500 changes never ticketed), and done-columns can contain deferred-in-substance items.
+- Milestone views and **the operator's magnitude estimate** — ask; the human carries the unfiled-work picture no tracker has.
 - Whether to *mention* the unfiled mass in the notes is an editorial call per iteration ("maybe!") — but it must inform scope framing either way.
 
 ## §3 Heavy Memory-Core mining per arc — `DISCIPLINE-ONLY`
