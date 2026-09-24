@@ -3,8 +3,8 @@
  * @summary Mutation-sensitive contract checks for the reusable consumer PR baseline.
  *
  * GitHub validates YAML syntax when the branch is published; this suite protects the semantic
- * boundary that syntax cannot: one workflow-call entrypoint, read-only permissions, four stable
- * jobs, caller-repository checkout, the explicit dev-base decision, immutable archaeology and
+ * boundary that syntax cannot: one workflow-call entrypoint, read-only permissions, a caller held to a
+ * release tag, stable jobs, caller-repository checkout, the explicit dev-base decision, immutable archaeology and
  * substrate-budget execution, and the supported materializer command. Each negative fixture removes
  * one property and must turn red.
  *
@@ -44,6 +44,7 @@ function jobSource(source, jobId) {
  */
 export function validateReusablePrBaseline(source) {
     const failures       = [],
+          releaseRefJob  = jobSource(source, 'release-ref'),
           prBaseJob      = jobSource(source, 'pr-base'),
           skillsJob      = jobSource(source, 'skills-materialized'),
           archaeologyJob = jobSource(source, 'source-comment-archaeology'),
@@ -57,6 +58,11 @@ export function validateReusablePrBaseline(source) {
           required = [
               ['workflow-call trigger', /^on:\n  workflow_call:\n/m],
               ['read-only contents', /^permissions:\n  contents: read\n/m],
+              ['release-ref job id', /^  release-ref:\n/m],
+              ['release-ref stable name', /^    name: Release ref\n/m],
+              // `job.workflow_ref` names THIS reusable file's ref; `github.workflow_ref` is the caller's own.
+              ['release-ref reads its own ref', /WORKFLOW_REF: \$\{\{ job\.workflow_ref \}\}/, releaseRefJob],
+              ['release-ref requires a semver tag', /=~ @refs\/tags\/v\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$ \]\]/, releaseRefJob],
               ['PR-base job id', /^  pr-base:\n/m],
               ['PR-base stable name', /^    name: PR base\n/m],
               ['Skills job id', /^  skills-materialized:\n/m],
@@ -341,6 +347,15 @@ expectMutationFailure('permissions', source,
 expectMutationFailure('write-all shorthand', source,
     value => value.replace('    runs-on: ubuntu-latest\n    steps:', '    runs-on: ubuntu-latest\n    permissions: write-all\n    steps:'),
     'write permission present');
+expectMutationFailure('release-ref removed', source,
+    value => value.replace('  release-ref:\n', '  removed-ref:\n'),
+    'missing release-ref job id');
+expectMutationFailure('release-ref reads the caller ref', source,
+    value => value.replace('WORKFLOW_REF: ${{ job.workflow_ref }}', 'WORKFLOW_REF: ${{ github.workflow_ref }}'),
+    'missing release-ref reads its own ref');
+expectMutationFailure('release-ref accepts any ref', source,
+    value => value.replace('=~ @refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]', '=~ @.+$ ]]'),
+    'missing release-ref requires a semver tag');
 expectMutationFailure('base job', source,
     value => value.replace('  pr-base:', '  removed-base:'),
     'missing PR-base job id');

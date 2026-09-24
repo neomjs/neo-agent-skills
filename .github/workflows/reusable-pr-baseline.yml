@@ -1,7 +1,8 @@
 # Canonical non-product PR baseline for repositories consuming neo-agent-skills.
 #
-# Callers own only their event trigger and immutable `uses:` coordinate. This workflow owns the
-# executable jobs, so adding another consumer does not copy any contract.
+# Callers own only their event trigger and a published release tag (`uses: …@vX.Y.Z`), which the
+# `release-ref` job enforces. This workflow owns the executable jobs, so adding another consumer does
+# not copy any contract.
 #
 # REQUIRED CALLER TRIGGER — the `pr-body` job is only as good as the events the caller fires:
 #
@@ -54,6 +55,21 @@ on:
         default: ''
 
 jobs:
+  # A caller names the published release it runs: at a tag the workflow's SKILLS_VERSION pins install
+  # the same npm version, and dependabot can move a tag. A SHA or a branch names neither.
+  release-ref:
+    name: Release ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse a caller that is not at a release tag
+        env:
+          WORKFLOW_REF: ${{ job.workflow_ref }}
+        run: |
+          if [[ ! "${WORKFLOW_REF}" =~ @refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Call neomjs/neo-agent-skills at a published release tag (@vX.Y.Z), not '${WORKFLOW_REF##*@}'."
+            exit 1
+          fi
+
   pr-base:
     name: PR base
     runs-on: ubuntu-latest
