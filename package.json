@@ -1,6 +1,6 @@
 {
   "name": "neo-agent-skills",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "Install the workflow substrate a cross-model AI team actually runs on: ticket intake, PR review gates, lane coordination and guards, versioned as a package. The skills Neo.mjs maintainers load every session — materialized into your repo, not copied.",
   "type": "module",
   "license": "MIT",
@@ -51,8 +51,9 @@
   "scripts": {
     "materialize": "node scripts/materialize-harness-skills.mjs",
     "lint": "node scripts/lint-skill-corpus.mjs",
-    "test": "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs && node scripts/test-check-pr-body.mjs && node scripts/test-workflow-concurrency.mjs && node scripts/test-generate-agents-md.mjs && node scripts/test-npm-overrides.mjs && node scripts/test-secrets.mjs && node scripts/test-commit-authorship.mjs",
-    "generate-agents-md": "node scripts/generate-agents-md.mjs"
+    "test": "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs && node scripts/test-check-pr-body.mjs && node scripts/test-workflow-concurrency.mjs && node scripts/test-generate-agents-md.mjs && node scripts/test-npm-overrides.mjs && node scripts/test-secrets.mjs && node scripts/test-commit-authorship.mjs && node scripts/test-tag-release.mjs",
+    "generate-agents-md": "node scripts/generate-agents-md.mjs",
+    "postpublish": "node scripts/tag-release.mjs"
   },
   "keywords": [
     "neo-mjs",

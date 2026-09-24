@@ -68,7 +68,8 @@ anywhere else a bare number stays a ref. A token-scoped `[not-ticket-ref: …]` 
 token it follows: `css-color` on such a color, or any other non-blank reason on a numeric reference
 the author declares deliberate. A marker binding to neither, or carrying no reason, fails closed.
 Consumer repositories call the stable `Source comment archaeology` job in
-`.github/workflows/reusable-pr-baseline.yml` through an immutable Skills revision. That job installs
+`.github/workflows/reusable-pr-baseline.yml` at a published release tag (`@vX.Y.Z`): its `Release ref` job fails
+a caller at a SHA or a branch, and every `npm publish` pushes the matching tag. That job installs
 its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by
 changing the caller lockfile or local binary.
 
@@ -96,7 +97,7 @@ error and fails the check, because absent is a claim about the repository while 
 about the observation, and a failed observation supports neither.
 
 Consumer repositories call the stable `Substrate size` job in
-`.github/workflows/reusable-pr-baseline.yml` through an immutable Skills revision. **The limit ships
+`.github/workflows/reusable-pr-baseline.yml` at a published release tag (`@vX.Y.Z`). **The limit ships
 with the guard, not with the caller**: the job installs its exact release outside the caller workspace
 and pins the measurement to the checked-out tree, so a pull request cannot widen the limit it is judged
 by, drop an entry from the target roster, or move the measurement to a directory where every target is

@@ -1,7 +1,8 @@
 # Canonical non-product PR baseline for repositories consuming neo-agent-skills.
 #
-# Callers own only their event trigger and immutable `uses:` coordinate. This workflow owns the
-# executable jobs, so adding another consumer does not copy any contract.
+# Callers own only their event trigger and a published release tag (`uses: …@vX.Y.Z`), which the
+# `release-ref` job enforces. This workflow owns the executable jobs, so adding another consumer does
+# not copy any contract.
 #
 # REQUIRED CALLER TRIGGER — the `pr-body` job is only as good as the events the caller fires:
 #
@@ -54,6 +55,23 @@ on:
         default: ''
 
 jobs:
+  # A caller names the published release it runs: the tag must be this workflow's own SKILLS_VERSION,
+  # the npm version every job below installs, so tag and package are one number. A SHA or a branch
+  # names neither, and dependabot can move only a tag.
+  release-ref:
+    name: Release ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse a caller that is not at this release's tag
+        env:
+          WORKFLOW_REF: ${{ job.workflow_ref }}
+          SKILLS_VERSION: '0.1.18'
+        run: |
+          if [[ "${WORKFLOW_REF}" != *"@refs/tags/v${SKILLS_VERSION}" ]]; then
+            echo "Call neomjs/neo-agent-skills at @v${SKILLS_VERSION}, the release this workflow installs, not '${WORKFLOW_REF##*@}'."
+            exit 1
+          fi
+
   pr-base:
     name: PR base
     runs-on: ubuntu-latest
@@ -112,7 +130,7 @@ jobs:
       - name: Install immutable archaeology guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
-          SKILLS_VERSION: '0.1.17'
+          SKILLS_VERSION: '0.1.18'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -151,7 +169,7 @@ jobs:
       - name: Install immutable substrate guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
-          SKILLS_VERSION: '0.1.17'
+          SKILLS_VERSION: '0.1.18'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -197,7 +215,7 @@ jobs:
       - name: Install immutable npm-overrides guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
-          SKILLS_VERSION: '0.1.17'
+          SKILLS_VERSION: '0.1.18'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -234,7 +252,7 @@ jobs:
       - name: Install immutable credential guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
-          SKILLS_VERSION: '0.1.17'
+          SKILLS_VERSION: '0.1.18'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -278,7 +296,7 @@ jobs:
       - name: Install immutable authorship guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
-          SKILLS_VERSION: '0.1.17'
+          SKILLS_VERSION: '0.1.18'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -331,7 +349,7 @@ jobs:
       - name: Install immutable PR-body guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
-          SKILLS_VERSION: '0.1.17'
+          SKILLS_VERSION: '0.1.18'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
