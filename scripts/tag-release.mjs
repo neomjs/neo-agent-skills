@@ -4,6 +4,7 @@
  *
  * Runs as `postpublish`, after the registry already holds the version, so no failure here can be
  * undone by publishing again. Every path is therefore loud and safe to rerun:
+ * - `npm publish --dry-run` runs postpublish too, with `npm_config_dry_run=true`: nothing is tagged;
  * - origin already has the tag at HEAD: nothing to do;
  * - the tag marks another commit, locally or on origin: refuse, the release would be ambiguous;
  * - no tag yet: refuse a dirty tree (the tag would not mark what was packed), else tag HEAD;
@@ -38,6 +39,11 @@ function remoteCommit() {
     const refs = Object.fromEntries(listed.stdout.trim().split('\n').filter(Boolean).map(line => line.split('\t').reverse()));
 
     return refs[`refs/tags/${tag}^{}`] || refs[`refs/tags/${tag}`] || ''
+}
+
+if (process.env.npm_config_dry_run === 'true') {
+    console.log(`tag-release: dry run, so ${tag} is not tagged`);
+    process.exit(0)
 }
 
 const

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * @summary Fixture checks for `tag-release.mjs` against a real bare origin: it tags and pushes a clean
- * published commit, is idempotent on rerun, fails loudly on a failed push and finishes it on rerun,
- * and refuses a dirty tree or a tag that marks another commit.
+ * @summary Fixture checks for `tag-release.mjs` against a real bare origin: it tags nothing on a dry
+ * run, tags and pushes a clean published commit, is idempotent on rerun, fails loudly on a failed push
+ * and finishes it on rerun, and refuses a dirty tree or a tag that marks another commit.
  *
  * Run: `node scripts/test-tag-release.mjs`
  */
@@ -19,7 +19,11 @@ const
     origin = join(base, 'origin.git'),
     repo   = join(base, 'work'),
     git    = (cwd, ...args) => execFileSync('git', args, {cwd, encoding: 'utf8'}).trim(),
-    run    = ()   => spawnSync('node', [script, `--root=${repo}`], {encoding: 'utf8'}),
+    run    = (extraEnv = {}) => {
+        const env = {...process.env, ...extraEnv};
+        if (!('npm_config_dry_run' in extraEnv)) delete env.npm_config_dry_run;
+        return spawnSync('node', [script, `--root=${repo}`], {encoding: 'utf8', env})
+    },
     onOrigin = t  => git(origin, 'tag', '--list', t) ? git(origin, 'rev-parse', `${t}^{commit}`) : '';
 
 /** @summary Commits a package.json at `version`, the state `npm publish` leaves behind. */
@@ -38,9 +42,17 @@ try {
     git(repo, 'config', 'user.name', 'ci');
     git(repo, 'remote', 'add', 'origin', origin);
 
+    // 0. `npm publish --dry-run` runs postpublish with npm_config_dry_run=true: nothing is tagged.
+    release('1.2.2');
+    let out = run({npm_config_dry_run: 'true'});
+    assert.equal(out.status, 0, `dry run: ${out.stderr}`);
+    assert.match(out.stdout, /dry run/);
+    assert.equal(git(repo, 'tag', '--list', 'v1.2.2'), '', 'a dry run writes no local tag');
+    assert.equal(onOrigin('v1.2.2'), '', 'a dry run pushes no tag');
+
     // 1. A clean published commit is tagged and the tag reaches origin.
     let head = release('1.2.3');
-    let out  = run();
+    out = run();
     assert.equal(out.status, 0, `tag and push: ${out.stderr}`);
     assert.equal(onOrigin('v1.2.3'), head, 'origin holds the tag at the published commit');
 
@@ -78,7 +90,7 @@ try {
     assert.equal(out.status, 1, 'a tag at another commit is refused');
     assert.match(out.stderr, /marks .*, not HEAD/);
 
-    console.log('tag-release: 6 cases passed');
+    console.log('tag-release: 7 cases passed');
 } finally {
     rmSync(base, {recursive: true, force: true})
 }

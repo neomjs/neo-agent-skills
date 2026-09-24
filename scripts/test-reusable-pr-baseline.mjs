@@ -62,7 +62,7 @@ export function validateReusablePrBaseline(source) {
               ['release-ref stable name', /^    name: Release ref\n/m],
               // `job.workflow_ref` names THIS reusable file's ref; `github.workflow_ref` is the caller's own.
               ['release-ref reads its own ref', /WORKFLOW_REF: \$\{\{ job\.workflow_ref \}\}/, releaseRefJob],
-              ['release-ref requires a semver tag', /=~ @refs\/tags\/v\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$ \]\]/, releaseRefJob],
+              ['release-ref requires its own release tag', /!= \*"@refs\/tags\/v\$\{SKILLS_VERSION\}" \]\]/, releaseRefJob],
               ['PR-base job id', /^  pr-base:\n/m],
               ['PR-base stable name', /^    name: PR base\n/m],
               ['Skills job id', /^  skills-materialized:\n/m],
@@ -176,6 +176,7 @@ export function validateReusablePrBaseline(source) {
     if (!/git fetch --no-tags origin "\$\{BASE_SHA\}"/.test(archaeologyJob)) {
         failures.push('missing exact base fetch')
     }
+    if (!releaseRefJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('release-ref package version drift');
     if (!archaeologyJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('package version drift');
     // Anchored for the same reason as the workspace pin: `…-source-comment-archaeology-x` is a
     // DIFFERENT install root that an unanchored match accepts.
@@ -353,9 +354,12 @@ expectMutationFailure('release-ref removed', source,
 expectMutationFailure('release-ref reads the caller ref', source,
     value => value.replace('WORKFLOW_REF: ${{ job.workflow_ref }}', 'WORKFLOW_REF: ${{ github.workflow_ref }}'),
     'missing release-ref reads its own ref');
-expectMutationFailure('release-ref accepts any ref', source,
-    value => value.replace('=~ @refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]', '=~ @.+$ ]]'),
-    'missing release-ref requires a semver tag');
+expectMutationFailure('release-ref accepts any semver tag', source,
+    value => value.replace('!= *"@refs/tags/v${SKILLS_VERSION}" ]]', '!~ @refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]'),
+    'missing release-ref requires its own release tag');
+expectMutationFailure('release-ref pin drifts from the package', source,
+    value => value.replace("          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: '" + pkg.version + "'", "          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: '999.999.999'"),
+    'release-ref package version drift');
 expectMutationFailure('base job', source,
     value => value.replace('  pr-base:', '  removed-base:'),
     'missing PR-base job id');
@@ -396,7 +400,7 @@ expectMutationFailure('base invocation', source,
     value => value.replace('--base "${BASE_SHA}"', '--base origin/dev'),
     'missing exact base invocation');
 expectMutationFailure('package version', source,
-    value => value.replace(`SKILLS_VERSION: '${pkg.version}'`, "SKILLS_VERSION: 'latest'"),
+    value => value.replace(`neo-agent-skills-source-comment-archaeology\n          SKILLS_VERSION: '${pkg.version}'`, "neo-agent-skills-source-comment-archaeology\n          SKILLS_VERSION: 'latest'"),
     'package version drift');
 expectMutationFailure('runner isolation', source,
     value => value.replace('${{ runner.temp }}/neo-agent-skills-source-comment-archaeology', '${{ github.workspace }}/guard'),

@@ -55,18 +55,20 @@ on:
         default: ''
 
 jobs:
-  # A caller names the published release it runs: at a tag the workflow's SKILLS_VERSION pins install
-  # the same npm version, and dependabot can move a tag. A SHA or a branch names neither.
+  # A caller names the published release it runs: the tag must be this workflow's own SKILLS_VERSION,
+  # the npm version every job below installs, so tag and package are one number. A SHA or a branch
+  # names neither, and dependabot can move only a tag.
   release-ref:
     name: Release ref
     runs-on: ubuntu-latest
     steps:
-      - name: Refuse a caller that is not at a release tag
+      - name: Refuse a caller that is not at this release's tag
         env:
           WORKFLOW_REF: ${{ job.workflow_ref }}
+          SKILLS_VERSION: '0.1.17'
         run: |
-          if [[ ! "${WORKFLOW_REF}" =~ @refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Call neomjs/neo-agent-skills at a published release tag (@vX.Y.Z), not '${WORKFLOW_REF##*@}'."
+          if [[ "${WORKFLOW_REF}" != *"@refs/tags/v${SKILLS_VERSION}" ]]; then
+            echo "Call neomjs/neo-agent-skills at @v${SKILLS_VERSION}, the release this workflow installs, not '${WORKFLOW_REF##*@}'."
             exit 1
           fi
 
