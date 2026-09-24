@@ -32,10 +32,10 @@
  * neo-agent-skills-materialize --check    # CI: assert they exist, resolve, and nothing shadows them
  */
 
-import {existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, lstatSync, rmSync, symlinkSync, statSync} from 'node:fs';
-import {execFileSync}                                                                                              from 'node:child_process';
-import {dirname, join, relative, resolve}                                                                          from 'node:path';
-import {fileURLToPath}                                                                                             from 'node:url';
+import {existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, lstatSync, realpathSync, rmSync, symlinkSync, statSync} from 'node:fs';
+import {execFileSync}                                                                                                            from 'node:child_process';
+import {dirname, join, relative, resolve}                                                                                        from 'node:path';
+import {fileURLToPath}                                                                                                           from 'node:url';
 
 const
     here        = dirname(fileURLToPath(import.meta.url)),
@@ -119,7 +119,8 @@ function tracked(root, path) {
 
 const
     args     = parseArgs(process.argv.slice(2)),
-    root     = resolve(args.root || consumerRoot()),
+    // Physical like `packageRoot`, which Node realpaths: across two path spaces a relative link dangles.
+    root     = realpathSync(resolve(args.root || consumerRoot())),
     skillsIn = join(packageRoot, SKILLS_REL),
     manifestPath = join(skillsIn, 'skills.manifest.json');
 
