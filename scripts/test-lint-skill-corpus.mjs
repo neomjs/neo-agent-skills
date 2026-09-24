@@ -13,7 +13,7 @@
 
 import {execFileSync} from 'node:child_process';
 import {
-    appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync,
+    appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync,
     writeFileSync
 } from 'node:fs';
 import {tmpdir}                  from 'node:os';
@@ -176,16 +176,26 @@ function projectedDocumentFindings(consumer) {
     return findings
 }
 
-/** @summary Exercise document reach from a clean non-Neo consumer using the real materializer. */
-function runConsumerDocumentReferences({mutate = false} = {}) {
+/**
+ * @summary Exercise document reach from a clean non-Neo consumer using the real materializer.
+ *
+ * `viaSymlink` hands the materializer its root through a symlink one level shallower than the real
+ * checkout. Node realpaths the package it runs from, so a root kept as given puts the two ends of every
+ * relative link in different path spaces, and the link dangles on any OS.
+ */
+function runConsumerDocumentReferences({mutate = false, viaSymlink = false} = {}) {
     const
-        consumer    = mkdtempSync(join(tmpdir(), 'skill-consumer-')),
+        base        = mkdtempSync(join(tmpdir(), 'skill-consumer-')),
+        consumer    = viaSymlink ? join(base, 'real', 'checkout') : base,
+        root        = viaSymlink ? join(base, 'link') : consumer,
         installed   = join(consumer, 'node_modules', PACKAGE_NAME),
         packageJson = JSON.stringify({name: 'reference-fixture-consumer', private: true, version: '1.0.0'}, null, 2) + '\n';
 
     let code = 0, out = '';
 
     try {
+        mkdirSync(consumer, {recursive: true});
+        viaSymlink && symlinkSync(consumer, root);
         writeFileSync(join(consumer, 'package.json'), packageJson);
         execFileSync('git', ['init', '-q'], {cwd: consumer});
         execFileSync('git', ['config', 'user.email', 'ci@local'], {cwd: consumer});
@@ -199,15 +209,15 @@ function runConsumerDocumentReferences({mutate = false} = {}) {
         cpSync(join(repoRoot, 'package.json'), join(installed, 'package.json'));
 
         const
-            materializer = join(installed, 'scripts/materialize-harness-skills.mjs'),
-            env          = {...process.env, INIT_CWD: consumer};
+            materializer = join(root, 'node_modules', PACKAGE_NAME, 'scripts/materialize-harness-skills.mjs'),
+            env          = {...process.env, INIT_CWD: root};
 
-        execFileSync('node', [materializer, '--root', consumer], {cwd: consumer, env, encoding: 'utf8'});
-        execFileSync('node', [materializer, '--root', consumer, '--check'], {cwd: consumer, env, encoding: 'utf8'});
+        execFileSync('node', [materializer, '--root', root], {cwd: root, env, encoding: 'utf8'});
+        execFileSync('node', [materializer, '--root', root, '--check'], {cwd: root, env, encoding: 'utf8'});
 
         if (mutate) exposeRawDocumentToken(installed);
 
-        const findings = projectedDocumentFindings(consumer);
+        const findings = projectedDocumentFindings(root);
 
         if (findings.length) {
             code = 1;
@@ -218,7 +228,7 @@ function runConsumerDocumentReferences({mutate = false} = {}) {
         out  = `${err.stdout ?? ''}${err.stderr ?? ''}${err.message ?? ''}`
     }
 
-    rmSync(consumer, {recursive: true, force: true});
+    rmSync(base, {recursive: true, force: true});
 
     return {code, out}
 }
@@ -342,7 +352,11 @@ consumerCases = [
         'the real materializer exposes the typed corpus through both .agents and .claude without a consumer-local learn tree'],
 
     ['a clean non-Neo consumer rejects a projected raw document token', 1, true,
-        'mutating one installed URL is visible through both symlink projections and must turn document reach red']
+        'mutating one installed URL is visible through both symlink projections and must turn document reach red'],
+
+    ['a consumer reached through a symlinked root resolves every projected link', 0, false,
+        'the package root is physical, so a root kept as given computes links that dangle — the materializer realpaths it',
+        {viaSymlink: true}]
 ];
 
 let failed = 0;
@@ -358,8 +372,8 @@ for (const [name, expected, mutate, because, options] of cases) {
     console.log(`${ok ? '  ok  ' : '  FAIL'} ${name} → exit ${code} (expected ${expected}) — ${because}`)
 }
 
-for (const [name, expected, mutate, because] of consumerCases) {
-    const {code, out} = runConsumerDocumentReferences({mutate}),
+for (const [name, expected, mutate, because, options] of consumerCases) {
+    const {code, out} = runConsumerDocumentReferences({mutate, ...options}),
           ok          = code === expected;
 
     if (!ok) {
