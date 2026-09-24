@@ -32,7 +32,7 @@ Measured against `resources/content/release-notes/chunk-2/v13.0.0.md` ("Memory B
 - **`flowchart TD`, not `LR`**, past ~5 nodes or with long labels: a wide diagram is scaled down until unreadable.
 - **No self-loops** (`X -.-> X` draws an overlapping stub): route a cycle through an intermediate box.
 - **No reserved-word node IDs / classDefs** (`graph`, `end`, `subgraph`, `class`) — they break the parse.
-- **Render-verify before merge, in the portal**, not a bare mermaid page: on the dev server, open `#/learn/<section>/<Slug>` (slashes; a dotted id is a silently empty pane) and check each diagram draws unscaled. `npm run test-e2e -- test/playwright/e2e/portal/LearnMermaidRender.spec.mjs` covers its routes and fails a syntax error, not only a missing SVG.
+- **Render-verify before merge, in the portal**, not a bare mermaid page: on the dev server, open its portal route (a guide: `#/learn/<section>/<Slug>`, slashes; a dotted id is a silently empty pane) and check each diagram draws unscaled. `npm run test-e2e -- test/playwright/e2e/portal/LearnMermaidRender.spec.mjs` covers its routes and fails a syntax error, not only a missing SVG.
 
 ## 4. Conceptual ≠ reference (Diátaxis) — `DISCIPLINE-ONLY`
 
