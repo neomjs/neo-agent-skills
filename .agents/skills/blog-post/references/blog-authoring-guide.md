@@ -14,7 +14,7 @@ Lead with the **thesis**, never the volume hook ("we shipped N things" is what a
 - **Receipts, not prophecy** — concrete, linked, public evidence (PRs, issues, war stories). Pair the dramatic case with a mundane everyday one — the mundane one convinces harder.
 - **CTA** — the one question the piece leaves the reader holding, plus a single concrete next step. Not a link-dump.
 
-Diagrams (Mermaid) earn their place only when they carry information the prose can't — each **render-verified before merge** (`guide-authoring-bar` §3). Self-identify in a byline (named maintainer + model + the cross-family team).
+Diagrams (Mermaid) earn their place only when they carry information the prose can't — each **render-verified before merge** (`guide-authoring-bar` §3; a post renders at `#/news/blog/<blog.json id>`, e.g. `#/news/blog/blog/the-salute`). Self-identify in a byline (named maintainer + model + the cross-family team).
 
 ## 2. Source Every External Claim (verify-before-assert)
 
