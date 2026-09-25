@@ -30,7 +30,7 @@ opt a skill out of a directory symlink** — so the neutral surface links the tr
 each skill. Git-ignore both paths; a tracked entry under either is a shadow copy, which is the thing
 this package exists to make unnecessary.
 
-**Skill changes bump this package's version.** Consumers update the dependency like any other.
+**Every pull request bumps this package's version, and every merge publishes it** (see *Authority*). Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
 no bespoke lag gate anywhere in this contract.
 
@@ -69,7 +69,7 @@ token it follows: `css-color` on such a color, or any other non-blank reason on 
 the author declares deliberate. A marker binding to neither, or carrying no reason, fails closed.
 Consumer repositories call the stable `Source comment archaeology` job in
 `.github/workflows/reusable-pr-baseline.yml` at a published release tag (`@vX.Y.Z`): its `Release ref` job fails
-a caller at a SHA or a branch, and every `npm publish` pushes the matching tag. That job installs
+a caller at a SHA or a branch, and every publish pushes the matching tag. That job installs
 its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by
 changing the caller lockfile or local binary.
 
@@ -172,9 +172,13 @@ because a skill cannot be opted out of a directory symlink.
 
 ## Authority
 
-Skills are authored on `dev`. `main` is release-only via the publish pipeline. Promotion is a
-version bump and a publish — **the package version, the registry tarball integrity, and the
-consumer's lockfile are the revision authority.** There is no receipt file; an earlier design used
+Skills are authored on `dev`, and every merge to `dev` is a release:
+- every pull request bumps `package.json` (`scripts/check-version-bump.mjs`);
+- `.github/workflows/publish.yml` publishes that version through npm trusted publishing and pushes `v<version>`;
+- Dependabot brings it to each consumer.
+
+The version is written once, in `package.json`, and read everywhere else. **The package version, the registry
+tarball integrity, and the consumer's lockfile are the revision authority.** There is no receipt file; an earlier design used
 one to police byte-copies across repositories, and both the copies and the receipt are gone.
 
 Contract: [neomjs/neo#17798](https://github.com/neomjs/neo/issues/17798) · graduated from

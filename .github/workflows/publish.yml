@@ -1,0 +1,68 @@
+# Every merge to `dev` is a release.
+#
+# The pull request carried a new version, since `check-version-bump.mjs` holds every pull request to one.
+# This job publishes it, and `postpublish` (`scripts/tag-release.mjs`) pushes `v<version>` at the merge
+# commit: the tag consumers call and Dependabot moves. Nothing here names the version; `package.json` does.
+#
+# npm trusted publishing, as in the engine's `npm-publish.yml`: the registry accepts this workflow's OIDC
+# token, so there is no NPM_TOKEN to leak or rotate. The trusted publisher is configured once on npmjs.com,
+# for this repository and this file name. Until it is, `npm publish` fails here, loudly.
+name: Publish
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+# One release at a time. A run is never cancelled mid-publish, because that can leave npm ahead of the tag.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - run: npm ci --ignore-scripts
+
+      - run: npm test
+
+  # A fresh checkout, so the tree `tag-release.mjs` tags is exactly the tree that was packed.
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # the release tag
+      id-token: write   # npm trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci --ignore-scripts
+
+      # A version npm already has means a rerun or a merge that skipped its bump. `tag-release.mjs` tells the two
+      # apart. On a rerun it finishes this commit's tag. On a skipped bump the tag marks another commit, so it
+      # refuses and names the unpublished merge instead of letting it pass in silence.
+      - name: Publish, then tag
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          version="$(jq -r .version package.json)"
+          if npm view "neo-agent-skills@${version}" version >/dev/null 2>&1; then
+            node scripts/tag-release.mjs
+          else
+            npm publish
+          fi

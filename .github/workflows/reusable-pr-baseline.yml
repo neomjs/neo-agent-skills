@@ -2,7 +2,8 @@
 #
 # Callers own only their event trigger and a published release tag (`uses: …@vX.Y.Z`), which the
 # `release-ref` job enforces. This workflow owns the executable jobs, so adding another consumer does
-# not copy any contract.
+# not copy any contract. It names no version: the `version` job reads `package.json` at this file's
+# commit, and every install takes the version from there.
 #
 # REQUIRED CALLER TRIGGER — the `pr-body` job is only as good as the events the caller fires:
 #
@@ -55,17 +56,50 @@ on:
         default: ''
 
 jobs:
-  # A caller names the published release it runs: the tag must be this workflow's own SKILLS_VERSION,
-  # the npm version every job below installs, so tag and package are one number. A SHA or a branch
-  # names neither, and dependabot can move only a tag.
+  # The release this workflow installs is read, never written: it is `package.json`'s version at the commit
+  # that defines this job. Every job below installs it, so the caller's tag, the installed package and the
+  # published release are one number from one file.
+  version:
+    name: Skills version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      # `job.workflow_*` name this reusable file's repository and commit; `github.*` would name the caller's.
+      - name: Checkout this workflow's package.json
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .neo-agent-skills
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Read the release version
+        id: read
+        env:
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: |
+          version="$(jq -r .version .neo-agent-skills/package.json)"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json at ${WORKFLOW_SHA::7} names no release version ('${version}')."
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+  # A caller names the published release it runs: the tag must be the version above. A SHA or a branch
+  # names no release, and Dependabot can move only a tag. The guards need the version, not this verdict,
+  # so a caller at the wrong ref still gets every guard's result.
   release-ref:
     name: Release ref
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Refuse a caller that is not at this release's tag
         env:
           WORKFLOW_REF: ${{ job.workflow_ref }}
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: |
           if [[ "${WORKFLOW_REF}" != *"@refs/tags/v${SKILLS_VERSION}" ]]; then
             echo "Call neomjs/neo-agent-skills at @v${SKILLS_VERSION}, the release this workflow installs, not '${WORKFLOW_REF##*@}'."
@@ -106,6 +140,7 @@ jobs:
 
   source-comment-archaeology:
     name: Source comment archaeology
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Reject a non-PR caller
@@ -130,7 +165,7 @@ jobs:
       - name: Install immutable archaeology guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -145,6 +180,7 @@ jobs:
 
   substrate-size:
     name: Substrate size
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Reject a non-PR caller
@@ -169,7 +205,7 @@ jobs:
       - name: Install immutable substrate guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -192,6 +228,7 @@ jobs:
 
   npm-overrides:
     name: npm overrides
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Reject a non-PR caller
@@ -215,7 +252,7 @@ jobs:
       - name: Install immutable npm-overrides guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -230,6 +267,7 @@ jobs:
 
   secrets:
     name: Secrets
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Reject a non-PR caller
@@ -252,7 +290,7 @@ jobs:
       - name: Install immutable credential guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -269,6 +307,7 @@ jobs:
 
   commit-authorship:
     name: Commit authorship
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Reject a non-PR caller
@@ -296,7 +335,7 @@ jobs:
       - name: Install immutable authorship guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -327,6 +366,7 @@ jobs:
 
   pr-body:
     name: PR body
+    needs: version
     runs-on: ubuntu-latest
     # The top-level grant is `contents: read`; this job needs the pull request itself. Declared here
     # rather than widened globally, so the other three jobs keep the narrower grant.
@@ -349,7 +389,7 @@ jobs:
       - name: Install immutable PR-body guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
-          SKILLS_VERSION: '0.1.19'
+          SKILLS_VERSION: ${{ needs.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
