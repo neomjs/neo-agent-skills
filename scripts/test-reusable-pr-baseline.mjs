@@ -60,9 +60,13 @@ export function validateReusablePrBaseline(source) {
               ['read-only contents', /^permissions:\n  contents: read\n/m],
               ['release-ref job id', /^  release-ref:\n/m],
               ['release-ref stable name', /^    name: Release ref\n/m],
-              // `job.workflow_ref` names THIS reusable file's ref; `github.workflow_ref` is the caller's own.
+              // `job.workflow_*` names THIS reusable file's commit and repository; `github.workflow_*` is the caller's own.
               ['release-ref reads its own ref', /WORKFLOW_REF: \$\{\{ job\.workflow_ref \}\}/, releaseRefJob],
-              ['release-ref requires its own release tag', /!= \*"@refs\/tags\/v\$\{SKILLS_VERSION\}" \]\]/, releaseRefJob],
+              ['release-ref requires a tag, never a SHA or a branch', /if \[\[ "\$\{WORKFLOW_REF\}" != \*"@refs\/tags\/v"\* \]\]; then/, releaseRefJob],
+              ['release-ref reads its own commit', /WORKFLOW_SHA: \$\{\{ job\.workflow_sha \}\}/, releaseRefJob],
+              ['release-ref reads its own repository', /WORKFLOW_REPOSITORY: \$\{\{ job\.workflow_repository \}\}/, releaseRefJob],
+              ['release-ref resolves its own release tag', /RELEASE_TAG="refs\/tags\/v\$\{SKILLS_VERSION\}"/, releaseRefJob],
+              ['release-ref requires the commit its release tag marks', /\[\[ -z "\$\{RELEASE_SHA\}" \|\| "\$\{WORKFLOW_SHA\}" != "\$\{RELEASE_SHA\}" \]\]/, releaseRefJob],
               ['PR-base job id', /^  pr-base:\n/m],
               ['PR-base stable name', /^    name: PR base\n/m],
               ['Skills job id', /^  skills-materialized:\n/m],
@@ -361,11 +365,23 @@ expectMutationFailure('release-ref removed', source,
 expectMutationFailure('release-ref reads the caller ref', source,
     value => value.replace('WORKFLOW_REF: ${{ job.workflow_ref }}', 'WORKFLOW_REF: ${{ github.workflow_ref }}'),
     'missing release-ref reads its own ref');
-expectMutationFailure('release-ref accepts any semver tag', source,
-    value => value.replace('!= *"@refs/tags/v${SKILLS_VERSION}" ]]', '!~ @refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]'),
-    'missing release-ref requires its own release tag');
+expectMutationFailure('release-ref admits a SHA or a branch', source,
+    value => value.replace('if [[ "${WORKFLOW_REF}" != *"@refs/tags/v"* ]]; then', 'if [[ -z "${WORKFLOW_REF}" ]]; then'),
+    'missing release-ref requires a tag, never a SHA or a branch');
+expectMutationFailure('release-ref reads the caller commit', source,
+    value => value.replace('WORKFLOW_SHA: ${{ job.workflow_sha }}', 'WORKFLOW_SHA: ${{ github.workflow_sha }}'),
+    'missing release-ref reads its own commit');
+expectMutationFailure('release-ref asks the caller repository', source,
+    value => value.replace('WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}', 'WORKFLOW_REPOSITORY: ${{ github.repository }}'),
+    'missing release-ref reads its own repository');
+expectMutationFailure('release-ref resolves any tag', source,
+    value => value.replace('RELEASE_TAG="refs/tags/v${SKILLS_VERSION}"', 'RELEASE_TAG="refs/tags/v0"'),
+    'missing release-ref resolves its own release tag');
+expectMutationFailure('release-ref skips the commit comparison', source,
+    value => value.replace('"${WORKFLOW_SHA}" != "${RELEASE_SHA}"', '"${WORKFLOW_SHA}" == ""'),
+    'missing release-ref requires the commit its release tag marks');
 expectMutationFailure('release-ref pin drifts from the package', source,
-    value => value.replace("          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: '" + pkg.version + "'", "          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: '999.999.999'"),
+    value => value.replace("          WORKFLOW_SHA: ${{ job.workflow_sha }}\n          SKILLS_VERSION: '" + pkg.version + "'", "          WORKFLOW_SHA: ${{ job.workflow_sha }}\n          SKILLS_VERSION: '999.999.999'"),
     'release-ref package version drift');
 expectMutationFailure('base job', source,
     value => value.replace('  pr-base:', '  removed-base:'),

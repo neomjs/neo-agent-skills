@@ -2,7 +2,8 @@
 /**
  * @summary Fixture checks for `tag-release.mjs` against a real bare origin: it tags nothing on a dry
  * run, tags and pushes a clean published commit, is idempotent on rerun, fails loudly on a failed push
- * and finishes it on rerun, and refuses a dirty tree or a tag that marks another commit.
+ * and finishes it on rerun, and refuses a dirty tree or a tag that marks another commit. The major tag
+ * follows every release forward, and neither a backport nor a prerelease moves it back.
  *
  * Run: `node scripts/test-tag-release.mjs`
  */
@@ -55,11 +56,13 @@ try {
     out = run();
     assert.equal(out.status, 0, `tag and push: ${out.stderr}`);
     assert.equal(onOrigin('v1.2.3'), head, 'origin holds the tag at the published commit');
+    assert.equal(onOrigin('v1'), head, 'the first release creates the major tag at the published commit');
 
     // 2. A rerun is a no-op, not a refusal.
     out = run();
     assert.equal(out.status, 0, `rerun after success: ${out.stderr}`);
     assert.match(out.stdout, /already on origin/);
+    assert.equal(onOrigin('v1'), head, 'a rerun leaves the major tag where it is');
 
     // 3. A failed push is loud, names the rerun, and leaves the local tag at HEAD.
     head = release('1.2.4');
@@ -73,6 +76,7 @@ try {
     out = run();
     assert.equal(out.status, 0, `recovery rerun: ${out.stderr}`);
     assert.equal(onOrigin('v1.2.4'), head, 'the recovered tag reaches origin at the published commit');
+    assert.equal(onOrigin('v1'), head, 'the major tag moves forward to the newer release');
 
     // 5. A dirty tree is refused before any tag exists.
     release('1.2.5');
@@ -90,7 +94,27 @@ try {
     assert.equal(out.status, 1, 'a tag at another commit is refused');
     assert.match(out.stderr, /marks .*, not HEAD/);
 
-    console.log('tag-release: 7 cases passed');
+    // 7. A newer minor release moves the major tag.
+    const minor = release('1.3.0');
+    out = run();
+    assert.equal(out.status, 0, `minor release: ${out.stderr}`);
+    assert.equal(onOrigin('v1'), minor, 'the major tag follows the newest release');
+
+    // 8. A backport is tagged, but the major tag stays on the newer release: no caller is downgraded.
+    head = release('1.2.9');
+    out = run();
+    assert.equal(out.status, 0, `backport: ${out.stderr}`);
+    assert.equal(onOrigin('v1.2.9'), head, 'the backport gets its own tag');
+    assert.equal(onOrigin('v1'), minor, 'a backport does not move the major tag back');
+
+    // 9. A prerelease never moves the major tag.
+    head = release('1.4.0-beta.1');
+    out = run();
+    assert.equal(out.status, 0, `prerelease: ${out.stderr}`);
+    assert.equal(onOrigin('v1.4.0-beta.1'), head, 'the prerelease gets its own tag');
+    assert.equal(onOrigin('v1'), minor, 'a prerelease does not move the major tag');
+
+    console.log('tag-release: 10 cases passed');
 } finally {
     rmSync(base, {recursive: true, force: true})
 }
