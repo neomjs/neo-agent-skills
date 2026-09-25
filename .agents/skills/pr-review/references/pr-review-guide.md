@@ -324,7 +324,7 @@ This is architectural judgment after defects are identified; it is not another d
 
 When §0 surfaces Cycle-1 structural invalidity — false premise, ungraduated substrate, authority bypass, roadmap conflict, better existing substrate, or stale/superseded ticket input — default to **Drop+Supersede**: one close/restart RA, not iterative fix lists. ADR conflict → run `ticket-intake/references/adr-successor-risk-audit.md`. Triggers + bias rationale: [`../audits/cycle-1-premise-preflight.md`](../audits/cycle-1-premise-preflight.md).
 
-**The premise has a handle.** A PR that changes how an existing surface behaves inherits its premise from the close-target ticket's `Design authority:` line (`ticket-create` §0): the record sentence that defines the current behavior as intended. No line, or a line the diff contradicts, is a false premise made visible — Request Changes with ONE RA (cite the record, or file the fork on it), never an approval on matching tests and green CI. The ticket's file:line citations and the author's receipts are not that authority; a receipt shows what happens, never whether it is wanted.
+**The premise's handle** is the close-target ticket's `Design authority:` line (`ticket-create` §0): the record sentence that made the current behavior intended. No line, or one the diff contradicts, is a visible false premise → ONE RA (cite the record, or file the fork on it), never an approval on matching tests and green CI; file:line citations and receipts are not authority.
 
 ### 9.1 Reviewer-Yield Protocol (Deadlock Prevention)
 
