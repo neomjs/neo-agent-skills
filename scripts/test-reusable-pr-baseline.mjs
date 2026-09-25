@@ -239,20 +239,27 @@ export function validateReusablePrBaseline(source) {
 //   steps receive only a workflow-owned path. A pull-request body is attacker-controlled text, so
 //   interpolating it into `run:` is a shell-injection primitive. Carried from `neomjs/neo` PR
 //   #17917 AC-4, which was the only place this property had ever been written down.
-// Two claims, two scopes. The close target (exactly one `Resolves`) is policy for EVERY pull request,
-// so the body read and its check run ungated; the §9 anchors are the AGENT protocol, so their step
-// alone carries the `neo-` / `ai` boundary. COUNTED, not merely present: a second gated step would
-// silently exempt human PRs from the close target again, and a presence check passes on one survivor.
+// Two claims, two scopes. The close target (exactly one `Resolves`) is policy for every pull request
+// a person or agent opens, so its only gate is the GitHub App exemption; the §9 anchors are the AGENT
+// protocol, so their step alone carries the `neo-` / `ai` boundary. COUNTED, not merely present: a
+// second gated step would silently exempt human PRs from the close target again, and a presence check
+// passes on one survivor. A bot's step must REPORT the exemption, or its green is the vacuous pass #103 removed.
 if ((prBodyJob.match(/if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/g) || []).length !== 1) {
     failures.push('PR-body author boundary must gate exactly one step — the anchors')
 }
 
-const closeTargetStep = prBodyJob.match(/- name: Validate the close target\n([\s\S]*?)(?=\n      - name: |$)/);
+const closeTargetStep = prBodyJob.match(/- name: Validate the close target\n([\s\S]*?)(?=\n      - name: |$)/),
+      botReportStep   = prBodyJob.match(/- name: Report a bot's unjudged close target\n([\s\S]*?)(?=\n      - name: |$)/),
+      closeTargetGate = (closeTargetStep?.[1].match(/^\s+if:.*$/gm) || []).map(line => line.trim()).join(' | ');
 
 if (!closeTargetStep) {
     failures.push('PR-body job has no close-target step')
-} else if (/^\s+if:/m.test(closeTargetStep[1]) || !/--close-target-only/.test(closeTargetStep[1])) {
-    failures.push('the close-target step must run ungated with --close-target-only')
+} else if (closeTargetGate !== "if: ${{ github.event.pull_request.user.type != 'Bot' }}" || !/--close-target-only/.test(closeTargetStep[1])) {
+    failures.push('the close-target step must run for every author but a Bot, with --close-target-only')
+}
+
+if (!botReportStep?.[1].includes("if: ${{ github.event.pull_request.user.type == 'Bot' }}")) {
+    failures.push("a Bot author's close target must be reported, not silently skipped")
 }
 
 if (/DRAFT_FLAG|--draft/.test(prBodyJob)) failures.push('PR-body job still carries a draft exception');
@@ -595,10 +602,19 @@ expectMutationFailure('PR-body anchors ungated', source,
     'PR-body author boundary must gate exactly one step — the anchors');
 expectMutationFailure('PR-body close target gated to agents again', source,
     value => value.replace('      - name: Validate the close target\n', `      - name: Validate the close target\n${AGENT_GATE}`),
-    'the close-target step must run ungated with --close-target-only');
+    'the close-target step must run for every author but a Bot, with --close-target-only');
 expectMutationFailure('PR-body close-target flag dropped', source,
     value => value.replace('          --body-file "${BODY_FILE}" --close-target-only', '          --body-file "${BODY_FILE}"'),
-    'the close-target step must run ungated with --close-target-only');
+    'the close-target step must run for every author but a Bot, with --close-target-only');
+expectMutationFailure('PR-body close target judges a bot', source,
+    value => value.replace("      - name: Validate the close target\n        if: ${{ github.event.pull_request.user.type != 'Bot' }}\n", '      - name: Validate the close target\n'),
+    'the close-target step must run for every author but a Bot, with --close-target-only');
+expectMutationFailure('PR-body close target exempts a person', source,
+    value => value.replace("user.type != 'Bot'", "user.type != 'User'"),
+    'the close-target step must run for every author but a Bot, with --close-target-only');
+expectMutationFailure('PR-body bot exemption unreported', source,
+    value => value.replace(/      - name: Report a bot's unjudged close target\n[\s\S]*?close target is not judged\."\n\n/, ''),
+    "a Bot author's close target must be reported, not silently skipped");
 expectMutationFailure('PR-body draft exception reintroduced', source,
     value => value.replace('          --body-file "${BODY_FILE}"\n', '          --body-file "${BODY_FILE}" ${DRAFT_FLAG}\n'),
     'PR-body job still carries a draft exception');

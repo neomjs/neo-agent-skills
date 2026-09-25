@@ -65,7 +65,7 @@ jobs:
       - name: Refuse a caller that is not at this release's tag
         env:
           WORKFLOW_REF: ${{ job.workflow_ref }}
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: |
           if [[ "${WORKFLOW_REF}" != *"@refs/tags/v${SKILLS_VERSION}" ]]; then
             echo "Call neomjs/neo-agent-skills at @v${SKILLS_VERSION}, the release this workflow installs, not '${WORKFLOW_REF##*@}'."
@@ -130,7 +130,7 @@ jobs:
       - name: Install immutable archaeology guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -169,7 +169,7 @@ jobs:
       - name: Install immutable substrate guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -215,7 +215,7 @@ jobs:
       - name: Install immutable npm-overrides guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -252,7 +252,7 @@ jobs:
       - name: Install immutable credential guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -296,7 +296,7 @@ jobs:
       - name: Install immutable authorship guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -349,7 +349,7 @@ jobs:
       - name: Install immutable PR-body guard
         env:
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
-          SKILLS_VERSION: '0.1.18'
+          SKILLS_VERSION: '0.1.19'
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
@@ -362,8 +362,9 @@ jobs:
       # It is written to a FILE from JavaScript and never interpolated into a shell. A pull-request
       # body is attacker-controlled text; `run:` steps below receive only a workflow-owned path.
       #
-      # Two claims, two scopes. The close target is repository policy for EVERY pull request — any
-      # author, draft or ready: it resolves exactly one ticket. The anchors are §9, the AGENT
+      # Two claims, two scopes. The close target is repository policy for EVERY pull request a person
+      # or agent opens, draft or ready: it resolves exactly one ticket. A GitHub App's pull request
+      # (dependabot's) resolves none, so a step reports it unjudged instead. The anchors are §9, the AGENT
       # protocol, so they judge only a `neo-` login or an `ai`-labelled PR; holding a human PR to that
       # template would be a policy nobody agreed to. The anchor step is gated rather than the job, so
       # the check still REPORTS on a human PR — a skipped job cannot serve as the required status
@@ -383,12 +384,21 @@ jobs:
             require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
 
       - name: Validate the close target
+        if: ${{ github.event.pull_request.user.type != 'Bot' }}
         env:
           BODY_FILE  : ${{ runner.temp }}/pr-body.md
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
           --body-file "${BODY_FILE}" --close-target-only
+
+      - name: Report a bot's unjudged close target
+        if: ${{ github.event.pull_request.user.type == 'Bot' }}
+        env:
+          AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+        run: >-
+          echo "${AUTHOR_LOGIN} is a GitHub App, whose pull request resolves no ticket,
+          so its close target is not judged."
 
       - name: Validate the required anchors
         if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
