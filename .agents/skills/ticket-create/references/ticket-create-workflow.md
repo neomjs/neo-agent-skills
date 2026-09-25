@@ -8,6 +8,8 @@ Tickets are **A2A (Agent-to-Agent) memory bridges**, not just human tracking art
 
 Before the duplicate sweep or the Fat-Ticket body: is this the right work — does it fit the current architecture and goals? Understand what it's *for* (from the affected files and their neighbors / imports — intent belongs in their JSDoc, `src/core/Base.mjs` is the bar — plus `memory-mining` / `ask_knowledge_base`) before you structure it. A perfectly-formed ticket for the wrong work is still the wrong work. If the intent it relies on is documented nowhere, that gap is itself worth a ticket.
 
+**The Design-authority line (a ticket that calls an existing behavior wrong).** A receipt — geometry, timing, a rendered frame — shows what happens, never whether it is wanted. When the ticket declares a designed behavior a defect and there is no crash, no red and no contradiction with the surface's own JSDoc, The Architectural Reality MUST carry `Design authority: <the record sentence, quoted>` — the ADR section, guide or owning module JSDoc that defines the current behavior as intended — before The Fix is written. Search the decision-record directory, the guides and `ask_knowledge_base`; if nothing defines it, write `Design authority: none found (searched: …)` and file a fork on the owning record (a comment on the ADR's epic, or a Discussion) instead of a defect with a Fix. A reviewer reads the line as the premise (`pr-review` §9.0): without it, or with a line the diff contradicts, the PR is premise-unverified. *(Retire this prose gate once a body lint enforces the line on behavior-change tickets.)*
+
 ## 1. Pre-Authoring Adjacency Sweeps (Gate 0)
 
 **Before drafting any title or body**, you MUST execute the applicable sweeps below to ensure swarm synchronicity and architectural discipline:
@@ -135,7 +137,7 @@ Skeleton tickets are forbidden — so are world atlases: sections complete, each
 
 - **Context** — why this exists and its evidence. Incident tickets name the observed operation when known, mark unknowns, and separate observation from inference; quotations are leads, not causes. *(Retire with §8 once lint enforces this without syntax proxies.)*
 - **The Problem** — deep background, insights from recent Memory Core explorations, reproducer if applicable. Historical "why" for the agent picking up the ticket later.
-- **The Architectural Reality** — exactly which Neo.mjs patterns, class topologies, or service boundaries this issue interacts with. Cite file:line when known. Distinguishes intent-level framing (Problem) from structural specificity (Reality).
+- **The Architectural Reality** — exactly which Neo.mjs patterns, class topologies, or service boundaries this issue interacts with. Cite file:line when known. Distinguishes intent-level framing (Problem) from structural specificity (Reality). A ticket that calls an existing behavior wrong carries the `Design authority:` line here (§0).
 - **The Fix** — concrete prescription: files, symbols, architectural primitives touched. What changes, and where.
 - **Contract Ledger Matrix** *(when applicable)* — For any ticket introducing, modifying, or deprecating a surface consumed by humans, agents, or external systems (e.g. public methods, configs, MCP tools), you MUST include a formal Contract Ledger matrix. This matrix defines Target Surface, Source of Authority, Proposed Behavior, Fallback, Docs, and Evidence. Rows that name existing fields, methods, helpers, tools, config keys, docs paths, or runtime surfaces must satisfy the row-level Surface-Anchor V-B-A discipline in the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md) before the ticket asserts them.
 - **Decision Record impact** *(architecture/substrate tickets)* — Declare `none`, `aligned-with ADR ####`, `depends-on ADR ####`, `amends ADR ####`, `supersedes ADR ####`, or `challenges ADR ####`. Use the ADR successor-risk audit when the ticket conflicts with or depends on accepted ADR authority.
@@ -173,6 +175,7 @@ When drafting ticket bodies, read the [reference-hygiene guide](https://github.c
 | Inventing label names | Breaks label taxonomy; causes silent GitHub API rejections |
 | Precedent-following without skill check | Propagates anti-patterns from prior sessions (e.g., `[enhancement]` prefix spread this way) |
 | Quotation as root cause | Text search tests attribution, not the event |
+| Receipt as design verdict | A receipt shows what happens, never whether it is wanted; the record that decided the behavior does (§0's `Design authority:` line) |
 | Over-fragmentation | one-PR work split into micro-tickets; bundle by default — a split replaces scope, not adds |
 
 ## 9. When to Escalate to Discussion Instead
