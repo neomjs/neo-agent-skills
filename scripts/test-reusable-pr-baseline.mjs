@@ -4,7 +4,8 @@
  *
  * GitHub validates YAML syntax when the branch is published; this suite protects the semantic
  * boundary that syntax cannot: one workflow-call entrypoint, read-only permissions, a caller held to a
- * release tag, stable jobs, caller-repository checkout, the explicit dev-base decision, immutable archaeology and
+ * release tag, a release version read from `package.json` and written nowhere in the workflow, stable
+ * jobs, caller-repository checkout, the explicit dev-base decision, immutable archaeology and
  * substrate-budget execution, and the supported materializer command. Each negative fixture removes
  * one property and must turn red.
  *
@@ -19,8 +20,7 @@ import {fileURLToPath} from 'node:url';
 const
     here         = dirname(fileURLToPath(import.meta.url)),
     root         = join(here, '..'),
-    workflowPath = join(root, '.github', 'workflows', 'reusable-pr-baseline.yml'),
-    pkg          = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    workflowPath = join(root, '.github', 'workflows', 'reusable-pr-baseline.yml');
 
 let mutationCount = 0;
 
@@ -44,6 +44,9 @@ function jobSource(source, jobId) {
  */
 export function validateReusablePrBaseline(source) {
     const failures       = [],
+          versionJob     = jobSource(source, 'version'),
+          // The other checkout of another repository: this workflow's own package.json, never the caller's tree
+          versionStep    = versionJob.match(/      - name: Checkout this workflow's package\.json\n[\s\S]*?(?=\n      - |\s*$)/)?.[0] || '',
           releaseRefJob  = jobSource(source, 'release-ref'),
           prBaseJob      = jobSource(source, 'pr-base'),
           skillsJob      = jobSource(source, 'skills-materialized'),
@@ -58,6 +61,14 @@ export function validateReusablePrBaseline(source) {
           required = [
               ['workflow-call trigger', /^on:\n  workflow_call:\n/m],
               ['read-only contents', /^permissions:\n  contents: read\n/m],
+              ['version job id', /^  version:\n/m],
+              ['version stable name', /^    name: Skills version\n/m],
+              // `job.workflow_*` name THIS reusable file; `github.*` would read the caller's package.json.
+              ['version checks out its own repository', /^\s*repository: \$\{\{ job\.workflow_repository \}\}\s*$/m, versionStep],
+              ['version checks out its own commit', /^\s*ref: \$\{\{ job\.workflow_sha \}\}\s*$/m, versionStep],
+              ['version checks out package.json alone', /^\s*sparse-checkout: package\.json\s*$/m, versionStep],
+              ['version reads the version field', /jq -r \.version \.neo-agent-skills\/package\.json/, versionJob],
+              ['version output', /^      version: \$\{\{ steps\.read\.outputs\.version \}\}\s*$/m, versionJob],
               ['release-ref job id', /^  release-ref:\n/m],
               ['release-ref stable name', /^    name: Release ref\n/m],
               // `job.workflow_ref` names THIS reusable file's ref; `github.workflow_ref` is the caller's own.
@@ -164,7 +175,7 @@ export function validateReusablePrBaseline(source) {
     if (!triggerBlock || /^  (?:pull_request|pull_request_target|push|workflow_dispatch|schedule):/m.test(triggerBlock)) {
         failures.push('direct event trigger present')
     }
-    if (/^\s+repository:/m.test(source.replace(rosterStep, ''))) failures.push('checkout repository override present');
+    if (/^\s+repository:/m.test(source.replace(rosterStep, '').replace(versionStep, ''))) failures.push('checkout repository override present');
     if (rosterStep && !/^\s*path: \.team-roster\s*$/m.test(rosterStep)) failures.push('authorship roster replaces the caller tree');
     if (!/^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m.test(archaeologyJob)) {
         failures.push('missing exact caller head')
@@ -176,8 +187,16 @@ export function validateReusablePrBaseline(source) {
     if (!/git fetch --no-tags origin "\$\{BASE_SHA\}"/.test(archaeologyJob)) {
         failures.push('missing exact base fetch')
     }
-    if (!releaseRefJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('release-ref package version drift');
-    if (!archaeologyJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('package version drift');
+    // Every job that installs or names the release takes it from the version job, so the version is written once,
+    // in package.json. `needs` is half of it: without it the expression is empty and npm installs `neo-agent-skills@`.
+    [['release-ref', releaseRefJob], ['archaeology', archaeologyJob], ['substrate', substrateJob], ['overrides', overridesJob],
+     ['secrets', secretsJob], ['authorship', authorshipJob], ['PR-body', prBodyJob]].forEach(([label, job]) => {
+        if (!/^    needs: version\n/m.test(job) || !/^\s*SKILLS_VERSION: \$\{\{ needs\.version\.outputs\.version \}\}\s*$/m.test(job)) {
+            failures.push(`${label} version not read from package.json`)
+        }
+    });
+    // A version typed into the workflow is a second copy that the next release must edit by hand.
+    if (/\d+\.\d+\.\d+/.test(source)) failures.push('version literal present');
     // Anchored for the same reason as the workspace pin: `…-source-comment-archaeology-x` is a
     // DIFFERENT install root that an unanchored match accepts.
     if ((archaeologyJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-source-comment-archaeology\s*$/gm) || []).length !== 2) {
@@ -191,7 +210,6 @@ export function validateReusablePrBaseline(source) {
         failures.push('missing isolated absolute bin')
     }
     if (!/--base "\$\{BASE_SHA\}"/.test(archaeologyJob)) failures.push('missing exact base invocation');
-    if (!substrateJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('substrate package version drift');
     if ((substrateJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-substrate-size\s*$/gm) || []).length !== 2) {
         failures.push('missing substrate isolated runner root')
     }
@@ -204,7 +222,6 @@ export function validateReusablePrBaseline(source) {
         failures.push('substrate guard invoked with arguments')
     }
 
-    if (!overridesJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('overrides package version drift');
     if ((overridesJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-npm-overrides\s*$/gm) || []).length !== 2) {
         failures.push('missing overrides isolated runner root')
     }
@@ -213,12 +230,10 @@ export function validateReusablePrBaseline(source) {
         failures.push('overrides guard invoked with arguments')
     }
 
-    if (!secretsJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('secrets package version drift');
     if ((secretsJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-secrets\s*$/gm) || []).length !== 2) {
         failures.push('missing secrets isolated runner root')
     }
 
-    if (!authorshipJob.includes(`SKILLS_VERSION: '${pkg.version}'`)) failures.push('authorship package version drift');
     if ((authorshipJob.match(/^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-commit-authorship\s*$/gm) || []).length !== 2) {
         failures.push('missing authorship isolated runner root')
     }
@@ -303,9 +318,6 @@ if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks
     } else if (!/neo-agent-skills@\$\{SKILLS_VERSION\}/.test(prBodyInstall[0])) {
         failures.push('PR-body guard install is not pinned to an exact version')
     }
-    if (!new RegExp(`SKILLS_VERSION: '${pkg.version}'`).test(prBodyJob)) {
-        failures.push('PR-body package version drift')
-    }
 
     // A body reaching a shell means an EXPRESSION interpolated into a run: line, not the substring
     // "body" appearing somewhere in the job. Scoped per line, so it cannot span steps.
@@ -364,9 +376,36 @@ expectMutationFailure('release-ref reads the caller ref', source,
 expectMutationFailure('release-ref accepts any semver tag', source,
     value => value.replace('!= *"@refs/tags/v${SKILLS_VERSION}" ]]', '!~ @refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]'),
     'missing release-ref requires its own release tag');
-expectMutationFailure('release-ref pin drifts from the package', source,
-    value => value.replace("          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: '" + pkg.version + "'", "          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: '999.999.999'"),
-    'release-ref package version drift');
+expectMutationFailure('release-ref version written by hand', source,
+    value => value.replace('          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}',
+                           "          WORKFLOW_REF: ${{ job.workflow_ref }}\n          SKILLS_VERSION: 'latest'"),
+    'release-ref version not read from package.json');
+expectMutationFailure('release-ref judged before the version is read', source,
+    value => value.replace('    name: Release ref\n    needs: version\n', '    name: Release ref\n'),
+    'release-ref version not read from package.json');
+
+// ── The version job: the release is package.json's, at the commit that defines this workflow ─────
+expectMutationFailure('version job removed', source,
+    value => value.replace('  version:\n    name: Skills version\n', '  removed-version:\n    name: Skills version\n'),
+    'missing version job id');
+expectMutationFailure('version read from the caller commit', source,
+    value => value.replace('          ref: ${{ job.workflow_sha }}\n', '          ref: ${{ github.sha }}\n'),
+    'missing version checks out its own commit');
+expectMutationFailure('version read from the caller repository', source,
+    value => value.replace('          repository: ${{ job.workflow_repository }}\n', '          repository: ${{ github.repository }}\n'),
+    'missing version checks out its own repository');
+expectMutationFailure('version checks out the whole tree', source,
+    value => value.replace('          sparse-checkout: package.json\n', ''),
+    'missing version checks out package.json alone');
+// The red control for "never written anywhere else": one literal, in one job, is enough to fail.
+expectMutationFailure('version literal reintroduced', source,
+    value => value.replace(
+        '          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}',
+        "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: '0.1.20'"),
+    'version literal present');
+expectMutationFailure('a guard installed before the version is read', source,
+    value => value.replace('    name: Secrets\n    needs: version\n', '    name: Secrets\n'),
+    'secrets version not read from package.json');
 expectMutationFailure('base job', source,
     value => value.replace('  pr-base:', '  removed-base:'),
     'missing PR-base job id');
@@ -407,8 +446,8 @@ expectMutationFailure('base invocation', source,
     value => value.replace('--base "${BASE_SHA}"', '--base origin/dev'),
     'missing exact base invocation');
 expectMutationFailure('package version', source,
-    value => value.replace(`neo-agent-skills-source-comment-archaeology\n          SKILLS_VERSION: '${pkg.version}'`, "neo-agent-skills-source-comment-archaeology\n          SKILLS_VERSION: 'latest'"),
-    'package version drift');
+    value => value.replace('neo-agent-skills-source-comment-archaeology\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}', "neo-agent-skills-source-comment-archaeology\n          SKILLS_VERSION: 'latest'"),
+    'archaeology version not read from package.json');
 expectMutationFailure('runner isolation', source,
     value => value.replace('${{ runner.temp }}/neo-agent-skills-source-comment-archaeology', '${{ github.workspace }}/guard'),
     'missing isolated runner root');
@@ -444,9 +483,9 @@ expectMutationFailure('substrate runner isolation', source,
     'missing substrate isolated runner root');
 expectMutationFailure('substrate package version', source,
     value => value.replace(
-        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: '${pkg.version}'`,
+        '          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}',
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size\n          SKILLS_VERSION: 'latest'"),
-    'substrate package version drift');
+    'substrate version not read from package.json');
 // Anchored on the STEP NAME rather than the comment that follows it. The archaeology job carries a
 // byte-identical install line, so this fixture needs something after it to disambiguate — it used
 // the prose `# Invoked bare`, and editing that comment silently turned the mutation into a no-op,
@@ -500,9 +539,9 @@ expectMutationFailure('overrides job removed', source,
     'missing overrides job id');
 expectMutationFailure('overrides package version', source,
     value => value.replace(
-        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-npm-overrides\n          SKILLS_VERSION: '${pkg.version}'`,
+        '          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}',
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides\n          SKILLS_VERSION: 'latest'"),
-    'overrides package version drift');
+    'overrides version not read from package.json');
 expectMutationFailure('overrides isolated install', source,
     value => value.replace(
         /(      - name: Install immutable npm-overrides guard\n[\s\S]*?)          npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save\n          "neo-agent-skills@\$\{SKILLS_VERSION\}"/,
@@ -530,9 +569,9 @@ expectMutationFailure('secrets job removed', source,
     'missing secrets job id');
 expectMutationFailure('secrets package version', source,
     value => value.replace(
-        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-secrets\n          SKILLS_VERSION: '${pkg.version}'`,
+        '          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}',
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets\n          SKILLS_VERSION: 'latest'"),
-    'secrets package version drift');
+    'secrets version not read from package.json');
 expectMutationFailure('secrets isolated install', source,
     value => value.replace(
         /(      - name: Install immutable credential guard\n[\s\S]*?)          npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save\n          "neo-agent-skills@\$\{SKILLS_VERSION\}"/,
@@ -560,9 +599,9 @@ expectMutationFailure('authorship job removed', source,
     'missing authorship job id');
 expectMutationFailure('authorship package version', source,
     value => value.replace(
-        `          SKILLS_ROOT: \${{ runner.temp }}/neo-agent-skills-commit-authorship\n          SKILLS_VERSION: '${pkg.version}'`,
+        '          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship\n          SKILLS_VERSION: ${{ needs.version.outputs.version }}',
         "          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship\n          SKILLS_VERSION: 'latest'"),
-    'authorship package version drift');
+    'authorship version not read from package.json');
 expectMutationFailure('authorship shallow checkout', source,
     value => value.replace(/(  commit-authorship:\n[\s\S]*?)          fetch-depth: 0\n/, '$1'),
     'missing authorship full history');

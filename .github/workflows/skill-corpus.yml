@@ -35,6 +35,16 @@ jobs:
       - name: Install source dependencies
         run: npm ci --ignore-scripts
 
+      # Every merge to dev publishes (publish.yml), so every pull request carries the new version it will publish.
+      - name: Version bump
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/check-version-bump.mjs --base "${BASE_SHA}"
+
+      - name: Version-bump contract
+        run: node scripts/test-check-version-bump.mjs
+
       - name: Corpus coherence, budgets, reference integrity, net growth
         run: |
           BASE="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
@@ -107,7 +117,7 @@ jobs:
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-commit-authorship.mjs' \
             || { echo "commit-authorship guard CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
