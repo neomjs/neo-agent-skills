@@ -324,6 +324,8 @@ This is architectural judgment after defects are identified; it is not another d
 
 When §0 surfaces Cycle-1 structural invalidity — false premise, ungraduated substrate, authority bypass, roadmap conflict, better existing substrate, or stale/superseded ticket input — default to **Drop+Supersede**: one close/restart RA, not iterative fix lists. ADR conflict → run `ticket-intake/references/adr-successor-risk-audit.md`. Triggers + bias rationale: [`../audits/cycle-1-premise-preflight.md`](../audits/cycle-1-premise-preflight.md).
 
+**The premise's handle**, when the close-target ticket calls an existing behavior wrong, is its `Design authority:` line (`ticket-create` §0). No line leaves the premise unverified; a line the diff contradicts is a false premise. Either → ONE RA (cite the record, or file the fork on it), never an approval on matching tests and green CI; file:line citations and receipts are not authority.
+
 ### 9.1 Reviewer-Yield Protocol (Deadlock Prevention)
 
 After `[REJECTED_WITH_RATIONALE]` (`review-response-protocol.md §4`), re-escalate the same item only with superior empirical evidence naming a missed failure mode. Authority or preference is insufficient; if the rationale survives falsification, yield, resolve it, and continue the PR lifecycle.
