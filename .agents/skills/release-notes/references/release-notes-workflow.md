@@ -53,7 +53,7 @@ Every factual claim in the notes carries a verifiable source (ticket, PR, commit
 
 ## §5 The quality bar — the precedent SET — `DISCIPLINE-ONLY`
 
-The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). All post-publish mirrors under `resources/content/release-notes/chunk-N/`:
+The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). All in the engine's `.github/RELEASE_NOTES/`:
 
 - `v13.0.0.md` — the major: five hero chapters, institution-scale narrative.
 - `v12.1.0.md` — TL;DR with an **honest velocity qualifier in the unflattering direction** (a lower tickets/day number contextualized by scope-depth, not hidden); `> [!NOTE]` alert-block sidebars carrying verbatim human-AI moments (the "Cyborg Guardrail" recovery-prompt, quoted).
@@ -76,16 +76,15 @@ The measurable precedent is a **set, never one file** — majors AND minors both
 
 ## §6 Publish-flow mechanics — the staging-file lifecycle — `MACHINE-ENFORCEABLE-CANDIDATE`
 
-The authoring surface is **`resources/content/release-notes/v{version}.md` at the flat directory root** — this is a hard `buildScripts/release/publish.mjs` contract, not a convention:
+The authoring surface is **`.github/RELEASE_NOTES/v{version}.md`** in the engine, one flat file per version — a hard `buildScripts/release/publish.mjs` contract, not a convention:
 
 1. **Pre-flight requires it** (`publish.mjs` §1): the release ERRORS if the file is absent. The version comes from `package.json` (bumped manually before the cut).
 2. The file is **committed and iterated on dev** ahead of the cut (§1) — the v13.0 lineage precedent, formalized.
 3. At cut time publish.mjs appends the **atomic-changelog-hash line** (post squash-to-main), parses the file — frontmatter stripped, first H1 extracted as the release title — and runs `gh release create` (cascades to npm).
-4. **publish.mjs itself removes the flat file post-release**; the SECOND runbook command — `npm run ai:post-release-sync` (fail-closed preflight; publish prints it) — then re-materializes the published release under `chunk-N/` with frontmatter, regenerates the ticket index, and commits the archive moves (`_index.json` is syncer-maintained — never hand-edit). Two commands since the severance: ADR 0004 §3.4.
-5. **The orphan guard** (`test/playwright/unit/ai/buildScripts/release/PublishReleaseNoteOrphan.spec.mjs`) polices the flat root. Its correct scope is the post-publish defect class — a flat file lingering ALONGSIDE its chunk-N mirror — and the `#14484` leaf narrows it to exactly that. **Check the spec's state on YOUR merge base before relying on staging-file passage:** an absolute empty-flat-root assertion means the narrowing has not landed yet (a staging file then trips `unit` until it does). Either way the principle holds: a staging file for an unpublished version is the DESIGNED state — never "fix" guard friction by relocating the notes out of the pipeline contract (attempted and operator-reverted in the v13.1 window).
-6. **Sync-guard interplay:** the husky pre-commit classifies `resources/content/release-notes/**` as sync-data; flat-root staging commits use `--no-verify` per the pipeline's own precedent (publish.mjs commits this file `--no-verify` internally). Keep such commits single-file so no other hook coverage is silently skipped.
-7. Known observation (epic-tracked): `buildScripts/docs/index/release.mjs` scans flat files recursively, so a committed staging note surfaces its version in `releases.json` when the docs index regenerates pre-cut.
-8. **The cut itself is human-only** (`§critical_gates`): agents prepare (notes, `prepare.mjs` validation, checklist) and hand off; `publish.mjs` execution and the dev→main release line belong to the operator.
+4. **publish.mjs keeps the file**: the authored note is the archive, and nothing re-materializes it. The SECOND runbook command, `npm run ai:post-release-sync` (fail-closed preflight; publish prints it), uploads the Knowledge Base and writes nothing into the engine. The corpus picks the release up from GitHub Releases.
+5. **Its guards:** `PublishReleaseNoteOrphan.spec.mjs` pins the authored path, the kept file and the flat layout; the release-note link scan in `Generate.spec.mjs` refuses mutable GitHub links.
+6. Known observation (epic-tracked): `buildScripts/docs/index/release.mjs` scans flat files recursively, so a committed staging note surfaces its version in `releases.json` when the docs index regenerates pre-cut.
+7. **The cut itself is human-only** (`§critical_gates`): agents prepare (notes, `prepare.mjs` validation, checklist) and hand off; `publish.mjs` execution and the dev→main release line belong to the operator.
 
 ## §7 Cut-readiness checklist — `MACHINE-ENFORCEABLE-CANDIDATE`
 
@@ -95,7 +94,7 @@ The notes epic's final iteration passes when:
 - [ ] `Release Type` / `Stability` designations operator-confirmed (§4)
 - [ ] Scope numbers regenerated at the cut boundary (§2 re-run) and reconciled in-document
 - [ ] Every claim anchor-verified (§4); the numbers-verify sweep (the `#14327` class, "sequence LAST") has run against the final text
-- [ ] The staging file sits at the flat root with the version matching `package.json`'s bump
+- [ ] The staging note is `.github/RELEASE_NOTES/v{version}.md`, matching `package.json`'s bump
 - [ ] The operator publish-handoff comment is posted on the cut-mechanics leaf (checklist + explicit "publish is yours")
 
 ## Lifecycle position
