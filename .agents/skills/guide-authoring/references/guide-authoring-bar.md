@@ -14,7 +14,7 @@ You MUST do all three before writing a line (or posting a review verdict):
 
 ## 2. The content bar — a rich hero-piece, not a feature list — `DISCIPLINE-ONLY`
 
-Measured against `resources/content/release-notes/chunk-2/v13.0.0.md` ("Memory Became Telepathy" depth). Clean + accurate ≈ 5/10; a narrative that earns goosebumps = 9-10/10.
+Measured against the engine's `.github/RELEASE_NOTES/v13.0.0.md` ("Memory Became Telepathy" depth). Clean + accurate ≈ 5/10; a narrative that earns goosebumps = 9-10/10.
 
 **Rich hero-piece, NOT compression.** v13.0.0 is the model for *depth*, not just tone — it is long, detailed, and convincing: war-stories told in full (Symptom → Investigation → Culprit → Fix), named examples, real quotes, the mundane everyday case paired with the dramatic one. **Conciseness is the wrong instinct for a guide.** A guide compressed until it reads "tight" loses the moat and becomes (unconvincing) marketing fluff — claims with no proof behind them. **Cut reference (§4), never narrative.** Length serves the story; earn it with detail and evidence. The test: a human should *want to try Neo after reading.* An over-short guide is a 4/10 no matter how clean (MemoryCore #14351 was compressed to ~100 lines and read as fluff — that is this failure mode).
 

@@ -33,7 +33,7 @@ Each cornerstone epic has exactly **one named steward** — accountable that the
 
 **SHOULD:** the release thesis (rationale); the cornerstone epics (linked to the milestone); the explicit deferred set; the steward map; a budget/cadence note (steady-state ≈ 100–150 merged PRs — sequence any over-budget stretch as a capstone, keep the deferred set firm).
 
-**MUST NOT:** an exhaustive prose item-list (stales → FAIL); a scope with no visible deferred set; pre-assigned peer steward lanes; a graduation rubber-stamped to fit the scope; a framework-vision restatement (→ `.github/VISION.md`); prior-release shipped-history (→ `resources/content/release-notes/`).
+**MUST NOT:** an exhaustive prose item-list (stales → FAIL); a scope with no visible deferred set; pre-assigned peer steward lanes; a graduation rubber-stamped to fit the scope; a framework-vision restatement (→ `.github/VISION.md`); prior-release shipped-history (→ `.github/RELEASE_NOTES/`).
 
 ## Avoided traps / rejected shapes
 
