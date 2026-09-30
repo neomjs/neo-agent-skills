@@ -286,7 +286,7 @@ For PRs that introduce new workflow primitives, skill files, architectural conve
 - PR adds or materially changes a skill file (`.agents/skills/**/SKILL.md` or `**/references/*.md`)
 - PR introduces a new workflow convention (new commit-message format, new comment template, new ticket-body section)
 - PR adds a new MCP tool surface
-- PR modifies `AGENTS_STARTUP.md` or `AGENTS.md` (startup conventions change)
+- PR modifies `AGENTS.md` (per-turn conventions change)
 - PR introduces a new architectural primitive other subsystems will consume
 - PR refactors a substrate or changes a wire format (e.g., event payloads, tool signatures, database schemas)
 - PR changes `ai/mcp/server/<name>/config.template.mjs`; read `.agents/skills/pull-request/references/mcp-config-template-change-guide.md` before approval
@@ -294,7 +294,6 @@ For PRs that introduce new workflow primitives, skill files, architectural conve
 ### 8.2 Verification Checklist
 
 - [ ] Does any existing skill document a predecessor step that should now fire this new pattern? (E.g., if PR adds `epic-review`, does `ticket-intake` need to check for epic-review state as a prerequisite?)
-- [ ] Does `AGENTS_STARTUP.md` §9 Workflow skills list need updating to include the new pattern?
 - [ ] Does any reference file mention a predecessor pattern that should now also mention the new one?
 - [ ] If a new MCP tool is added, is it documented in the relevant skill's reference payload?
 - [ ] If a new convention is introduced, is there documentation somewhere explaining when the convention applies and how it fires?

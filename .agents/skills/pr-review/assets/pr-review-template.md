@@ -172,10 +172,9 @@ Expand these audits only when their trigger fires; otherwise omit them rather th
 
 ### 🔗 Cross-Skill Integration Audit
 
-*(Required per guide §8.1 when the PR touches skill files, conventions, MCP tool surfaces, `AGENTS_STARTUP.md` / `AGENTS.md`, or architectural primitives. Mark N/A for routine code changes that don't introduce cross-substrate conventions.)*
+*(Required per guide §8.1 when the PR touches skill files, conventions, MCP tool surfaces, `AGENTS.md`, or architectural primitives. Mark N/A for routine code changes that don't introduce cross-substrate conventions.)*
 
 - [ ] Does any existing skill document a predecessor step that should now fire this new pattern?
-- [ ] Does `AGENTS_STARTUP.md` §9 Workflow skills list need updating?
 - [ ] Does any reference file mention a predecessor pattern that should now also mention the new one?
 - [ ] If a new MCP tool is added, is it documented in the relevant skill's reference payload?
 - [ ] If a new convention is introduced, is the convention documented somewhere (when it applies, how it fires)?

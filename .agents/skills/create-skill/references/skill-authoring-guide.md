@@ -57,7 +57,7 @@ Even at creation time, declaring the implicit disposition (`keep` for newly auth
 
 ### Substrate-vs-Discipline Tagging
 
-For sections likely to be cited from per-turn substrate (`AGENTS.md`, `AGENTS_STARTUP.md`, frequently-loaded SKILL.md routers), tag the section with one of:
+For sections likely to be cited from per-turn substrate (`AGENTS.md`, frequently-loaded SKILL.md routers), tag the section with one of:
 
 - **`MACHINE-ENFORCEABLE-CANDIDATE`** — the rule could in principle be enforced by a hook, lint, or schema check. The tag signals "this is a good target for mechanical-enforcement follow-up work."
 - **`DISCIPLINE-ONLY`** — the rule depends on agent judgment and cannot be mechanically enforced. The tag signals "this needs explicit per-turn substrate to fire reliably."
