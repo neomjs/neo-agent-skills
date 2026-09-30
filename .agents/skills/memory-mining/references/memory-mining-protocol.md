@@ -2,7 +2,7 @@
 
 This document is the authoritative playbook for the **memory-first reflex** — the discipline of querying the Memory Core before diagnostic or architectural work, so you don't re-derive what a prior agent already figured out.
 
-The rule lives in `AGENTS_STARTUP.md §3.3`. This skill is the enforcement mechanism: invocation IS the mode switch. Reflexes-as-rules get applied inconsistently; reflexes-as-skills get applied reliably.
+This skill is both the rule and its enforcement: invocation IS the mode switch. Reflexes-as-rules get applied inconsistently; reflexes-as-skills get applied reliably.
 
 ## 1. When to invoke — the two gates
 
@@ -70,7 +70,7 @@ Do not keep querying past a clear miss. The absence of prior context is itself a
 
 Tobi's past decisions, push-backs, and course-corrections are indexed in memory across many agents and harnesses (Claude Code, Antigravity, Gemini CLI). Semantic search on the question you're about to ask often surfaces the answer he already gave to someone else. This is a cross-harness asset — use it.
 
-### Historical Traps vs Gold Standards (per AGENTS_STARTUP §3.3)
+### Historical Traps vs Gold Standards
 
 When reviewing hits, classify them:
 - **Trap** — an approach that caused race conditions, regressions, or architectural dead-ends. Avoid replicating.
