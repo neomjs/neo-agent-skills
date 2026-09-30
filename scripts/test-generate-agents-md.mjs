@@ -64,7 +64,7 @@ function capture(argv) {
         {id: 'beta',  order: 20, wrapperGroup: 'g2', body: '## §beta\n\nB.'}
     ]);
 
-    const {text} = generate({audience: 'maintainer', repo: 'neo', root});
+    const {text} = generate({audience: 'maintainer', repos: ['neo'], root});
 
     assert.equal(text.match(/<neo_core_overrides/g).length, 2, 'adjacent DISTINCT groups stay two blocks');
     assert.equal(text.match(/<\/neo_core_overrides>/g).length, 2, 'and both close');
@@ -76,7 +76,7 @@ function capture(argv) {
         {id: 'beta',  order: 20, wrapperGroup: 'g1', body: '## §beta\n\nB.'}
     ]);
 
-    const {text} = generate({audience: 'maintainer', repo: 'neo', root});
+    const {text} = generate({audience: 'maintainer', repos: ['neo'], root});
 
     assert.equal(text.match(/<neo_core_overrides/g).length, 1, 'a shared group is ONE block');
     // The arm that catches a same-group section being dropped — the first implementation collapsed
@@ -109,9 +109,9 @@ function capture(argv) {
         {id: 'internal',   order: 30, repos: 'neo, devindex',  audiences: 'maintainer',              body: '## §internal\n\nI.'}
     ]);
 
-    const engine      = generate({audience: 'maintainer',  repo: 'neo', root}).text,
-          contributor = generate({audience: 'contributor', repo: 'neo', root}).text,
-          brain       = generate({audience: 'maintainer',  repo: 'neo-agent-brain', root}).text;
+    const engine      = generate({audience: 'maintainer',  repos: ['neo'], root}).text,
+          contributor = generate({audience: 'contributor', repos: ['neo'], root}).text,
+          brain       = generate({audience: 'maintainer',  repos: ['neo-agent-brain'], root}).text;
 
     assert.doesNotMatch(engine, /§brainonly/,  'a gate whose governed surface is elsewhere does not ship here');
     assert.match(brain,        /§brainonly/,   'and does ship where it is load-bearing');
@@ -135,6 +135,17 @@ function capture(argv) {
     assert.equal(code, 1, 'an over-budget variant is refused');
     assert.match(text, /over the 24576 B budget/, 'and the refusal names the budget it broke');
     assert.throws(() => readFileSync(out, 'utf8'), /ENOENT/, 'and nothing is written — refuse before emitting, not after');
+    assert.throws(() => generate({audience: 'maintainer', repos: ['neo'], root}), /over the 24576 B budget/,
+        'an importer is refused the same variant: the budget is not the CLI\'s alone');
+}
+
+// ── An importer is refused what a person is ─────────────────────────────────────────────────────
+// Each of these would otherwise return the preamble alone as a successful variant, which the caller
+// then writes into a seat's home.
+{
+    assert.throws(() => generate({audience: 'maintainer', repos: []}),         /no repository given/,                          'an empty set');
+    assert.throws(() => generate({audience: 'maintainer', repos: ['nobody']}), /no section declares the repository "nobody"/, 'an undeclared repository');
+    assert.throws(() => generate({audience: 'nobody',     repos: ['neo']}),    /no section declares the audience "nobody"/,    'an undeclared audience');
 }
 
 // ── The document sink does not editorialize ─────────────────────────────────────────────────────
@@ -162,8 +173,8 @@ function capture(argv) {
         {id: 'gate3', order: 403, repos: 'neo, brain', body: 'Third.',  listGroup: 'gates', listNumber: 3}
     ]);
 
-    const engine = generate({audience: 'maintainer', repo: 'neo', root}).text,
-          brain  = generate({audience: 'maintainer', repo: 'brain', root}).text;
+    const engine = generate({audience: 'maintainer', repos: ['neo'], root}).text,
+          brain  = generate({audience: 'maintainer', repos: ['brain'], root}).text;
 
     assert.match(brain,  /1\. First\.\n2\. Second\.\n3\. Third\./, 'all three render as one list, in order');
     assert.doesNotMatch(engine, /Second\./,   'the repo-specific gate does not ship where it governs nothing');
@@ -172,10 +183,49 @@ function capture(argv) {
     assert.doesNotMatch(engine, /2\. Third\./, 'Third must NOT slide up into the vacated number');
 }
 
+// ── A repository set composes ONE file ──────────────────────────────────────────────────────────
+// A peer working in several repositories loads one home file, which must carry each repository's
+// own rules once, in source order, whatever order the set was given in.
+{
+    const root = fixture([
+        {id: 'shared', order: 10, repos: 'neo, neo-agent-brain', body: '## §shared\n\nS.'},
+        {id: 'brain',  order: 20, repos: 'neo-agent-brain',      body: '## §brain\n\nB.'},
+        {id: 'engine', order: 30, repos: 'neo',                  body: '## §engine\n\nE.'}
+    ]);
+
+    const both = generate({audience: 'maintainer', repos: ['neo', 'neo-agent-brain'], root}).text;
+
+    assert.equal(both.match(/## §shared/g).length, 1, 'a section both repositories declare renders once');
+    assert.match(both, /§shared[\s\S]*§brain[\s\S]*§engine/, 'each repository keeps its own section, in source order');
+    assert.equal(generate({audience: 'maintainer', repos: ['neo-agent-brain', 'neo'], root}).text, both,
+        'the order of the set does not change the output');
+}
+
+// A repository-specific replacement for a numbered rule is valid in each repository alone and
+// renders twice in their union, so the union is refused rather than emitting two "2." items.
+{
+    const root = fixture([
+        {id: 'gate2',      order: 402, repos: 'neo',   body: 'Second.',        listGroup: 'gates', listNumber: 2},
+        {id: 'gate2brain', order: 403, repos: 'brain', body: 'Second, Brain.', listGroup: 'gates', listNumber: 2}
+    ]);
+
+    assert.match(generate({audience: 'maintainer', repos: ['neo'],   root}).text, /2\. Second\./,        'each repository alone is valid');
+    assert.match(generate({audience: 'maintainer', repos: ['brain'], root}).text, /2\. Second, Brain\./, 'including the replacement');
+    assert.throws(() => generate({audience: 'maintainer', repos: ['neo', 'brain'], root}),
+        /gate2 and gate2brain both render gates #2/, 'their union refuses a number rendered twice');
+
+    const out   = join(root, 'emitted.md'),
+          lines = [],
+          code  = run(['--repo', 'neo,brain', '--out', out], {out: line => lines.push(line), error: line => lines.push(line), root});
+
+    assert.equal(code, 1, 'and the CLI exits non-zero');
+    assert.ok(!existsSync(out), 'without writing the file');
+}
+
 // ── The real source: the headline exclusion ─────────────────────────────────────────────────────
 {
-    const engine = generate({audience: 'maintainer', repo: 'neo'}).text,
-          brain  = generate({audience: 'maintainer', repo: 'neo-agent-brain'}).text,
+    const engine = generate({audience: 'maintainer', repos: ['neo']}).text,
+          brain  = generate({audience: 'maintainer', repos: ['neo-agent-brain']}).text,
           GATE   = /No AiConfig work without reading ADR-0019/;
 
     assert.match(brain,        GATE, 'the AiConfig gate ships where its governed surface lives');
@@ -201,7 +251,7 @@ function capture(argv) {
 
     for (const repo of repos) {
         for (const audience of audiences) {
-            const {bytes, text} = generate({audience, repo});
+            const {bytes, text} = generate({audience, repos: [repo]});
 
             assert.ok(bytes > 0, `${repo}/${audience} emits something`);
             assert.ok(bytes <= PER_FILE_LIMIT_BYTES,
@@ -218,11 +268,11 @@ function capture(argv) {
     // Applicability, asserted on the real output rather than on the declarations that produced it.
     const GATE = /No AiConfig work without reading ADR-0019/;
 
-    assert.match(generate({audience: 'maintainer', repo: 'neo-agent-brain'}).text, GATE,
+    assert.match(generate({audience: 'maintainer', repos: ['neo-agent-brain']}).text, GATE,
         'the AiConfig gate ships where its governed surface lives');
 
     for (const repo of ['neo', 'neo-agent-skills', 'neo-agent-institution', 'devindex']) {
-        assert.doesNotMatch(generate({audience: 'maintainer', repo}).text, GATE,
+        assert.doesNotMatch(generate({audience: 'maintainer', repos: [repo]}).text, GATE,
             `${repo} does not carry a gate governing a surface it does not have`);
     }
 }
@@ -242,7 +292,7 @@ function capture(argv) {
     ];
 
     for (const repo of readSupported().repos) {
-        const text = generate({audience: 'contributor', repo}).text;
+        const text = generate({audience: 'contributor', repos: [repo]}).text;
 
         for (const [pattern, what] of forbidden) {
             assert.doesNotMatch(text, pattern, `${repo}/contributor must not mandate ${what}`);
@@ -250,7 +300,7 @@ function capture(argv) {
     }
 
     // …while keeping the guidance that DOES apply to a fork.
-    const contributor = generate({audience: 'contributor', repo: 'neo'}).text;
+    const contributor = generate({audience: 'contributor', repos: ['neo']}).text;
 
     assert.match(contributor, /§verify_before_assert/, 'verify-before-assert still reaches contributors');
     assert.match(contributor, /§pre_commit_gates/,     'and so does the commit-completeness gate');
@@ -274,7 +324,7 @@ function capture(argv) {
     ];
 
     for (const repo of readSupported().repos) {
-        const text = generate({audience: 'contributor', repo}).text;
+        const text = generate({audience: 'contributor', repos: [repo]}).text;
 
         for (const [pattern, why] of wrong) {
             assert.doesNotMatch(text, pattern, `${repo}/contributor must not state ${why}`);
@@ -297,7 +347,7 @@ function capture(argv) {
     ];
 
     for (const repo of readSupported().repos) {
-        const text = generate({audience: 'contributor', repo}).text;
+        const text = generate({audience: 'contributor', repos: [repo]}).text;
 
         for (const [pattern, why] of engineOnly) {
             if (repo === 'neo') {
@@ -313,7 +363,7 @@ function capture(argv) {
 // The falsifier for "correct subset, not an onboarding door" is mechanical: a grep for any runnable
 // command over this document must not return zero.
 {
-    const contributor = generate({audience: 'contributor', repo: 'neo'}).text;
+    const contributor = generate({audience: 'contributor', repos: ['neo']}).text;
 
     [
         [/npm run server-start/,       'the command that gets the engine running'],
@@ -372,12 +422,34 @@ function capture(argv) {
         'the PACKED artifact emits a real variant — `agents-md/` shipped with it');
     assert.doesNotMatch(emitted, /No AiConfig work without reading ADR-0019/,
         'and the packed source carries the same declarations, not a stale copy');
+
+    // Fleet imports the composition by package name; the `exports` map refuses any path it does not
+    // list, so this entry is what makes the in-process call possible.
+    const composed = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '--eval', [
+        "const control = await import('neo-agent-skills/package.json', {with: {type: 'json'}});",
+        "const {generate} = await import('neo-agent-skills/agents-md');",
+        "const {text} = generate({audience: 'maintainer', repos: ['neo', 'neo-agent-brain']});",
+        "console.log(JSON.stringify({name: control.default.name, gate: text.includes('No AiConfig work without reading ADR-0019')}));"
+    ].join('\n')], {cwd: consumer, encoding: 'utf8'}));
+
+    assert.equal(composed.name, 'neo-agent-skills', 'control: the consumer resolves the package by name');
+    assert.ok(composed.gate, 'and imports the generator by name, composing a repository set in-process');
 }
 
 // ── CLI contract ────────────────────────────────────────────────────────────────────────────────
 {
     assert.equal(capture([]).code, 1, '--repo is required: there is no default repository');
     assert.equal(capture(['--repo', 'neo', '--audience', 'nobody']).code, 1, 'an unknown audience is refused, not silently treated as maintainer');
+    assert.equal(capture(['--repo', ',']).code, 1, 'an empty set is a missing --repo, not an empty file');
+
+    const set     = capture(['--repo', 'neo,neo-agent-brain']),
+          partial = capture(['--repo', 'neo,nobody']);
+
+    assert.equal(set.code, 0, 'a comma set of declared repositories emits');
+    assert.equal(set.payload, generate({audience: 'maintainer', repos: ['neo', 'neo-agent-brain']}).text, 'the composition itself');
+    assert.match(set.payload, /No AiConfig work without reading ADR-0019/, 'keeping the Brain-only gate an Engine-only file lacks');
+    assert.equal(partial.code, 1, 'one undeclared repository refuses the whole set');
+    assert.match(partial.text, /"nobody"/, 'and the refusal names it');
 }
 
 fixtures.forEach(root => rmSync(root, {force: true, recursive: true}));
