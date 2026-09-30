@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @summary Emits a repository's and audience's `AGENTS.md` from the sectioned source of record.
+ * @summary Emits the `AGENTS.md` for one audience and a set of repositories from the sectioned source of record.
  *
  * `AGENTS.md` is turn-loaded substrate: every seat pays its byte cost on every turn, against a hard
  * per-file budget. Hand-maintaining it per repository has already produced two divergent copies, so
@@ -98,7 +98,10 @@ export function readSections(root = sourceRoot) {
 }
 
 /**
- * @summary Assembles the emitted file for one repository and audience.
+ * @summary Assembles the emitted file for one audience and a set of repositories.
+ *
+ * A section is included once when ANY repository in the set declares it, so a peer working in
+ * several repositories loads one file that still carries each repository's own rules.
  *
  * **A wrapper group is ONE block, not a state machine.** Consecutive included sections sharing a
  * group collapse into a single `neo_core_overrides` block; sections without a group are their own
@@ -112,17 +115,30 @@ export function readSections(root = sourceRoot) {
  * @param {Object} options
  * @param {String} options.audience
  * @param {String} options.preamble
- * @param {String} options.repo
+ * @param {String[]} options.repos
  * @param {Object[]} options.sections
  * @returns {String}
  */
-export function assemble({audience, preamble, repo, sections}) {
+export function assemble({audience, preamble, repos, sections}) {
     const
         included = sections.filter(section =>
-            section.repos.includes(repo) && section.audiences.includes(audience)),
-        blocks   = [];
+            section.repos.some(repo => repos.includes(repo)) && section.audiences.includes(audience)),
+        blocks   = [],
+        numbered = new Map();
 
     included.forEach(section => {
+        // A set can include what no single repository does: a repository-specific replacement for a
+        // numbered rule is valid in each repository alone, and renders twice in their union.
+        if (section.listNumber !== null) {
+            const slot = `${section.listGroup} #${section.listNumber}`;
+
+            if (numbered.has(slot)) {
+                throw new Error(`${numbered.get(slot)} and ${section.id} both render ${slot} for ${repos.join(', ')}`)
+            }
+
+            numbered.set(slot, section.id)
+        }
+
         const previous = blocks[blocks.length - 1],
               // A numbered item renders with its DECLARED number, never its position. Dropping one
               // rule from a repository must not renumber the rest, because cross-references name
@@ -187,22 +203,44 @@ function readPreamble(root, audience) {
 }
 
 /**
- * @summary Emits one repository/audience variant.
+ * @summary Emits one audience's variant for a set of repositories.
+ *
+ * Exported to consumers as `neo-agent-skills/agents-md`, so Fleet composes a seat's instructions
+ * in-process and writes them into the harness home it owns. Writing stays with the caller: the
+ * harness slot and a safe write into that home are Fleet's, and a second copy here would drift.
+ * Every refusal lives here rather than in the CLI, so an importer is refused exactly as a person is.
  * @param {Object} options
  * @param {String} options.audience
- * @param {String} options.repo
+ * @param {String[]} options.repos
  * @param {String} [options.root=sourceRoot]
  * @returns {{bytes: Number, text: String}}
  */
-export function generate({audience, repo, root = sourceRoot}) {
-    const text = assemble({
-        audience,
-        preamble: readPreamble(root, audience),
-        repo,
-        sections: readSections(root)
-    });
+export function generate({audience, repos, root = sourceRoot}) {
+    // A filter that matches nothing is not an empty variant, it is a question the source cannot
+    // answer, so each refusal comes before any text exists for a caller to write.
+    if (!repos.length) throw new Error('no repository given: a variant is emitted FOR at least one.');
 
-    return {bytes: Buffer.byteLength(text, 'utf8'), text}
+    const supported = readSupported(root),
+          unknown   = repos.filter(repo => !supported.repos.has(repo));
+
+    if (unknown.length) {
+        throw new Error(`no section declares the repository ${unknown.map(repo => `"${repo}"`).join(', ')}. Declared: ${[...supported.repos].sort().join(', ')}`)
+    }
+
+    if (!supported.audiences.has(audience)) {
+        throw new Error(`no section declares the audience "${audience}". Declared: ${[...supported.audiences].sort().join(', ')}`)
+    }
+
+    const text  = assemble({audience, preamble: readPreamble(root, audience), repos, sections: readSections(root)}),
+          bytes = Buffer.byteLength(text, 'utf8');
+
+    // The budget is a property of the emitted file: past it the harness silently truncates the tail,
+    // and the loss is unobservable from inside the seat that suffers it.
+    if (bytes > PER_FILE_LIMIT_BYTES) {
+        throw new Error(`${repos.join(',')}/${audience} is ${bytes} B, over the ${PER_FILE_LIMIT_BYTES} B budget by ${bytes - PER_FILE_LIMIT_BYTES}.`)
+    }
+
+    return {bytes, text}
 }
 
 /**
@@ -241,54 +279,26 @@ export function run(argv = process.argv.slice(2), {
         return 1
     }
 
-    const {audience, out: target, repo} = parsed.values;
+    const {audience, out: target, repo} = parsed.values,
+          repos = [...new Set((repo ?? '').split(',').map(value => value.trim()).filter(Boolean))];
 
-    if (!repo) {
-        error('generate-agents-md: --repo is required (the repository the variant is emitted FOR).');
-        return 1
-    }
-
-    let supported;
-
-    try {
-        supported = readSupported(root)
-    } catch (cause) {
-        error(`generate-agents-md: ${cause.message}`);
-        return 1
-    }
-
-    // Refused BEFORE `generate`, so an unknown repository never reaches the write. A filter that
-    // matches nothing is not an empty variant, it is a question the source cannot answer.
-    if (!supported.repos.has(repo)) {
-        error(`generate-agents-md: no section declares the repository "${repo}". Declared: ${[...supported.repos].sort().join(', ')}`);
-        return 1
-    }
-
-    if (!supported.audiences.has(audience)) {
-        error(`generate-agents-md: no section declares the audience "${audience}". Declared: ${[...supported.audiences].sort().join(', ')}`);
+    if (!repos.length) {
+        error('generate-agents-md: --repo is required (the repository, or comma-separated repositories, the variant is emitted FOR).');
         return 1
     }
 
     let result;
 
     try {
-        result = generate({audience, repo, root})
+        result = generate({audience, repos, root})
     } catch (cause) {
         error(`generate-agents-md: ${cause.message}`);
         return 1
     }
 
-    // The budget is a property of the emitted file, so it is asserted here rather than left to the
-    // consumer repo's own guard: a variant that breaches is never written, because the harness would
-    // silently truncate its tail and the loss is unobservable from inside the seat that suffers it.
-    if (result.bytes > PER_FILE_LIMIT_BYTES) {
-        error(`generate-agents-md: ${repo}/${audience} is ${result.bytes} B, over the ${PER_FILE_LIMIT_BYTES} B budget by ${result.bytes - PER_FILE_LIMIT_BYTES}.`);
-        return 1
-    }
-
     if (target) {
         writeFileSync(target, result.text);
-        out(`✅ ${repo}/${audience} → ${target} (${result.bytes} B, ${PER_FILE_LIMIT_BYTES - result.bytes} B headroom)`)
+        out(`✅ ${repos.join(',')}/${audience} → ${target} (${result.bytes} B, ${PER_FILE_LIMIT_BYTES - result.bytes} B headroom)`)
     } else {
         write(result.text)
     }

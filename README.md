@@ -156,6 +156,28 @@ Consumer repositories call the stable `Secrets` job in `.github/workflows/reusab
 scans **every tracked file** at the pull request's head, not only the diff: a credential already on
 the base branch still fails, because it is one to revoke whichever pull request finds it.
 
+## Generated `AGENTS.md`
+
+```bash
+npx --no-install neo-agent-skills-agents-md --repo neo,neo-agent-brain --out AGENTS.md
+```
+
+```js
+import {generate} from 'neo-agent-skills/agents-md';
+
+const {text} = generate({audience: 'maintainer', repos: ['neo', 'neo-agent-brain']});
+```
+
+The instructions a seat loads every turn are composed from `agents-md/sections/`. Each section declares
+the repositories and the audience (`maintainer` or `contributor`) it applies to; nothing is inferred. A
+set of repositories composes one file, with every section once, in source order, when any repository
+in the set declares it. A peer working in several repositories loads that one file and keeps each
+repository's own rules.
+
+Both callers get the same refusals: an undeclared repository or audience, two sections claiming one
+numbered rule, and output over the **24,576-byte** budget. The bin writes `--out`, or stdout. The
+import writes nothing: Fleet puts the text into each seat's harness home with its own safe write.
+
 ## What is in the package
 
 | path | what |
