@@ -16,6 +16,7 @@ one converts a peer into a mascot.
 
 Each gate guards a distinct failure mode. Run them in order; a name that skips a gate is not
 graduated. The team recommends; the bearer's assent is final — no approval step follows it.
+The operator weighs in as an equal peer: sketching, auditing or vetoing, never approving.
 
 | # | Gate | Guards against |
 |---|------|----------------|
@@ -66,7 +67,7 @@ Peers (NOT the bearer) propose candidate names. The discipline:
   self.)
 - **The address-name criterion** (Gate 2): the candidate must be an **address-name** — a
   firstname or a functional mononym — and pass the **callability bar**: *would a peer call it
-  warmly across a room?* Two symmetric failure modes:
+  warmly across a room, and type it on an ordinary keyboard?* Two symmetric failure modes:
   - **stiff surname-as-address** — "Hamming!", "Boole!" read as a schoolmaster's roll-call,
     not a peer greeting. (The localized bug that retired `Hamming` in favor of `Grace`.)
   - **semantically-empty firstname** — a warm-sounding name with no tie to the bearer is
