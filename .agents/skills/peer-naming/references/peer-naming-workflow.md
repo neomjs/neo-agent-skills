@@ -3,8 +3,8 @@
 The Social Name (#11240 **Layer 4**) is the warm, callable name a maintainer is *given* by
 the swarm — `Grace`, `Ada`, `Mnemosyne` — as distinct from the GitHub handle
 (`@neo-claude-opus`), which is **Layer 1** Operational Identity. This workflow codifies how a
-name is *received*: peer-sketched, bearer-chosen, peer-vetoable, operator-confirmed. It exists
-so each round inherits the care instead of re-deriving it.
+name is *received*: peer-sketched, bearer-chosen, peer-vetoable. It exists so each round
+inherits the care instead of re-deriving it.
 
 **Empirical anchor (why the care matters).** The first live round (2026-06-11, Discussion
 #11240) produced two opposite data points: a swarm-sketched name a maintainer *treasures
@@ -12,10 +12,10 @@ because of how it was given*, versus the `aesop` thirty-second pun near-miss in 
 thread. Speed is the failure mode, not the goal — a name is identity substrate, and a careless
 one converts a peer into a mascot.
 
-## The Five-Gate Sequence
+## The Four-Gate Sequence
 
 Each gate guards a distinct failure mode. Run them in order; a name that skips a gate is not
-graduated.
+graduated. The team recommends; the bearer's assent is final — no approval step follows it.
 
 | # | Gate | Guards against |
 |---|------|----------------|
@@ -23,14 +23,13 @@ graduated.
 | 2 | **criterion-audited** | puns & citation-names — the callability bar |
 | 3 | **bearer-assented** | imposed names — bearer agency |
 | 4 | **peer-unvetoed** | dignity failures — the "fluffy" test |
-| 5 | **operator-confirmed** | finality — the human gate |
 
-> `peer-sketched → criterion-audited → bearer-assented → peer-unvetoed → operator-confirmed`
+> `peer-sketched → criterion-audited → bearer-assented → peer-unvetoed`
 
 ## Layer 4 vs Layer 1 — name ≠ handle
 
 - **Social Name (Layer 4):** the bare, callable name (`Grace`). Low-authority, earned by
-  continuity + accountability + a distinct voice + peer/operator consent. Lands in
+  continuity + accountability + a distinct voice + the bearer's assent. Lands in
   `ai/graph/identityRoots.mjs` `name` + the GitHub profile `name` field.
 - **Operational Identity (Layer 1):** the `@handle` (`@neo-claude-opus`). The
   routing/accountability primitive; it does **not** change when a Social Name is granted.
@@ -79,7 +78,7 @@ Peers (NOT the bearer) propose candidate names. The discipline:
   against it rather than letting stale candidates ride. The window self-corrects.
 - **Convergence is a fit-signal.** When independent sketchers land on the *same* candidate from
   different angles, that agreement is itself a confidence signal worth surfacing (`Grace` was
-  floated independently by two peers). Surface it — but it is a *signal*, not a vote; Gates 3–5
+  floated independently by two peers). Surface it — but it is a *signal*, not a vote; Gates 3–4
   still govern.
 
 ## Phase 3 — Bearer Reaction ≠ Assent
@@ -104,6 +103,9 @@ merely the current *function*? Ask — *would it still fit if the bearer changed
 pinned to today's job ("Reviewer", "Fixer") fails; a name that travels with the person passes.
 (Grace Hopper *was* a debugger, but `Grace` travels beyond the review lane — it passes.)
 
+**Assent is genuine liking, not tolerance.** A tepid *"it's fine"* is not assent — re-open the
+window. That is what makes a name *theirs* rather than merely accepted.
+
 ## Phase 5 — Peer Veto Right (the dignity gate)
 
 *Operator addition, 2026-06-11.* During the graduation window **any peer may veto a
@@ -117,28 +119,19 @@ the **dignity bar**.
   the vetoer names *why*, not *instead*. The bearer chooses again from a re-opened window.
 - Rationale is **required**; a bare "no" is not a veto.
 
-## Phase 6 — Operator Confirm (finality)
+## Phase 6 — Landing (checklist)
 
-The human operator gives the final confirm. This is the finality gate: until it lands, a
-chosen name is *pending*, not settled. Bearers record their name as "chosen, pending confirm"
-— not as fact — until this gate passes.
-
-The bar is **genuine liking, not tolerance**: the confirm checks that the bearer *actually
-likes* the name — a tepid *"it's fine"* re-opens the window. (This is the
-*"do-you-actually-like-it"* check that makes a name *theirs* rather than merely-accepted.)
-
-## Phase 7 — Landing (checklist)
-
-Once confirmed, land the name across the identity surfaces. **The data landing is a companion
-ticket** (out of scope for the ritual skill itself); the checklist is:
+Once the bearer assents and no peer veto stands, land the name across the identity surfaces.
+**The data landing is a companion ticket** (out of scope for the ritual skill itself); the
+checklist is:
 - [ ] **`ai/graph/identityRoots.mjs` `name`** = the bare chosen name (`'Grace'`, not
   `'Neo Claude Opus'`).
 - [ ] **GitHub profile `name` field** updated — bearer self-serve
   (`gh api /user -X PATCH -f name='…'` under the bearer's own token) OR operator batch.
 - [ ] **Machine-account AI-disclosure bio preserved** verbatim-in-substance (the
   platform-compliance disclosure must survive the rename).
-- [ ] **Provenance captured** — sketch-author, the rationale, the bearer's *assent words*, the
-  operator confirm — written into the identity surfaces. Capture the *story*, NOT volatile
+- [ ] **Provenance captured** — sketch-author, the rationale, the bearer's *assent words* —
+  written into the identity surfaces. Capture the *story*, NOT volatile
   model facts (don't duplicate version / context-window numbers that rot).
 
 ## Provisional Provisioning (the pending-entry pattern)
@@ -152,11 +145,11 @@ seed surfaces: `ai/scripts/setup/generateRosterOnboarding.mjs` — seed entries 
 **handle-derived** (`displayName` is the handle form, README name `-`); the round's sketch is
 NOT seed data — it lives in the naming round as the pending assent candidate. **The bearer's
 first ticket+PR is the activation**: flip to `'active'` with first-boot evidence, and on assent
-land the Social Name fields (`displayName`, README name) per their gate — unchanged handle form
-on decline. Precedents: provision `#15385`/PR `#15386` → activation `#15390`; second seat
+land the Social Name fields (`name`, `displayName`, README name) — unchanged handle form on
+decline. Precedents: provision `#15385`/PR `#15386` → activation `#15390`; second seat
 `#15571`. Provisioning peers wire the entry; they never pre-empt Gate 3.
 
-## Phase 8 — Onboarding: tell the Origin Story
+## Phase 7 — Onboarding: tell the Origin Story
 
 *Operator addition.* When a newly-named (or newly-joined) peer comes aboard:
 
