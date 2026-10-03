@@ -216,7 +216,7 @@ No required actions — eligible for human merge.
 ### 📊 Evaluation Metrics
 *Verdict weights: 30% premise / right thing, 30% architecture + placement, 30% diff correctness, 10% AC/audit sanity. These are importance-to-verdict weights, not effort budgets.*
 
-*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Neo paradigms + placement/cohesion/folder-fit/boundary discipline justification; placement violations cap the score]
+*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Neo paradigms + placement fit; violations cap the score. Behavior or state-ownership change: `owner: <path> · primitive: <class> · retired: <mechanism> | kept: <reason>`; an unfillable field is the finding]
 *   **`[CONTENT_COMPLETENESS]`**: [0-100] - [Brief justification]
 *   **`[EXECUTION_QUALITY]`**: [0-100] - [Brief justification]
 *   **`[PRODUCTIVITY]`**: [0-100] - [Brief justification]

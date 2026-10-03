@@ -15,7 +15,7 @@ This protocol ensures that feedback is:
 Build — and write down — your premise of the change **before** reading the patch as the source of truth. You can reject a toaster-when-we-need-a-car before reading a line; a green checklist over a wrong premise is theater. Capture four fields. The snapshot is **patch-blind** — the *premise authority* is the substrate, not the patch ("I wrote this first" is itself theater).
 
 1. **Inputs read before the patch** — the ticket/issue, the changed-file list, the current `dev` source of the touched files, sibling precedent, and the source-of-authority substrate (ADRs, `learn/`, the owning service). **NOT the PR's own self-description as the primary premise** — the PR body is a claim to verify, not the authority. Build the premise from the affected files (intent belongs in their JSDoc — `src/core/Base.mjs` is the bar), their neighbors, and their imports; use `memory-mining` / `ask_knowledge_base` when the code is thin. Intent you can't find anywhere is the finding: ticket the gap. **Intent authority:** PR claims to change / retire / amend / supersede / correct a prior position → mine the body's `Origin Session ID`: the premise is intent-vs-diff, not claims-vs-diff, and semantic search misses silently (see the [correction-culture guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/correction-culture.md)).
-2. **Expected solution-shape** (1–3 sentences) — what *should* a correct change here look like? Explicitly include **"what boundary should this NOT hardcode?"** and **"what test-isolation should exist?"**, so the snapshot reaches the portability + test-isolation dimensions before the diff frames them away.
+2. **Expected solution-shape** (1–3 sentences) — what *should* a correct change here look like? Explicitly include **"what boundary should this NOT hardcode?"** and **"what test-isolation should exist?"**, so the snapshot reaches the portability + test-isolation dimensions before the diff frames them away. Behavior-changing work starts from the beneficiary: what must they newly do, know or supply, and did the surface's product reader resolve a new obligation before implementation (`ticket-intake` §0)? On an FM surface, the journey step and the installed candidate are inputs.
 3. **Patch-verdict** — does the diff **match / improve / contradict** the expected shape? Name the specific evidence that changed (or confirmed) your mind. "Matches" with no evidence is not a verdict.
 4. **Premise-coherence** — the value-coherence verdict, or a scoped "N/A — no value-surface".
 
@@ -23,7 +23,7 @@ Build — and write down — your premise of the change **before** reading the p
 
 ## 1. Core Philosophy
 - **For Internal Agents (Peer-Review):** Be objective, clinical, and strict. Enforce the "Fat Ticket" protocol and strict JSDoc completeness.
-- **For External/First-Time Contributors:** Start with positive reinforcement. Acknowledge their effort. Provide explicit, helpful examples when asking for changes. **Discharge it in the template's opening slot** — full form `Peer-Review Opening`, micro form `Opening`. This bullet alone did not: 3/3 slot-bearing reviews opened with a personal address, 0/2 slotless ones did — but reviewer and form covary there, so it sizes the gap, not its cause. The slot is the intervention being tried (`#97`).
+- **For External/First-Time Contributors:** Start with positive reinforcement. Acknowledge their effort. Provide explicit, helpful examples when asking for changes. **Discharge it in the template's opening slot** — full form `Peer-Review Opening`, micro form `Opening` (`#97`).
 - **For Self-Review (same session):** Use first-person, introspective tone. The review is a structured reflection, not praise. Replace "you did X" with "I chose X because...". Focus on documenting *rationale*, *trade-offs*, and *gaps you are aware of* rather than scoring your own work favorably. Be harsher on self-scoring — actively hunt for blind spots. Self-review is a **fallback mode** for intent capture; it does NOT substitute for the cross-family requirement. See `pull-request §6.1` for the authoritative cross-family mandate.
 
 ## 2. Agent Operational Mandates: The Reflection Phase
@@ -44,7 +44,7 @@ Every PR review MUST score the work across the following categories on a scale o
 
 **Verdict weights:** 30% premise / right thing; 30% architecture / placement; 30% diff correctness; 10% AC/evidence/close-target/CI/contract sanity. Weights are importance-to-verdict, not effort budget; a tidy checklist over the wrong premise or folder still fails.
 
-*   **`[ARCH_ALIGNMENT]`** (0-100): Neo paradigms plus "does this belong here?" placement, cohesion, single responsibility, folder fit, and boundaries. Logic in definitions/config, provider specifics outside providers, or subsystem leakage into root surfaces caps the score; the #14298 placement miss would be ~45, not 94.
+*   **`[ARCH_ALIGNMENT]`** (0-100): does this belong here — placement, cohesion, boundaries. Logic in definitions/config, provider specifics outside providers, or subsystem leakage into root surfaces caps the score (#14298: ~45, not 94).
 *   **`[CONTENT_COMPLETENESS]`** (0-100): Are all new or modified methods documented with 'Anchor & Echo' JSDoc? Is the body complete in anchors and economical in prose — each fact once, linked narratives not restated (#16528)? Duplication caps the score like absence.
 *   **`[EXECUTION_QUALITY]`** (0-100): Code flow, absence of bugs, race condition safety, VDOM syncing correctness, and testing coverage.
 *   **`[PRODUCTIVITY]`** (0-100): Were the primary goals of the linked ticket achieved?
@@ -151,7 +151,7 @@ Use the full template from `.agents/skills/pr-review/assets/pr-review-template.m
 - **Major delta:** the author changed scope, touched new architectural surfaces, added new files outside the prior Required Actions, or rewrote the PR body/close-target semantics enough that prior scores are no longer reliable.
 - **Lost anchor recovery:** no usable prior review commentId, author response commentId, or last-known anchor exists.
 
-Use the full template when uncertainty is about missing context, broadened scope, or lost anchors — not when the delta is merely narrow. Uncertainty is never a reason to inflate a round.
+Missing context, broadened scope or lost anchors earn the full template; a merely narrow delta never does.
 
 ### 6.2 Round 2 Is Disposition-Only
 
@@ -185,8 +185,11 @@ architectural concept to teach (test-only / config-leaf / behavior-preserving /
 docs / receipt refresh) — at ANY size, or a micro/contained diff. Paying the full
 floor on a mechanical diff is itself the violation. **Never** for ADR / new
 abstraction / consumed contract / security / migration / fleet-critical zones
-(`ai/` config, release path, workflows, substrate, MCP contracts) — full form
-regardless of size. Authors signal with `Micro-review eligible: <class> — <why>`;
+(`ai/` config, release path, workflows, substrate, MCP contracts, journey-surface
+design pages) — full form regardless of size. A journey-surface design page also
+gets the stranger read (words a stranger lacks · decisions asked · the one next
+action per frame) by a seat that neither wrote nor will build it; the walker is
+never the builder or the designer. Authors signal with `Micro-review eligible: <class> — <why>`;
 **the reviewer owns the classification**, but a full-form escalation must NAME
 the concept-bearing surface or never-zone earning it. The reverse never happens.
 **Keys on mechanical-vs-concept-bearing, never size:** a 400-line receipt refresh

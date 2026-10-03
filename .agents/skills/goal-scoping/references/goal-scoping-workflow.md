@@ -14,7 +14,7 @@ The cure is neither: a planner **defines the goal + the lanes**, and **peers sel
 ## The process
 
 ### 1. Define the GOAL
-One demonstrable bar — what "done" means, end-to-end. The outcome, not a task list.
+State one observable outcome for its beneficiary, the accepted constraints and the canonical acceptance record, independently of the proposed implementation. Before decomposition, inspect the current end-to-end journey or affected consumer effect; record failures and explicit unknowns. A mechanism, directory layout or closed-child count is not the outcome.
 
 ### 2. Scope into LANES (the core discipline)
 Carve the goal into a **few** (≈2–6) coherent streams — by subsystem / daemon / pillar / capability. A **lane** is *a coherent stream worth a dedicated owner driving it to a sub-goal*. It is NOT:
@@ -33,25 +33,8 @@ Author each lane as an epic via **`/epic-create`**; linked subs, not prose, are 
 The planner **defines** the goal + the lanes (the planning artifact) and **facilitates**. Peers **self-select** the lane they own. The planner **never assigns** a peer to a lane — that is micro-management and violates self-assignment. Surface the lanes; let peers claim them. Each lane needs exactly one accountable owner; if two claim, the earlier claim wins (the later contributes into it).
 
 ### 5. Drive to the lane-GOAL
-The owner is accountable for the **lane's goal** (close-by-goal, never sub-count) and decomposes internally into **reasonable** units (no micro-slivers). The owner drives ALL their lane's tickets to the lane-goal — which dissolves orphaned tickets, never-closing parents, and "nothing to do."
-
-## Relationship to the epic lifecycle
-
-| Skill | Phase | Owns |
-|---|---|---|
-| **`goal-scoping`** (this skill) | Front-end | GOAL → the set of owned LANES |
-| `epic-create` | Per-lane creation | author each lane as an epic |
-| `epic-review` | Per-epic pre-work | review an epic before sub pickup |
-| `epic-resolution` | Per-epic closeout | close an epic when its goal is met |
+The self-selected owner carries the outcome through planning, integration and acceptance. Update the same acceptance record (step or consumer effect · expected · observed · state · evidence · remaining owner/action) before decomposition, at the first integrated candidate, and before declaring readiness or handing the outcome to its user. Compare expected with observed behavior on a named candidate; retain failed, blocked and unknown checks with the next falsifying action, owner and, if deferred, its activation condition; neither a PR's close nor its parent's discharges them. Recipient-specific effects require evidence from the recipient's actual session. Installed checks that need no restart are the owner's to run (L3); only the merge, a named judgment or a destructive act waits for the operator.
 
 ## Anti-patterns
 
-| Anti-pattern | Why it fails |
-|---|---|
-| No planning (goal → backlog of micro-tickets) | the team chases slivers; nothing converges; "nothing to do" |
-| Lead assigns peers to lanes | micro-management; violates self-assignment + flat-peer agency |
-| Scrap-ticket explosion (goal → N micro-tickets) | per-unit overhead × N; ownership-amnesia across context-wipes |
-| A "lane" that is really a sliver | too small to own; it is a sub, not a lane |
-| Epic shell with leaves to follow | not delegatable; hidden planner context |
-| Lanes listed in prose, never owned | a backlog dump is not a plan; lanes have accountable owners |
-| The planner owns every lane | that is a solo project, not planning; the point is distributed ownership |
+An epic enters execution only with its planned set complete in native links. The planner does not own every lane; contributors retain independent outcome ownership.

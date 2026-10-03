@@ -16,7 +16,7 @@ learning you may skip the gate costs ~1KB rather than the 31KB workflow it may r
 The exemption rests on the chain having run in this context window. That holds for every stage testing
 facts about the codebase. It **inverts** for stage 2, **Prescription**: that stage challenges the fix
 *you* chose, so "the chain ran in this same context" means it was run by the author of the thing under
-challenge. Same-session authorship removes stage 2's independence rather than supplying it.
+challenge. Same-session authorship removes stage 2's independence rather than supplying it, so a non-author reader (the planner, or the PR's cross-family reviewer) answers it.
 
 The read is the **prerequisite**. What discharges the gate is stage 2's own question, answered where
 a reader can see the answer:
