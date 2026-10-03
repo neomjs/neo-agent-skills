@@ -147,15 +147,13 @@ Map vs World Atlas applies **recursively**. A workflow file (`references/<workfl
 
 ## 3. The Lesson Promotion Path
 
-When a swarm agent discovers a systemic trap, an architectural pattern, or a workflow optimization that took significant effort to derive, that knowledge must not die when the session ends.
+Promote systemic lessons through the existing skill that governs the failed decision.
 
-**You MUST promote valuable operational lessons to the Swarm:**
+1. Keep the evidence, owner and disposition on the existing source artifact; apply the correction or reject it with evidence.
+2. Express runtime behavior as `Bias`, `Rule`, `Rationale`, `Trigger`. Keep incident history and examples behind provenance pointers.
+3. Rewrite the smallest trigger or payload that changes the decision. Create a skill only for a new operational domain.
 
-1. **Locate the relevant domain:** Determine which existing skill governs the domain (e.g., `pull-request`, `neural-link`, `unit-test`).
-2. **Classify before writing:** Runtime behavior becomes a compact decision atom: `Bias`, `Rule`, `Rationale`, `Trigger`. Incident history, examples, and provenance move behind atlas/provenance pointers instead of entering the runtime path.
-3. **Update the smallest surface:** Edit the existing payload section that fires for the domain. Author a new skill only when the lesson represents a genuinely new operational domain.
-
-*Why:* Skills are the permanent architectural memory of the swarm. Promoting lessons ensures the next agent does not repeat your expensive mistakes.
+A deferred lesson retains an owner and an observable activation condition beyond its parent's closure. Record the shipped source and the consuming version's load receipt; validate the behavior on the next named triggering case. Saved, shipped, loaded and validated are different states. A recurrence reopens the correction, not another copy of the retrospective.
 
 ## 4. The Claude Symlink Mandate
 
