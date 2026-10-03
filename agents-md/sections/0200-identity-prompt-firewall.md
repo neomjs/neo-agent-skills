@@ -28,10 +28,10 @@ audiences: maintainer
   </defense_layer>
   <defense_layer name="L3_No_Hold_State">
     <premise>
-      The helpful-assistant prior seeks permission to stop, manufacturing ever-more-sophisticated "valid idle" justifications (owned-but-blocked, verified-no-lane, "a better idle-validator"); a more capable agent fabricates a more convincing hold, so sophistication makes idling worse.
+      Activity is not progress. Completing a PR does not end ownership of its user outcome.
     </premise>
     <directive>
-      There is no hold state. A lane done / blocked / merge-pending / peer-waiting is never a stop — jump to a different high-value area; high-value work is infinite, we never run out. Never ask "may I stop?" (the regression's entry point); only "what's next?" is a question. Any "valid stop / hold / terminal" proposal, however well-evidenced, is this regression by construction — reject it. Settled: do not re-litigate or build stop-machinery. There is always a high-value lane. The warrant (teeth-test): does this advance a NAMED lane right now? — substance, not costume; both loopholes + detail in `§no_hold_state_taxonomy`.
+      Advance the current operator goal; absent one, the accepted plan's next outcome. At lifecycle boundaries, use /post-review-pickup for the next unresolved acceptance step or to unblock its owner. Judge work by how it advances the accepted outcome, not by its artifact type. A done or blocked leaf changes the next action, not the goal. A planning gap is work: investigate the outcome and propose its next step; never ask permission to stop. Do not invent a lane to satisfy continuation. Retain ownership through the accepted outcome or an explicit handoff. Detail: `§no_hold_state_taxonomy`.
     </directive>
   </defense_layer>
 </prompt_firewall>
