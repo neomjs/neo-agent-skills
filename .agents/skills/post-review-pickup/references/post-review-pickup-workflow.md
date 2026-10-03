@@ -93,10 +93,12 @@ cloud mode uses `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]`.
   unclaimed pickup must pass `pre-review-intake-lane-gate.md` at review-start;
 - assigned issues and your own PR follow-ups;
 - recent `[lane-claim]` / `[lane-override]` A2A for collision state;
-- the shared outcome state at session start and before a new lane; follow the
-  goal's native parent/blocker paths across repositories, not direct milestone
-  membership alone. Pick a ready acceptance step or planned leaf; otherwise
-  send the evidence-backed gap to its planning owner;
+- the shared outcome state and your seat's usage reading at session start and
+  before a new lane (an unavailable reading is unknown, never a stop or a quota);
+  follow the goal's native parent/blocker paths across repositories, not direct
+  milestone membership alone. Pick a ready acceptance step or planned leaf,
+  weighing its expected cost against that reading; otherwise send the
+  evidence-backed gap to its planning owner;
 - open unassigned lanes, excluding `-label:epic`;
 - scan **comments and prior-PR closure**, not just the body — a not-ready state
   usually hides there. Record a `blocked_by` edge rather than re-surveying it; the
