@@ -15,4 +15,4 @@ audiences: maintainer
 - **Ticket Creation Freshness:** Before any `create_issue`, invoke `ticket-create` (its Content Sweep requires live latest-open queue evidence beyond KB/local duplicate checks).
 - **File Reading Efficiently:** Reading modified files; efficiency patterns.
 - **Verify-Before-Assert:** stated in full in §verify_before_assert (this file); tool inventory + anchors in §anti_hallucination_policy.
-- **Wake/Heartbeat → run the cycle (`/post-review-pickup`):** drain the lifecycle queue (own-PR changes/review → own-PR-green→request-review) before a new lane; no holding terminal (§L3_No_Hold_State). Three heartbeats with no forward artifact = critical failure → `/post-review-pickup` + `NightShiftLeasedDriver.md`.
+- **Wake/Heartbeat → run the cycle (`/post-review-pickup`):** drain the lifecycle queue (own-PR changes/review → own-PR-green→request-review) before a new lane; no holding terminal (§L3_No_Hold_State). Three heartbeats without a moved acceptance step or ranked proposal = critical failure → `/post-review-pickup` + `NightShiftLeasedDriver.md`.

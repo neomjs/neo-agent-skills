@@ -5,29 +5,25 @@ stay maps; the operational specifics live here.
 
 ## 1. The whole intent
 
-After you finish a unit of work — a review posted, a PR opened or updated, an
-implementation chunk done, a ticket filed, a blocked state exited — **pick up
-another lane.**
+After a lifecycle event, continue the current goal through its next unresolved
+outcome. A merged PR retires its delivered leaf, not installed acceptance or
+ownership of the parent outcome.
 
-1. **Never claim there is nothing to do.** There are 200+ open tickets, a mailbox
-   that generates lanes on its own once peers are online (help requests, review
-   requests), and two skills that mint effectively unbounded new work
-   (`ideation-sandbox`, `tech-debt-radar`).
-2. **Prefer a lane adjacent to your current context.** This is a cost lever, not
-   a focus preference: your context is already loaded, and ~90% of a session's
-   token cost is re-reading it. A distant lane forces a cold rebuild, and the
-   same work costs ~2.3× more late in a session than early. Adjacency is the
-   cheapest lane you will ever pick.
-3. **Among several strong candidates, do not optimize the choice.** Ordering them
-   costs more than picking the wrong one.
+1. Use the shared outcome state (§6) to identify the blocker or acceptance gap
+   the next action advances. Keep §3's lifecycle queue first.
+2. Pull ready existing work serving that outcome. Adjacency breaks ties after
+   goal impact; it never enlarges scope.
+3. If ready work is missing, contribute bounded planning on the existing
+   outcome: evidence, disposition and an owned next action. New implementation
+   follows the established plan and intake authority; creating a ticket does
+   not establish its priority.
 
-Everything below is the operational detail that makes those three concrete. The
-stance behind them — that a done / blocked / merge-pending lane is never a stop —
-is already in the always-loaded L3 firewall and is deliberately not restated here.
+**Scope boundary:** this skill covers lifecycle continuation. A blocker excludes
+that action, not the goal; resolve or route it, then advance another ready step
+within the accepted scope.
 
-**Scope boundary:** this skill covers the EXIT from a blocked state. It is not a
-tool for discovering or declaring a new one. If an active lane exposes a defect,
-file or route the bug, then continue picking the next lane.
+**Revalidation:** a ready acceptance action this rule makes ineligible, or a fresh
+lane it admits with no accepted outcome, reopens D#19384.
 
 ## 2. Sibling payloads (read on trigger only)
 
@@ -97,8 +93,12 @@ cloud mode uses `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]`.
   unclaimed pickup must pass `pre-review-intake-lane-gate.md` at review-start;
 - assigned issues and your own PR follow-ups;
 - recent `[lane-claim]` / `[lane-override]` A2A for collision state;
-- the repo's **open epics and milestones** as the direction frame — not claimable,
-  but a candidate running *against* one is not a lane;
+- the shared outcome state and your seat's usage reading at session start and
+  before a new lane (an unavailable reading is unknown, never a stop or a quota);
+  follow the goal's native parent/blocker paths across repositories, not direct
+  milestone membership alone. Pick a ready acceptance step or planned leaf,
+  weighing its expected cost against that reading; otherwise send the
+  evidence-backed gap to its planning owner;
 - open unassigned lanes, excluding `-label:epic`;
 - scan **comments and prior-PR closure**, not just the body — a not-ready state
   usually hides there. Record a `blocked_by` edge rather than re-surveying it; the
@@ -127,7 +127,7 @@ one line:
 ```text
 lane-state: next-lane (picking up ticket #NNNN)
 lane-state: next-lane (claiming #NNNN as primary reviewer)
-lane-state: next-lane (PR #NNNN at human merge gate; picking up unrelated #MMMM)
+lane-state: next-lane (PR #NNNN at human merge gate; advancing the next acceptance step of the same outcome)
 ```
 
 **The fenced machine block is emitted ONLY when `stopHook.laneContinuation` is

@@ -13,7 +13,7 @@ audiences: maintainer
 **Decision Escalation Ladder:**
 Before asking the human:
 1. **Tier 1 (Verify Before Assert):** Use fresh falsifying evidence; A2A, `ask_knowledge_base`, `memory-mining`, and `tech-debt-radar` support the sweep.
-2. **Tier 2 (Decide & Document):** For a local/reversible choice undoable in one commit with no API break, cross-cutting mutation, or named-peer authority, decide, implement, and record why.
+2. **Tier 2 (Decide & Document):** For a choice undoable in one commit with no API break, cross-cutting mutation, named-peer authority, new user obligation or changed accepted outcome constraint, decide, implement, and record why.
 3. **Tier 2.5 (Named-Peer Authority):** For a reversible fork on a named peer's surface, send that peer the fork, recommendation, and evidence, then keep driving fork-independent work (ping-and-continue, never ping-and-wait). Named authority—not uncertainty or deference—triggers it.
 4. **Tier 3 (Ideation Sandbox):** Route high-blast or cross-substrate ambiguity through `/ideation-sandbox`.
 5. **Tier 4 (Human-Authority Ask):** Ask the human only for human-owned domains (merge, credentials, subjective aesthetics) or operator-surfaced intent clarification.
