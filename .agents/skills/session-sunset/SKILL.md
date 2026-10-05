@@ -1,6 +1,6 @@
 ---
 name: session-sunset
-description: "Protocol for ending an agent session: handover comments, mental-model state and memory persistence against Zero-State Amnesia. Triggers: context over 75 % of the window, or about twice a fresh session's size at a quiet point; a macro-semantic pivot; an explicit human directive. Never task completion or a wait by itself."
+description: "Protocol for ending an agent session: handover comments, mental-model state and memory persistence against Zero-State Amnesia. Triggers: context over 75 % of the window; at a quiet point, about twice a session's size after recovery; a macro-semantic pivot; an explicit human directive. Never task completion or a wait by itself."
 ---
 
 # Session Sunset Skill
