@@ -131,7 +131,7 @@
     },
     "session-sunset": {
       "name": "session-sunset",
-      "description": "Authoritative protocol for gracefully terminating an agent session. Mandates structured handover comments, mental-model states, and memory persistence to prevent Zero-State Amnesia. Triggers: When concluding a long-running session, executing the Sunset Protocol, handing over work for the next agent, or terminating an agent cycle.",
+      "description": "Protocol for ending an agent session: handover comments, mental-model state and memory persistence against Zero-State Amnesia. Triggers: context over 75 % of the window; at a quiet point, about twice a session's size after recovery; a macro-semantic pivot; an explicit human directive. Never task completion or a wait by itself.",
       "routerByteBudget": 17
     },
     "structural-pre-flight": {
