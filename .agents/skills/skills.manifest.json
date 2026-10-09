@@ -102,6 +102,10 @@
       "name": "neural-link",
       "description": "Expert tactical knowledge on sequencing Neural Link MCP tools to inspect, debug, and manipulate live Neo.mjs applications. Triggers: Use this skill if the user asks you to interact with the browser, inspect the UI natively, patch live code, or use the Neural Link."
     },
+    "overview": {
+      "name": "overview",
+      "description": "One read that answers where Fleet Manager v1 stands, what is missing and which views need love — the handoff's Focus (v1) section first, the rows' own Row state lines and the views' receipts when it is absent. Triggers: a fresh session's first planning question; before claiming a Fleet Manager lane; the weekly planning slot; an operator's 'where are we'."
+    },
     "peer-naming": {
       "name": "peer-naming",
       "description": "Ritual for giving a maintainer their Social Name (#11240 Layer 4) — a peer-sketched, bearer-assented, peer-vetoable name, distinct from the GitHub handle. Triggers: an operator opens a naming round, a maintainer wants a name or notices one is missing, or a new maintainer/family joins. ANTI-trigger: never a contribution-count award or self-initiated rename churn."
