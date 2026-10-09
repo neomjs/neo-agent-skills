@@ -202,6 +202,10 @@ Skills are authored on `dev`:
 - maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot merges do neither;
 - Dependabot brings it to each consumer.
 
+Dependabot changes to shipped dependency declarations or reusable workflows are included in the
+next maintainer release. Lock-only updates refresh repository validation; consumers resolve
+dependencies through their own lockfiles.
+
 The version is written once, in `package.json`, and read everywhere else. **The package version, the registry
 tarball integrity, and the consumer's lockfile are the revision authority.** There is no receipt file; an earlier design used
 one to police byte-copies across repositories, and both the copies and the receipt are gone.
