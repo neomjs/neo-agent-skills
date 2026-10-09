@@ -3,8 +3,9 @@
 One screen, four blocks, in the order and vocabulary of the Sandman handoff's
 `## Focus (v1)` section (the producer: neomjs/neo-agent-brain#957). The section is read
 first; whatever it does not carry is read from the sources the section itself reads,
-block by block, and printed with its own as-of time. Nothing is summarised into a
-verdict: the rows' words are the stewards', copied raw.
+block by block, and printed with its own as-of time, build class and source. Nothing is
+summarised into a verdict: the rows' words are the stewards', copied raw; a receipt's
+evidence class travels with its line; an approval is a candidate, not readiness.
 
 **Why it exists.** The two questions a session asks first — *where are we for v1, what is
 missing* and *which views still need love* — cost a peer its first twenty minutes or an
@@ -23,9 +24,10 @@ the section; record it on neomjs/neo-agent-skills#152's successor and shrink thi
    envelope before the text: a stale handoff is printed as stale, with its age, never
    silently.
 2. Find the level-two heading `## Focus (v1)`. Present → print the blocks it carries,
-   each with the observation time and source the block names, and stop at the blocks it
-   carries. Absent → print `Focus (v1): absent from the handoff (as of <envelope time>)`
-   and continue with §3 for every block.
+   each with the observation time, candidate or profile and source the block names
+   (D#19493 OQ-8 iii), and stop at the blocks it carries. Absent → print
+   `Focus (v1): absent from the handoff (as of <envelope time>)` and continue with §3
+   for every block.
 3. A block the section names as `unknown` stays `unknown` with the section's reason;
    §3 may add a seat-side read beneath it, labelled as such, never in its place.
 
@@ -34,12 +36,16 @@ the section; record it on neomjs/neo-agent-skills#152's successor and shrink thi
 The screen opens with two lines, derived only from what the blocks below print:
 
 ```
-v1: <n> of 5 rows passed · ready <k> · unknown <u> · failed <f> · missing: <the row words that say so>
-views needing love: <count of keys with a line> · none yet when no receipt carries one
+v1: <n> of 5 rows passed · ready <k> · unknown <u> · failed <f> · missing: <the state words>
+views: swept <s> · needing love <m> · unassessed: <the keys with no governing line>
 ```
 
-`passed` counts only a `Row state:` line whose state word is `passed`; `ready` is not
-`passed`, and a missing line is `unknown`.
+- `passed` counts only a `Row state:` line whose state word is `passed`; `ready` is not
+  `passed`, and a missing line is `unknown`.
+- `needing love` counts only keys whose governing line (§3) is affirmative. A canonical
+  `none observed` line is coverage: it raises `swept`, never `needing love`.
+- `unassessed` names every declared view key with no structured receipt, and every key
+  whose source could not be read. Unassessed is never "no work needed".
 
 ## 3. The fallback, block by block
 
@@ -50,34 +56,66 @@ here goes through the cloud producer):
   **State** column links the epic whose `Row state:` line is the row's state (today
   rows 1–5 → the five epics it names; never hardcode the numbers — the table is the
   source). For each epic, print its first `Row state:` line verbatim with the epic
-  number and the line's own date. No line → `row <n>: unknown (no Row state line on #N)`.
+  number and the line's own date; the line's `plan:` tail is not state — truncate there
+  and link. No line → `row <n>: unknown (no Row state line on #N)`.
 - **views.** Read the receipt comments on neomjs/neo-agent-institution#505 (the views
-  epic) and keep, per view key, the newest line of the shape
-  `view: <key> · needs love: <text>` (the `design-sweep` skill's line). Print one line
-  per key with the receipt's date; no receipts → `views: none yet (no receipt on #505)`.
+  epic). Each `view: <key> · needs love: <text>` line arrives with its receipt's binding:
+  build class (`installed candidate <sha>` or `source build`), profile, pins, observation
+  time. **The governing line per key is the newest line of the highest evidence class
+  present: an installed line is replaced only by a newer installed line; a source or
+  fixture line never replaces, and never resolves, an installed line** (the
+  `design-sweep` rule: a source capture cannot retire an installed check). Print the
+  governing line with its build class, profile and time; a newer source line prints
+  beneath it, labelled `source`, with no inference that the installed finding is
+  resolved. A key with only source lines prints as `source`; a key with no line is
+  `unassessed`. No receipts at all → `views: none yet (no receipt on #505)`.
 - **reach and outbound.** `unknown` with the reason: no seat-side source until the
   section's host-edge reader (Brain #957) or the outbound analytics (D#19500) exist.
-- **what waits for the operator's word.** Open pull requests across the organization
-  with an approving review and no merge (`gh search prs --owner neomjs --state open
-  --review approved`), counted and linked, labelled `search index, may lag`; a count
-  that matters is confirmed with an object read before it is repeated.
+- **what waits for the operator's word.** Discovery first: open pull requests across the
+  organization with an approving review (`gh search prs --owner neomjs --state open
+  --review approved`; the index may lag, say so). **Then readiness, per candidate**: read
+  `state`, the still-requested reviewers, the checks and mergeability (`gh pr view
+  <n> --json state,reviewRequests,statusCheckRollup,mergeable`). A candidate is
+  `ready for the operator` only with no reviewer still requested, checks green and the
+  PR mergeable; otherwise it prints `approved · still owed: <review by @x | CI | a
+  rebase>`. Where the Brain's readiness projection has issued a canonical
+  `[merge-eligible]` marker, that marker wins over this read. Decisions that are not
+  pull requests — a Discussion gate, a design approval, a cut — are **outside this read's
+  coverage**, and the block says so in one line.
+
+### 3a. Six cases the rules must survive (synthetic, labelled; not installed claims)
+
+| Case | Input | Output |
+|---|---|---|
+| clean receipt | `memories · none observed` (installed) | `swept 1 · needing love 0` |
+| clean + defect | `memories · none observed` + `system · service cards clip` (both installed) | `swept 2 · needing love 1` — `system` |
+| missing / unreadable | no receipt for `tasks`; or #505 unreadable | `tasks: unassessed` · or every key `unassessed (reason)` — never 0 needing love |
+| scope collision | `system · clips` installed 10:00 · `system · none observed` source 11:00 | governing: the installed 10:00 line; beneath: `source 11:00 · none observed`; `needing love 1` |
+| approved, reviewer owed | approved by A, a review still requested of B | `approved · still owed: review by B` — not ready |
+| approved, CI red | approved, a check failing | `approved · still owed: CI` — not ready |
 
 ## 4. The screen
 
 Fill `assets/overview-screen.md`: the two answer lines, then the four blocks in the
-section's order, each block with `as of <time>` and its source link. One screen; the
-remainder is links, never a second page. Keys are the candidate's own identifiers (the
-view key as the receipt carries it; rows by their number; seats by Fleet agent id).
+section's order, each block with `as of <time>` and its source link; each view line with
+its build class, profile and observation time; each operator candidate with its
+readiness label. One screen; the remainder is links, never a second page. Keys are the
+candidate's own identifiers (the view key as the receipt carries it; rows by number;
+seats by Fleet agent id).
 
 ## 5. Anti-patterns
 
 | Anti-pattern | Why it harms |
 |---|---|
 | Promoting a row word (`ready` printed as done) | a second status authority; the stewards' lines are the only one |
+| A clean receipt counted as a finding | coverage and defects collapse; the count stops meaning "work" |
+| A newer source line resolving an installed finding | the candidate the operator runs was never re-read |
+| An approval read as readiness | a peer's owed review or a red check becomes the operator's problem |
 | Fabricating a block the section and the seat cannot read | `unknown` with a reason is the truthful shape |
 | Hardcoded epic numbers | the ROADMAP's State column is the source; numbers rot |
 | A verdict sentence ("v1 is on track") | the screen reports; the reader judges |
 | Tool parameters copied here | the tool descriptions are the source |
 
-Provenance: D#19493 OQ-8 (viii); Brain #957 (the section's block contract); Skills #150
-(the receipts' line); the Institution ROADMAP's row table (rows 1–5, State column).
+Provenance: D#19493 OQ-8 (iii, viii); Brain #957 (the section's block contract); Skills
+#150 (the receipts' line and binding); the Institution ROADMAP's row table (rows 1–5,
+State column); Sophie's three counterexamples on PR #153 (2026-10-09).
