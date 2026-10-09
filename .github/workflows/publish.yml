@@ -1,6 +1,6 @@
-# Every merge to `dev` is a release.
+# Maintainer merges to `dev` release; Dependabot merges validate without publishing or tagging.
 #
-# The pull request carried a new version, since `check-version-bump.mjs` holds every pull request to one.
+# The maintainer pull request carried a new version, checked by `check-version-bump.mjs`.
 # This job publishes it, and `postpublish` (`scripts/tag-release.mjs`) pushes `v<version>` at the merge
 # commit: the tag consumers call and Dependabot moves. Nothing here names the version; `package.json` does.
 #
@@ -14,15 +14,31 @@ on:
     branches: [dev]
   workflow_dispatch:
 
-# One release at a time. A run is never cancelled mid-publish, because that can leave npm ahead of the tag.
-concurrency:
-  group: publish
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
+  origin:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      publish: ${{ steps.origin.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Classify the exact merged PR
+        id: origin
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" |
+            node scripts/release-origin.mjs --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" >> "$GITHUB_OUTPUT"
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -38,8 +54,14 @@ jobs:
 
   # A fresh checkout, so the tree `tag-release.mjs` tags is exactly the tree that was packed.
   publish:
-    needs: test
+    needs: [origin, test]
+    if: ${{ needs.origin.outputs.publish == 'true' }}
     runs-on: ubuntu-latest
+    # Only releases enter this queue; validation-only merges cannot displace a pending release.
+    concurrency:
+      group: publish
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: write   # the release tag
       id-token: write   # npm trusted publishing

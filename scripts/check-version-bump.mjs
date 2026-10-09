@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * @summary Fails a pull request that does not carry a new release. Its `package.json` version must be greater
- * than its base's, the lockfile must agree, and npm must not have the version yet.
+ * @summary Checks release versions by PR author: Dependabot retains the base version; other PRs carry a new release.
  *
- * Every merge to `dev` publishes (`.github/workflows/publish.yml`), so a pull request carries the version it will
- * publish. `package.json` is the one place a version is written:
+ * Maintainer merges to `dev` publish (`.github/workflows/publish.yml`); Dependabot merges validate only.
+ * `package.json` is the one place a version is written:
  * - a pull request without a bump would merge a change npm never receives;
  * - a pull request naming a version npm already has would fail the publish after the merge, where no review
  *   sees it.
@@ -20,6 +19,7 @@ import {join}                       from 'node:path';
 import {fileURLToPath}              from 'node:url';
 import {parseArgs}                  from 'node:util';
 import semver                       from 'semver';
+import {isDependabot}               from './release-origin.mjs';
 
 // A plain release. The baseline's `version` job accepts only this shape, so a prerelease could publish and
 // then never be callable.
@@ -27,16 +27,22 @@ const RELEASE = /^\d+\.\d+\.\d+$/;
 
 /**
  * @summary The reasons a head version is not a new release. Empty when it is one.
- * @param {{head: String, lock: String, base: String, published: Boolean}} versions
+ * @param {{head: String, lock: String, base: String, published: Boolean, dependabot?: Boolean}} versions
  * @returns {String[]}
  */
-export function judgeVersionBump({head, lock, base, published}) {
+export function judgeVersionBump({head, lock, base, published, dependabot = false}) {
     if (!RELEASE.test(head ?? '')) return [`package.json names no release version ('${head}')`];
+
+    if (dependabot) return [
+        lock !== head && `package-lock.json says ${lock} where package.json says ${head}`,
+        (!RELEASE.test(base ?? '') || head !== base) &&
+            `Dependabot must retain the base package version ${base}, not release ${head}`
+    ].filter(Boolean);
 
     return [
         lock !== head && `package-lock.json says ${lock} where package.json says ${head}; bump both with \`npm version\``,
         RELEASE.test(base ?? '') && !semver.gt(head, base) &&
-            `${head} is not greater than the base's ${base}; every merge publishes, so every pull request bumps`,
+            `${head} is not greater than the base's ${base}; maintainer pull requests carry a new release`,
         published && `npm already has neo-agent-skills@${head}; bump past it`
     ].filter(Boolean)
 }
@@ -74,7 +80,9 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
     let parsed;
 
     try {
-        parsed = parseArgs({args: argv, allowPositionals: false, strict: true, options: {base: {type: 'string'}}})
+        parsed = parseArgs({args: argv, allowPositionals: false, strict: true, options: {
+            base: {type: 'string'}, event: {type: 'string'}
+        }})
     } catch (cause) {
         error(`check-version-bump: ${cause.message}`);
         return 2
@@ -89,13 +97,15 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
 
     try {
         const read = file => JSON.parse(readFileSync(join(cwd, file), 'utf8')).version,
-              head = read('package.json');
+              head = read('package.json'),
+              dependabot = parsed.values.event ? isDependabot(JSON.parse(readFileSync(parsed.values.event, 'utf8')).pull_request) : false;
 
         versions = {
             head,
             lock     : read('package-lock.json'),
             base     : JSON.parse(execFileSync('git', ['show', `${parsed.values.base}:package.json`], {cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']})).version,
-            published: RELEASE.test(head ?? '') && published(head)
+            dependabot,
+            published: !dependabot && RELEASE.test(head ?? '') && published(head)
         }
     } catch (cause) {
         error(`check-version-bump: ${cause.message}`);
@@ -109,7 +119,8 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
         return 1
     }
 
-    out(`check-version-bump: ${versions.base} → ${versions.head}, a version npm does not have yet.`);
+    out(versions.dependabot ? `check-version-bump: Dependabot retains ${versions.base}; validation only.` :
+        `check-version-bump: ${versions.base} → ${versions.head}, a version npm does not have yet.`);
     return 0
 }
 

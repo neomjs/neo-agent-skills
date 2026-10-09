@@ -90,6 +90,38 @@ try {
     assert.equal(result.code, 1, 'an unbumped head fails');
     assert.match(result.text, /0\.1\.19 is not greater than the base's 0\.1\.19/);
 
+    const event = join(repo, 'event.json'),
+          eventOf = (login, type) => writeFileSync(event, JSON.stringify({
+              sender: {login: 'tobiu'}, pull_request: {user: {login, type}}
+          }));
+
+    eventOf('dependabot[bot]', 'Bot');
+    result = judge(['--base', base, '--event', event], () => { throw new Error('Dependabot must not query npm') });
+    assert.equal(result.code, 0, `Dependabot retains the published base version: ${result.text}`);
+    assert.match(result.text, /validation only/);
+
+    release('0.1.20');
+    result = judge(['--base', base, '--event', event]);
+    assert.equal(result.code, 1, 'Dependabot must not carry a package release');
+    assert.match(result.text, /Dependabot must retain/);
+
+    release('0.1.19');
+    writeFileSync(join(repo, 'package-lock.json'), JSON.stringify({version: '0.1.18'}));
+    result = judge(['--base', base, '--event', event]);
+    assert.equal(result.code, 1, 'Dependabot still requires matching lock metadata');
+
+    release('0.1.19');
+    for (const [login, type] of [['neo-gpt', 'User'], ['another[bot]', 'Bot']]) {
+        eventOf(login, type);
+        assert.equal(judge(['--base', base, '--event', event]).code, 1, 'other authors still require a release');
+    }
+    release('0.1.20');
+    eventOf('neo-gpt', 'User');
+    assert.equal(judge(['--base', base, '--event', event]).code, 0, 'human rerun actor does not exempt a maintainer PR');
+    writeFileSync(event, '{}');
+    assert.equal(judge(['--base', base, '--event', event]).code, 1, 'missing PR metadata fails closed');
+    assert.equal(judge(['--base', base, '--event', join(repo, 'missing.json')]).code, 1, 'unreadable event fails closed');
+
     result = judge([]);
     assert.equal(result.code, 2, 'a missing --base is a usage error, not a pass');
     assert.match(result.text, /--base <ref> is required/);
