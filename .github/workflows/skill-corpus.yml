@@ -35,15 +35,18 @@ jobs:
       - name: Install source dependencies
         run: npm ci --ignore-scripts
 
-      # Every merge to dev publishes (publish.yml), so every pull request carries the new version it will publish.
+      # PR author, not workflow actor: Dependabot retains the version; maintainer PRs carry a release.
       - name: Version bump
         if: ${{ github.event_name == 'pull_request' }}
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: node scripts/check-version-bump.mjs --base "${BASE_SHA}"
+        run: node scripts/check-version-bump.mjs --base "${BASE_SHA}" --event "$GITHUB_EVENT_PATH"
 
       - name: Version-bump contract
         run: node scripts/test-check-version-bump.mjs
+
+      - name: Release-origin contract
+        run: node scripts/test-release-origin.mjs
 
       - name: Corpus coherence, budgets, reference integrity, net growth
         run: |

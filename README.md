@@ -30,7 +30,9 @@ opt a skill out of a directory symlink** — so the neutral surface links the tr
 each skill. Git-ignore both paths; a tracked entry under either is a shadow copy, which is the thing
 this package exists to make unnecessary.
 
-**Every pull request bumps this package's version, and every merge publishes it** (see *Authority*). Consumers update the dependency like any other.
+**Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests
+retain the package version and run validation without publishing or tagging** (see *Authority*).
+Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
 no bespoke lag gate anywhere in this contract.
 
@@ -194,9 +196,10 @@ because a skill cannot be opted out of a directory symlink.
 
 ## Authority
 
-Skills are authored on `dev`, and every merge to `dev` is a release:
-- every pull request bumps `package.json` (`scripts/check-version-bump.mjs`);
-- `.github/workflows/publish.yml` publishes that version through npm trusted publishing and pushes `v<version>`;
+Skills are authored on `dev`:
+- maintainer pull requests bump `package.json`; Dependabot keeps the base version (`scripts/check-version-bump.mjs`);
+- both run validation; `.github/workflows/publish.yml` classifies the exact merged PR's author, so a human merging Dependabot cannot turn it into a release;
+- maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot merges do neither;
 - Dependabot brings it to each consumer.
 
 The version is written once, in `package.json`, and read everywhere else. **The package version, the registry
