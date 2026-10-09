@@ -41,6 +41,10 @@
       "name": "create-skill",
       "description": "Authoritative guide on how to architect, format, and structure new Anthropic Progressive Disclosure skills. Triggers: Use before creating OR modifying any `.agents/skills/**/*.md` files — Progressive Disclosure architecture (Map vs World Atlas), YAML frontmatter, skill structure. Complementary to `turn-memory-pre-flight` (load-runtime-effect dimension vs skill-shape dimension)."
     },
+    "design-sweep": {
+      "name": "design-sweep",
+      "description": "The design sweep of one Fleet Manager view by a peer who did not build it, on the installed candidate, ending in a bound receipt on the views epic. Triggers: the weekly design-sweep slot; a design read of a Fleet Manager view; an operator's screenshot of a view; before filing a design leaf; before writing a 'needs love' line."
+    },
     "epic-create": {
       "name": "epic-create",
       "description": "Authoritative protocol for authoring an Epic body — the creation-side dual of `ticket-create` + entry partner of `epic-review`/`epic-resolution`. Enforces: epic body = problem-scope + intended-solution (NOT pseudo-subs / ACs); ACs live in the SUB tickets; subs are LINKED via `update_issue_relationship` + added incrementally; the body MUST NOT hardcode a sub-list (it stales out → FAIL). Triggers: before creating an Epic (a parent issue labeled `epic`) via `create_issue`, or before decomposing one into sub-tickets."
