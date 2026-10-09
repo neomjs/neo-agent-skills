@@ -43,10 +43,18 @@ A receipt that cannot say what it read is not a receipt. Fill the binding block 
 | states exercised | the list you will walk (empty, loading, degraded, error, selected, …) |
 | asynchronous transition | at least one per view: which, and how it was observed |
 
-**Stable view keys.** Panes by their dock item id: `fleet`, `stream`, `memories`,
-`operator`, `tasks`, `catchUp`, `goldenPath`, `detail`. Route views by route: `home`,
-`observatory`, `system`, `accounts`, `setup`, `chat`. Seats by Fleet agent id. A key
-the table does not carry is added to the table in the same PR as the view.
+**The view key is the candidate's own identifier**, copied from the declaration that
+owns the surface — never from this file. A pane's key is its dock item id as the
+candidate declares it (`apps/agentos/util/CockpitPerspectives.mjs`; at the head of
+2026-10-09: `fleet`, `stream`, `tasks`, `memories`, `operator`, `catchUp`, `goldenPath`,
+`detail`, and the rail's `perspectives`, `defineAgent`, `wakeRoutes`); a route view's
+key is its route as the `ViewportController` declares it (`home`, `fleet`, `observatory`,
+`system`, `accounts`, `chat`); a seat's key is its Fleet agent id. These lists are
+illustrative and dated; the declaration at the swept candidate wins. A surface mounted
+outside the routes and the dock (the setup card sits above the shell, not on a route)
+takes the identifier its own declaration carries, or `unknown (surface: <what you saw>)`
+when it carries none — never invented, and never a reason to edit a registry before
+the sweep.
 
 ## 3. The seven steps
 
@@ -57,8 +65,13 @@ the table does not carry is added to the table in the same PR as the view.
 2. **Say in one sentence, as a stranger, what the view is for.** If the sentence
    needs the ticket to be written, the view does not say it.
 3. **Read every sentence on it aloud: does it speak to the reader or to the
-   system?** A line that names a reader's state ("not listed yet", "could not be
-   read", a service id, a reason code) speaks to the system; list it.
+   system?** The test is whether the sentence helps the person in front of it. A
+   state line passes when it names the state, its reason and the next step (the
+   ROADMAP's row-2 contract: cold · live · stale · degraded · unreachable, each with
+   its reason and the next step) — "not listed yet" or "could not be read" with their
+   reason and exit are truthful and pass. A state without its reason or next step, an
+   internal id, a reason code, or a line a stranger cannot act on speaks to the
+   system — list it with what it lacks, never for the phrase alone.
 4. **Press every control and say what happened.** On a live team only reversible
    reading and navigation; Stop/Start, delete, import, credential, permission and
    publication controls only in an isolated fixture or the existing approved

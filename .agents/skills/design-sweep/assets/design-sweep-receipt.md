@@ -7,7 +7,7 @@
 | build | `installed candidate <letter · sha>` · or `source build` (cannot retire an installed check) |
 | pins | Engine `<sha>` · Brain `<sha>` · Institution `<sha>` (installed: `organism-build-info.json`) |
 | profile | `<profile>` |
-| view key | `<key>` |
+| view key | `<key>` — copied from the owning declaration (dock item id · route · Fleet agent id); `unknown (surface: <what you saw>)` when none is declared |
 | pane | `<w> × <h>` CSS px · `<docked · split · popped out · perspective>` |
 | data scope | the team's own data · or fixture `<which>` |
 | states exercised | `<empty · loading · degraded · error · selected · …>` |
