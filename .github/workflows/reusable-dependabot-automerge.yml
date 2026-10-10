@@ -1,6 +1,6 @@
 # Hands a Dependabot update of an allow-listed dependency to GitHub's auto-merge. GitHub then merges it once
-# the caller's required status checks pass on the current head, and waits again after every rebase. Nothing
-# here merges by itself, and no agent runs `gh pr merge` (critical gate 1's machine-merge line).
+# the base branch's required status checks pass. Nothing here merges by itself, and no agent runs
+# `gh pr merge` (critical gate 1's machine-merge line).
 #
 # Callers own the trigger, the permissions and a published release tag:
 #
@@ -14,9 +14,13 @@
 #     automerge:
 #       uses: neomjs/neo-agent-skills/.github/workflows/reusable-dependabot-automerge.yml@vX.Y.Z
 #
-# Fail-closed: a repository without "Allow auto-merge", or without required status checks on its base
-# branch, turns `enable` red and merges nothing. The repository variable `NEO_AUTOMERGE_SKILLS=off` stops
-# every merge without a code change.
+# Both jobs run one script each from this workflow's own commit. `eligibility` decides from the event.
+# `handoff` reads the repository live and arms only when "Allow auto-merge" is on, the base branch's rulesets
+# require a status check, and the head is still the admitted commit. A failed read turns `handoff` red and
+# arms nothing (scripts/dependabot-automerge-handoff.mjs). Every event decides afresh: a Dependabot pull
+# request that stops being eligible, for example after another account pushes to it, loses the auto-merge
+# this workflow armed. `NEO_AUTOMERGE_SKILLS=off` stops new armings and takes back each armed pull request
+# at its next event.
 #
 # A merge GitHub performs for this workflow's token starts no `push` workflow runs on the base branch
 # (GitHub's GITHUB_TOKEN rule). The pull request's own required checks are the evidence; the next merged
@@ -55,11 +59,15 @@ jobs:
       pull-requests: read
     outputs:
       eligible: ${{ steps.decide.outputs.eligible }}
+      disarm: ${{ steps.decide.outputs.disarm }}
       reason: ${{ steps.decide.outputs.reason }}
+      head: ${{ github.event.pull_request.head.sha }}
     steps:
+      # Read on Dependabot's own events only. After another account's push the decision refuses on the sender,
+      # and fetch-metadata fails when that push replaced Dependabot's commit, which would stop the take-back.
       - name: Read the update
         id: metadata
-        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.sender.login == 'dependabot[bot]'
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ github.token }}
@@ -85,6 +93,7 @@ jobs:
         env:
           AUTOMERGE_AUTHOR: ${{ github.event.pull_request.user.login }}
           AUTOMERGE_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          AUTOMERGE_SENDER: ${{ github.event.sender.login }}
           AUTOMERGE_DEPENDENCY_NAMES: ${{ steps.metadata.outputs.dependency-names }}
           AUTOMERGE_UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
           AUTOMERGE_ALLOW_LIST: ${{ inputs.dependency_allow_list }}
@@ -92,23 +101,36 @@ jobs:
           AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_SKILLS }}
         run: node .neo-agent-skills/scripts/dependabot-automerge-eligibility.mjs
 
-  enable:
-    name: Enable auto-merge
+  handoff:
+    name: Hand off to auto-merge
     needs: eligibility
-    if: needs.eligibility.outputs.eligible == 'true'
+    if: needs.eligibility.outputs.eligible == 'true' || needs.eligibility.outputs.disarm == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Hand the pull request to GitHub's auto-merge
+      - name: Checkout this workflow's handoff
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .neo-agent-skills
+          sparse-checkout: scripts/dependabot-automerge-handoff.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Arm or take back auto-merge
         env:
           GH_TOKEN: ${{ github.token }}
-          MERGE_METHOD: ${{ inputs.merge_method }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          case "${MERGE_METHOD}" in
-            squash|merge|rebase) ;;
-            *) echo "merge_method '${MERGE_METHOD}' is not squash, merge or rebase."; exit 1 ;;
-          esac
-          gh pr merge --auto "--${MERGE_METHOD}" "${PR_URL}"
+          AUTOMERGE_REPOSITORY: ${{ github.repository }}
+          AUTOMERGE_PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUTOMERGE_ADMITTED_HEAD: ${{ needs.eligibility.outputs.head }}
+          AUTOMERGE_ELIGIBLE: ${{ needs.eligibility.outputs.eligible }}
+          AUTOMERGE_DISARM: ${{ needs.eligibility.outputs.disarm }}
+          AUTOMERGE_MERGE_METHOD: ${{ inputs.merge_method }}
+        run: node .neo-agent-skills/scripts/dependabot-automerge-handoff.mjs
