@@ -46,7 +46,6 @@ export const PATTERNS = [
 export const ALLOW_MARKER = 'secret-scan-ok:';
 
 const
-    allowRE           = /secret-scan-ok:(.*?)(?:-->|\*\/|$)/,
     BINARY_EXTENSIONS = new Set([
         '.eot', '.gif', '.ico', '.jpeg', '.jpg', '.mp3', '.mp4', '.otf', '.pdf', '.png', '.ttf', '.wasm', '.webm',
         '.webp', '.woff', '.woff2', '.zip'
@@ -66,16 +65,47 @@ export function findSecrets(text) {
                 re.lastIndex = 0;
                 return re.test(line)
             }).map(({kind}) => kind),
-            marker = kinds.length > 0 && line.match(allowRE);
+            reason = kinds.length > 0 ? allowReason(line) : null;
 
-        if (!marker) {
+        if (reason === null) {
             kinds.forEach(kind => findings.push({line: index + 1, kind}))
-        } else if (!givesReason(marker[1])) {
+        } else if (!givesReason(reason)) {
             findings.push({line: index + 1, kind: 'allow-marker-without-reason'})
         }
     });
 
     return findings
+}
+
+/**
+ * @summary Finds the first complete allow marker without retrying every marker before a line separator.
+ * Comment closers terminate its reason; a CR or Unicode line separator invalidates that candidate,
+ * so the next search starts after it. An empty reason remains distinct from an absent marker.
+ * @param {String} line One LF-delimited source line.
+ * @returns {String|null} The reason, or null when no marker completes on its line.
+ */
+function allowReason(line) {
+    let from = 0;
+
+    while (from < line.length) {
+        const marker = line.indexOf(ALLOW_MARKER, from);
+
+        if (marker < 0) return null;
+
+        const start = marker + ALLOW_MARKER.length;
+
+        for (let end = start; ; end++) {
+            if (end === line.length || line.startsWith('-->', end) || line.startsWith('*/', end)) {
+                return line.slice(start, end)
+            }
+            if (line[end] === '\r' || line[end] === '\u2028' || line[end] === '\u2029') {
+                from = end + 1;
+                break
+            }
+        }
+    }
+
+    return null
 }
 
 /**

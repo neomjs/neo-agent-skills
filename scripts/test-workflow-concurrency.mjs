@@ -2,10 +2,11 @@
 /** @summary Mutation-sensitive contract checks for the workflow-concurrency guard. */
 
 import assert                                          from 'node:assert/strict';
+import {spawnSync}                                    from 'node:child_process';
 import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                        from 'node:os';
 import {join}                                          from 'node:path';
-import {collectConcurrencyBlocks, collectReport, gradeBlock, isInScope, run} from './check-workflow-concurrency.mjs';
+import {RERUN_PATTERN, collectConcurrencyBlocks, collectReport, gradeBlock, isInScope, run} from './check-workflow-concurrency.mjs';
 
 const fixtures = [];
 
@@ -41,6 +42,55 @@ const NO_RERUN_CLAUSE = CORRECT.replace(
 );
 
 const silent = {error() {}, out() {}};
+
+// Malformed source is read by the same entrypoints as normal workflows, under a process deadline.
+{
+    const guard = new URL('./check-workflow-concurrency.mjs', import.meta.url).href;
+
+    for (const [label, arm] of [
+        ['inline whitespace near miss', `assert.deepEqual(collectConcurrencyBlocks('concurrency: !' + ' '.repeat(500000) + '\\r!'), [])`],
+        ['group whitespace near miss', `assert.deepEqual(collectConcurrencyBlocks('concurrency:\\n group:a' + ' '.repeat(500000) + '\\r!'), [{cancelInProgress: null, group: null, jobLevel: false}])`],
+        ['missing rerun id', `assert.equal(gradeBlock({group: 'github.ref ' + 'github.run_attempt'.repeat(100000)}).length, 1)`],
+        ['exported rerun pattern', `assert.equal(RERUN_PATTERN.test('github.run_attempt'.repeat(100000)), false)`]
+    ]) {
+        const child = spawnSync(process.execPath, ['--input-type=module', '-e',
+            `import assert from 'node:assert/strict';
+             import {RERUN_PATTERN, collectConcurrencyBlocks, gradeBlock} from ${JSON.stringify(guard)};
+             ${arm}`
+        ], {encoding: 'utf8', timeout: 2000});
+
+        assert.equal(child.status, 0, `${label}: ${child.error?.message ?? child.stderr}`)
+    }
+}
+
+{
+    const cases = [
+        ['concurrency: !   ', [{cancelInProgress: null, group: '!', jobLevel: false}]],
+        ['concurrency:!', []],
+        ['\tconcurrency\u00a0:\t a \r', [{cancelInProgress: null, group: 'a', jobLevel: true}]],
+        ['concurrency: a\r b', []],
+        ['concurrency: \r a', [{cancelInProgress: null, group: 'a', jobLevel: false}]],
+        ['concurrency:\r', [{cancelInProgress: null, group: null, jobLevel: false}]],
+        ['concurrency:\n group: \t\r', [{cancelInProgress: null, group: '\t', jobLevel: false}]],
+        ['concurrency:\n group:\r\u2028', [{cancelInProgress: null, group: null, jobLevel: false}]],
+        ['concurrency:\n group:old\n group:a  \r!\n cancel-in-progress: true', [{cancelInProgress: true, group: 'old', jobLevel: false}]],
+        ['concurrency:\n\tgroup:a\r!\n cancel-in-progress: true', [{cancelInProgress: null, group: null, jobLevel: false}]],
+        ['concurrency:\n cancel-in-progress: true false', [{cancelInProgress: null, group: null, jobLevel: false}]]
+    ];
+
+    cases.forEach(([source, expected]) => assert.deepEqual(collectConcurrencyBlocks(source), expected));
+    assert.ok(RERUN_PATTERN instanceof RegExp, 'the exported pattern retains its RegExp contract');
+
+    for (const [group, expected] of [
+        ['github.run_attempt github.run_id', true],
+        ['github.run_id github.run_attempt', false],
+        ['prefix github.run_attempt\r\u2028github.run_attempt github.run_id suffix', true],
+        ['github.run_attempt github.run_attempt', false],
+        ['', false]
+    ]) {
+        assert.equal(RERUN_PATTERN.test(group), expected, 'the id follows an attempt, across line separators')
+    }
+}
 
 // ── the parser ────────────────────────────────────────────────────────────────────────────────
 {
