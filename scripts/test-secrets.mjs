@@ -113,6 +113,31 @@ function fixture(name, content) {
     ].join('\n')), [], 'a marker on a line without a credential excuses nothing, and is nothing to report')
 }
 
+// ── Malformed markers preserve policy and finish within a bounded process ─────────────────────
+{
+    const key = planted['google-api-key'];
+
+    for (const separator of ['\r', '\u2028', '\u2029']) {
+        assert.deepEqual(findSecrets(`${key} secret-scan-ok: first${separator}!`), [{line: 1, kind: 'google-api-key'}],
+            'a marker interrupted by a line separator does not excuse the credential');
+        assert.deepEqual(findSecrets(`${key} secret-scan-ok: first${separator}secret-scan-ok: later */`), [],
+            'a later complete marker still supplies the reason');
+        assert.deepEqual(findSecrets(`${key} secret-scan-ok: */${separator}!`), [{line: 1, kind: 'allow-marker-without-reason'}],
+            'the first complete marker wins, including its empty reason')
+    }
+
+    const probe = spawnSync(process.execPath, ['--input-type=module', '--eval', `
+        import {findSecrets} from ${JSON.stringify(new URL('./check-secrets.mjs', import.meta.url).href)};
+        const key = 'AIza' + 'a'.repeat(35);
+        const line = key + ' secret-scan-ok:a'.repeat(32000) + '\\u2028!';
+        const findings = findSecrets(line);
+        if (findings.length !== 1 || findings[0].kind !== 'google-api-key') process.exit(1);
+    `], {encoding: 'utf8', timeout: 2000});
+
+    assert.equal(probe.error, undefined, 'repeated malformed markers finish within the isolated deadline');
+    assert.equal(probe.status, 0, probe.stderr)
+}
+
 // ── Process-level arms: the report, and the shipping path through the bin symlink ──────────────
 {
     const

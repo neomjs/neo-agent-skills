@@ -9,7 +9,7 @@
 
 import assert                                                            from 'node:assert/strict';
 import {execFileSync, spawnSync}                                         from 'node:child_process';
-import {mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                                          from 'node:os';
 import {dirname, join}                                                   from 'node:path';
 import {fileURLToPath}                                                   from 'node:url';
@@ -241,7 +241,57 @@ try {
             'a branch the remote has is measured from its remote sha, less what any remote-tracking ref has seen');
         assert.deepEqual(pendingRanges(`refs/heads/a ${zero} refs/heads/a ${'b'.repeat(40)}\n`), [], 'a deletion sends nothing');
         assert.deepEqual(pendingRanges(''), ['HEAD --not --remotes'], 'no payload scans the unpushed commits, never nothing');
-        assert.deepEqual(pendingRanges('', 'abc'), ['abc..HEAD'])
+        assert.deepEqual(pendingRanges('', 'abc'), ['abc..HEAD']);
+        assert.deepEqual(pendingRanges(`refs/heads/a ${'a'.repeat(64)} refs/heads/a ${'0'.repeat(64)}`),
+            [`${'a'.repeat(64)} --not --remotes`], 'the zero sentinel follows the validated object-name width');
+        assert.deepEqual(pendingRanges(`refs/heads/a ${'0'.repeat(64)} refs/heads/a ${'b'.repeat(64)}`), [],
+            'a 64-digit deletion sends no range');
+
+        for (const revision of ['--all', '-n1', 'HEAD --all', 'HEAD\u0000']) {
+            assert.throws(() => pendingRanges('', revision), /revision/, 'a revision cannot add Git options')
+        }
+
+        assert.throws(() => pendingRanges(`refs/heads/a ${base} refs/heads/a ${zero} extra`), /four fields/);
+        assert.throws(() => pendingRanges(`refs/heads/a ^HEAD refs/heads/a ${zero}`), /hexadecimal/);
+
+        const addresses = body => findUnknownCoAuthors({team, agentLane: true, commits: [{body}]}).map(row => row.email);
+
+        assert.deepEqual(addresses('Co-Authored-By: <unknown<person@else.example>'), ['unknown<person@else.example'],
+            'a malformed inner opening never turns an unknown address into a known seat');
+        assert.deepEqual(addresses('co-authored-by: Name <bad> suffix <person@else.example>'), ['person@else.example']);
+        assert.deepEqual(addresses('Co-Authored-By:\n  Name <person@else.example>'), ['person@else.example']);
+        assert.deepEqual(addresses('co-authored-by:\nco-authored-by:<bad><>'), [],
+            'a prefix overlapping the next line cannot reuse that line\'s advanced closer cursor');
+        assert.deepEqual(addresses('Co-Authored-By: <person\n@else.example>\nCo-Authored-By: <seat-two@team.example>'),
+            ['person\n@else.example'], 'multiline captures and later known-seat trailers retain their policy');
+
+        const bounded = spawnSync(process.execPath, ['--input-type=module', '--eval', `
+            import {findUnknownCoAuthors} from ${JSON.stringify(new URL('./check-commit-authorship.mjs', import.meta.url).href)};
+            const team = {emails: new Set(), domains: new Set()};
+            const body = 'co-authored-by:<' + '<='.repeat(64000);
+            if (findUnknownCoAuthors({team, agentLane: true, commits: [{body}]}).length) process.exit(1);
+        `], {encoding: 'utf8', timeout: 2000});
+
+        assert.equal(bounded.error, undefined, 'malformed angle runs finish within the isolated deadline');
+        assert.equal(bounded.status, 0, bounded.stderr)
+    }
+
+    // ── Caller text stays data: neither a shell command nor additional Git options ────────────────
+    {
+        const marker = join(root, 'unexpected-shell-effect'),
+              sideEffect = `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'unexpected')`,
+              injected = `${base}; ${process.execPath} -e ${JSON.stringify(sideEffect)} #`,
+              read = value => spawnSync(process.execPath, [GUARD, '--roster', roster, '--base', value],
+                  {cwd: repo, encoding: 'utf8', env, timeout: 2000});
+
+        assert.equal(read(injected).status, 1, 'a shell-bearing base is a refused read');
+        assert.equal(existsSync(marker), false, 'caller text executed no side effect');
+        assert.equal(read('--all').status, 1, 'an option-like base cannot widen the read');
+        assert.equal(read('HEAD..HEAD').status, 1, 'a range cannot stand in for the one CI base commit');
+        assert.equal(read('HEAD:lane.txt').status, 1, 'a non-commit object cannot stand in for the CI base');
+        assert.equal(read('HEAD;literal').status, 1, 'metacharacters without whitespace reach only Git as literal data');
+        assert.equal(existsSync(marker), false);
+        assert.equal(read(base).status, 0, 'the valid commit range remains readable')
     }
 
     // ── It ships, or consumers cannot invoke it ────────────────────────────────────────────────────

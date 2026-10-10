@@ -2,7 +2,7 @@
 /** @summary Mutation-sensitive contract checks for the AGENTS.md generator. */
 
 import assert                                      from 'node:assert/strict';
-import {execFileSync}                              from 'node:child_process';
+import {execFileSync, spawnSync}                   from 'node:child_process';
 import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                    from 'node:os';
 import {dirname, join}                             from 'node:path';
@@ -51,6 +51,37 @@ function capture(argv) {
         code: run(argv, {out: line => lines.push(line), error: line => lines.push(line), write: text => {payload += text}}),
         payload,
         text: lines.join('\n')
+    }
+}
+
+{
+    const frontMatter = '---\nid: x\norder: 10\nrepos: neo\naudiences: maintainer\n---\n',
+          guard       = new URL('./generate-agents-md.mjs', import.meta.url).href,
+          child       = spawnSync(process.execPath, ['--input-type=module', '-e',
+              `import assert from 'node:assert/strict';
+               import {parseSection} from ${JSON.stringify(guard)};
+               const body = '\\n'.repeat(500000) + 'X';
+               assert.equal(parseSection(${JSON.stringify(frontMatter)} + body, 'x.md').body, body);`
+          ], {encoding: 'utf8', timeout: 2000});
+
+    assert.equal(child.status, 0, `internal newline run: ${child.error?.message ?? child.stderr}`);
+
+    for (const [body, expected] of [
+        ['A\n\nB\n\n', 'A\n\nB'],
+        ['A \t\r\n', 'A \t\r'],
+        ['A\n\n\r', 'A\n\n\r'],
+        ['A\n\n\r\n', 'A\n\n\r'],
+        ['A\n\n\u2028', 'A\n\n\u2028'],
+        ['A\n\n\u2029', 'A\n\n\u2029'],
+        ['A\n \n', 'A\n '],
+        ['\n\n', ''],
+        ['', '']
+    ]) {
+        assert.equal(parseSection(frontMatter + body, 'x.md').body, expected);
+        const root = fixture([{id: 'x', order: 10, body: 'B'}], body);
+
+        assert.equal(generate({audience: 'maintainer', repos: ['neo'], root}).text, expected + '\n\nB\n',
+            'the preamble uses the same LF normalization as section bodies')
     }
 }
 

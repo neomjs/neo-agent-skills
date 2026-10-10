@@ -45,6 +45,19 @@ const
 export const PER_FILE_LIMIT_BYTES = 24576;
 
 /**
+ * @summary Removes final LF runs without trimming any other whitespace or line separator.
+ * @param {String} text
+ * @returns {String}
+ */
+function trimFinalLineFeeds(text) {
+    let at = text.length;
+
+    while (at > 0 && text[at - 1] === '\n') at--;
+
+    return text.slice(0, at)
+}
+
+/**
  * @summary Splits one section file into its declarations and its body.
  *
  * The front-matter is read as a flat key/value block rather than through a YAML dependency: the
@@ -74,7 +87,7 @@ export function parseSection(text, name) {
 
     return {
         audiences   : list('audiences'),
-        body        : match[2].replace(/\n+$/, ''),
+        body        : trimFinalLineFeeds(match[2]),
         id          : declared.id,
         listGroup   : declared.listGroup ?? null,
         listNumber  : declared.listNumber === undefined ? null : Number(declared.listNumber),
@@ -199,7 +212,7 @@ export function readSupported(root = sourceRoot) {
  * @returns {String}
  */
 function readPreamble(root, audience) {
-    return readFileSync(join(root, `preamble.${audience}.md`), 'utf8').replace(/\n+$/, '')
+    return trimFinalLineFeeds(readFileSync(join(root, `preamble.${audience}.md`), 'utf8'))
 }
 
 /**
