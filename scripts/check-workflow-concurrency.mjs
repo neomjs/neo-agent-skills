@@ -22,7 +22,7 @@ export const WORKFLOW_DIR = '.github/workflows';
 export const REF_PATTERN = /github\.(ref|head_ref)|pull_request\.head\.ref/;
 
 /** @type {RegExp} The rerun clause: an attempt test that falls back to the run's own id. */
-export const RERUN_PATTERN = /github\.run_attempt[\s\S]*github\.run_id/;
+export const RERUN_PATTERN = /^(?:(?!github\.run_attempt)[\s\S])*github\.run_attempt[\s\S]*github\.run_id/;
 
 /**
  * @summary Extracts every top-level `concurrency` block from one workflow's source.
@@ -39,22 +39,26 @@ export function collectConcurrencyBlocks(source) {
     let current = null;
 
     for (const line of lines) {
+        const content  = line.trimStart(),
+              colon    = content.indexOf(':'),
+              key      = colon < 0 ? null : content.slice(0, colon).trimEnd(),
+              rest     = colon < 0 ? '' : content.slice(colon + 1),
+              value    = rest.trim(),
+              indented = content.length !== line.length,
+              oneLine  = !/[\r\u2028\u2029]/.test(value);
+
         // The inline shorthand `concurrency: ci-${{ github.ref }}` carries a group and cannot carry
         // `cancel-in-progress`, so it is out of scope — but it must still be COUNTED. The block
         // total is a consumer's only evidence the guard read anything, and a form that vanishes
         // shrinks that number silently.
-        const inline = /^(\s*)concurrency\s*:\s+(\S.*?)\s*$/.exec(line);
-
-        if (inline) {
-            blocks.push({cancelInProgress: null, group: inline[2], jobLevel: inline[1].length > 0});
+        if (key === 'concurrency' && /^\s/.test(rest) && value && oneLine) {
+            blocks.push({cancelInProgress: null, group: value, jobLevel: indented});
             current = null;
             continue
         }
 
-        const concurrency = /^(\s*)concurrency\s*:\s*$/.exec(line);
-
-        if (concurrency) {
-            current = {cancelInProgress: null, group: null, jobLevel: concurrency[1].length > 0};
+        if (key === 'concurrency' && !value) {
+            current = {cancelInProgress: null, group: null, jobLevel: indented};
             blocks.push(current);
             continue
         }
@@ -63,11 +67,26 @@ export function collectConcurrencyBlocks(source) {
             continue
         }
 
-        const group  = /^\s+group\s*:\s*(.+?)\s*$/.exec(line),
-              cancel = /^\s+cancel-in-progress\s*:\s*(\S+)\s*$/.exec(line);
+        let group = null;
 
-        if (group)  {current.group            = group[1]}
-        if (cancel) {current.cancelInProgress = cancel[1] === 'true'}
+        if (key === 'group' && indented && oneLine) {
+            group = value || null;
+
+            // The former .+ capture takes the last non-line-separator character on a whitespace-only value.
+            if (!value) {
+                for (let at = rest.length - 1; at >= 0; at--) {
+                    if (!/[\r\u2028\u2029]/.test(rest[at])) {
+                        group = rest[at];
+                        break
+                    }
+                }
+            }
+        }
+
+        const cancel = key === 'cancel-in-progress' && indented && value && !/\s/.test(value);
+
+        if (group)  {current.group            = group}
+        if (cancel) {current.cancelInProgress = value === 'true'}
 
         // A non-indented, non-comment, non-blank line ends the block.
         if (!group && !cancel && line.trim() && !line.startsWith(' ') && !line.trim().startsWith('#')) {

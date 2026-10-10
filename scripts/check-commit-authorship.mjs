@@ -24,7 +24,7 @@
  * Bypass, for an operator genuinely committing from an agent checkout: `git push --no-verify`.
  */
 
-import {execSync}                    from 'node:child_process';
+import {execFileSync}                from 'node:child_process';
 import {readFileSync, realpathSync} from 'node:fs';
 import path                          from 'node:path';
 import process                       from 'node:process';
@@ -32,10 +32,9 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const
     UNSEEN   = '--not --remotes',
-    ZERO_SHA = '0'.repeat(40),
-    tryExec  = command => {
+    tryGit   = (...args) => {
         try {
-            return execSync(command, {encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore']}).trim()
+            return execFileSync('git', args, {encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore']}).trim()
         } catch {
             return ''
         }
@@ -56,6 +55,7 @@ const
  */
 export function pendingRanges(payload, base=null) {
     if (base) {
+        assertRevision(base);
         return [`${base}..HEAD`]
     }
 
@@ -66,14 +66,33 @@ export function pendingRanges(payload, base=null) {
     }
 
     return rows.map(row => {
-        const [, localSha, , remoteSha] = row.split(/\s+/);
+        const fields = row.split(/\s+/);
 
-        if (!localSha || localSha === ZERO_SHA) {
+        if (fields.length !== 4) throw new Error('a pre-push row must carry exactly four fields');
+
+        const [, localSha, , remoteSha] = fields;
+
+        if (![localSha, remoteSha].every(value => /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/i.test(value))) {
+            throw new Error('pre-push object names must be full hexadecimal hashes')
+        }
+
+        if (/^0+$/.test(localSha)) {
             return null
         }
 
-        return !remoteSha || remoteSha === ZERO_SHA ? `${localSha} ${UNSEEN}` : `${remoteSha}..${localSha} ${UNSEEN}`
+        return /^0+$/.test(remoteSha) ? `${localSha} ${UNSEEN}` : `${remoteSha}..${localSha} ${UNSEEN}`
     }).filter(Boolean)
+}
+
+/**
+ * @summary Refuses option-bearing or whitespace-delimited revision text before forming a range.
+ * Git resolves the remaining revision as one argv value, never shell source or additional options.
+ * @param {String} revision A base revision or a hook-supplied object name.
+ */
+function assertRevision(revision) {
+    if (typeof revision !== 'string' || !revision || revision.startsWith('-') || /[\s\x00-\x1f\x7f]/.test(revision)) {
+        throw new Error('a revision must be one non-option value without whitespace or control characters')
+    }
 }
 
 /**
@@ -86,8 +105,8 @@ export function pendingRanges(payload, base=null) {
  * @returns {Boolean}
  */
 export function isAgentCheckout() {
-    const gitDir    = tryExec('git rev-parse --absolute-git-dir'),
-          commonDir = tryExec('git rev-parse --git-common-dir');
+    const gitDir    = tryGit('rev-parse', '--absolute-git-dir'),
+          commonDir = tryGit('rev-parse', '--git-common-dir');
 
     return Boolean(gitDir && commonDir && path.resolve(gitDir) !== path.resolve(commonDir)) ||
         Boolean(process.env.NEO_AGENT_IDENTITY?.trim())
@@ -129,21 +148,15 @@ export function teamFromRoster(roster) {
  * @returns {Object[]} `{sha, subject, email, agentAuthored}` each
  */
 export function findUnknownCoAuthors({commits = [], agentLane = false, team}) {
-    const
-        trailer   = /^\s*co-authored-by:\s*.*?<([^>]+)>\s*$/gim,
-        offenders = [];
+    const offenders = [];
 
     commits.forEach(({sha, subject, body, authorEmail}) => {
         const
             agentAuthored = agentLane || team.emails.has((authorEmail || '').trim().toLowerCase()),
             seen          = new Set();
 
-        let match;
-
-        trailer.lastIndex = 0;
-
-        while ((match = trailer.exec(body || '')) !== null) {
-            const email = match[1].trim().toLowerCase();
+        for (const address of coAuthorAddresses(body || '')) {
+            const email = address.trim().toLowerCase();
 
             if (team.emails.has(email) || seen.has(email) || (!agentAuthored && !team.domains.has(email.split('@')[1]))) {
                 continue
@@ -158,8 +171,79 @@ export function findUnknownCoAuthors({commits = [], agentLane = false, team}) {
 }
 
 /**
+ * @summary Reads trailer addresses in linear passes, preserving line anchors and multiline captures.
+ * A closing angle qualifies only at the end of its line. Indexing all closers once avoids scanning
+ * the rest of the message again for every malformed opening, while the first opening after a rejected
+ * closer preserves the original display-name and address boundary.
+ * @param {String} body A full commit message.
+ * @returns {String[]} Raw address captures in message order.
+ */
+function coAuthorAddresses(body) {
+    const prefix = 'co-authored-by:', lines = body.split(/[\r\n\u2028\u2029]/),
+          starts = [], closerStarts = [], closers = [], eligible = new Set(), addresses = [];
+
+    let offset = 0, nameLine = 0, acceptedClose = -1;
+
+    for (const line of lines) {
+        starts.push(offset);
+        closerStarts.push(closers.length);
+
+        const end = line.trimEnd();
+
+        end.endsWith('>') && eligible.add(offset + end.length - 1);
+
+        for (let at = line.indexOf('>'); at >= 0; at = line.indexOf('>', at + 1)) {
+            closers.push(offset + at)
+        }
+
+        offset += line.length + 1
+    }
+
+    lines.forEach((line, index) => {
+        const trimmed = line.trimStart(), start = starts[index] + line.length - trimmed.length;
+
+        if (start <= acceptedClose || trimmed.slice(0, prefix.length).toLowerCase() !== prefix) return;
+
+        let nameStart = start + prefix.length;
+
+        while (nameStart < body.length && /\s/.test(body[nameStart])) nameStart++;
+
+        let nameEnd = nameStart;
+
+        while (nameEnd < body.length && !/[\r\n\u2028\u2029]/.test(body[nameEnd])) nameEnd++;
+
+        const name = body.slice(nameStart, nameEnd);
+
+        while (nameLine + 1 < starts.length && starts[nameLine + 1] <= nameStart) nameLine++;
+
+        let closerIndex = closerStarts[nameLine] ?? closers.length;
+
+        for (let local = name.indexOf('<'); local >= 0; ) {
+            const opening = nameStart + local;
+
+            while (closerIndex < closers.length && closers[closerIndex] <= opening) closerIndex++;
+
+            const closing = closers[closerIndex];
+
+            if (closing === undefined) return;
+            if (closing > opening + 1 && eligible.has(closing)) {
+                addresses.push(body.slice(opening + 1, closing));
+                acceptedClose = closing;
+                return
+            }
+            if (closing >= nameEnd) return;
+
+            local = name.indexOf('<', closing + 1 - nameStart)
+        }
+    });
+
+    return addresses
+}
+
+/**
  * @summary The commits in the ranges, with the full message each trailer lives in.
  *
+ * Resolves the CI base to one commit before adding the range; hook object names were validated at intake.
  * Throws when git cannot read a range: an unreadable push is not a push without offenders, and both checks read here.
  * @param {String[]} ranges
  * @returns {Object[]} `{sha, authorEmail, subject, body}` each
@@ -167,7 +251,20 @@ export function findUnknownCoAuthors({commits = [], agentLane = false, team}) {
 function readCommits(ranges) {
     return ranges.flatMap(range => {
         // \x1f between fields and \x1e between records: a body carries newlines, so splitting lines would cut trailers
-        const log = execSync(`git log ${range} --format=%H%x1f%ae%x1f%s%x1f%B%x1e`, {
+        const unseen = range.endsWith(` ${UNSEEN}`);
+
+        let revision = unseen ? range.slice(0, -(UNSEEN.length + 1)) : range;
+
+        if (!unseen) {
+            const base = range.slice(0, -'..HEAD'.length),
+                  commit = execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`],
+                      {encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']}).trim();
+
+            revision = `${commit}..HEAD`
+        }
+
+        const log = execFileSync('git', ['log', revision, ...(unseen ? ['--not', '--remotes'] : []),
+                  '--format=%H%x1f%ae%x1f%s%x1f%B%x1e', '--'], {
             encoding: 'utf8',
             stdio   : ['pipe', 'pipe', 'pipe']
         }).trim();
@@ -201,8 +298,16 @@ export async function run(args, payload) {
     const
         base       = option(args, '--base'),
         login      = option(args, '--author-login'),
-        rosterPath = option(args, '--roster'),
-        ranges     = pendingRanges(payload, base);
+        rosterPath = option(args, '--roster');
+
+    let ranges;
+
+    try {
+        ranges = pendingRanges(payload, base)
+    } catch (error) {
+        console.error(`check-commit-authorship: cannot read the pushed commits (${error.message}).`);
+        return 1
+    }
 
     let team = null;
 
@@ -220,7 +325,7 @@ export async function run(args, payload) {
 
     const
         agentCheckout = isAgentCheckout(),
-        operator      = tryExec('git config --global user.email').toLowerCase(),
+        operator      = tryGit('config', '--global', 'user.email').toLowerCase(),
         // The operator check only exists where an agent pushes, and only when there is a global identity to leak
         checkOperator = Boolean(operator && agentCheckout);
 
@@ -230,7 +335,7 @@ export async function run(args, payload) {
 
     // A range measured against the remote-tracking refs alone has no basis without them; one that also names its
     // remote sha (`..`) keeps that basis, and merely excludes nothing more
-    if (ranges.some(range => range.endsWith(UNSEEN) && !range.includes('..')) && !tryExec('git for-each-ref --count=1 refs/remotes')) {
+    if (ranges.some(range => range.endsWith(UNSEEN) && !range.includes('..')) && !tryGit('for-each-ref', '--count=1', 'refs/remotes')) {
         console.error('check-commit-authorship: no remote-tracking ref to measure the pushed commits against. ' +
             'Fetch the remote first, or bypass with git push --no-verify.');
         return 1
@@ -286,7 +391,7 @@ export async function run(args, payload) {
 
     console.error(`check-commit-authorship: ${offenders.size} commit(s) authored as the operator from an agent checkout:`);
     console.error([...offenders.values()].join('\n'));
-    console.error(`This checkout's user.email is: ${tryExec('git config user.email') || '(unset, so the global identity resolves)'}
+    console.error(`This checkout's user.email is: ${tryGit('config', 'user.email') || '(unset, so the global identity resolves)'}
 Set this checkout's own identity, then repair the commits:
 
   git config user.email "<your seat's address>"
