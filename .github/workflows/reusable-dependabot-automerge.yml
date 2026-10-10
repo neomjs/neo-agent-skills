@@ -13,7 +13,10 @@
 #     pull-requests: write
 #   jobs:
 #     automerge:
+#       if: github.event.pull_request.user.login == 'dependabot[bot]'
 #       uses: neomjs/neo-agent-skills/.github/workflows/reusable-dependabot-automerge.yml@vX.Y.Z
+#
+# The `if` skips every other pull request before a runner starts; the decision checks the author again.
 #
 # Both jobs run one script each from this workflow's own commit. `eligibility` decides from the event.
 # `handoff` reads the repository live and arms only when "Allow auto-merge" is on, the base branch's rulesets
