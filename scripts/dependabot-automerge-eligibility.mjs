@@ -8,7 +8,7 @@
  * - the pull request's author, read from the event and never from `github.actor`, which names whoever re-ran or merged;
  * - the event's sender, the account whose push or reopen this run answers;
  * - the dependencies and update type `dependabot/fetch-metadata` read;
- * - the caller's allow-list and update types;
+ * - the caller's allow-list and update types, where `*` admits any, majors and unparsed updates included;
  * - the repository's kill switch.
  *
  * Anything short of a full match is ineligible, with one reason line; an ineligible pull request is not an error.
@@ -25,6 +25,9 @@ import {fileURLToPath}                from 'node:url';
 /** @summary Splits a comma-separated list into trimmed, non-empty entries. @param {String} [value] @returns {String[]} */
 const list = value => String(value ?? '').split(',').map(entry => entry.trim()).filter(Boolean);
 
+/** @summary Whether a list admits anything: it names `*`. @param {String} [value] @returns {Boolean} */
+const admitsAny = value => list(value).includes('*');
+
 /**
  * @summary Returns whether this pull request may merge itself, whether an earlier arming must be taken back, and why.
  * @param {Object} update
@@ -33,9 +36,9 @@ const list = value => String(value ?? '').split(',').map(entry => entry.trim()).
  * @param {String} update.sender          The event's sender: Dependabot when it opened or rebased the pull request.
  * @param {String} update.dependencyNames Comma-separated names `dependabot/fetch-metadata` read.
  * @param {String} update.updateType      `version-update:semver-<patch|minor|major>`, or empty.
- * @param {String} update.allowList       Comma-separated dependency names that may merge themselves.
- * @param {String} update.updateTypes     Comma-separated semver update types that may merge themselves.
- * @param {String} [update.killSwitch]    The repository variable `NEO_AUTOMERGE_SKILLS`; `off` stops every merge.
+ * @param {String} update.allowList       Comma-separated dependency names that may merge themselves, or `*` for any.
+ * @param {String} update.updateTypes     Comma-separated semver update types that may merge themselves, or `*` for any.
+ * @param {String} [update.killSwitch]    The repository variable `NEO_AUTOMERGE_DEPENDABOT`; `off` stops every merge.
  * @returns {{eligible: Boolean, disarm: Boolean, reason: String}}
  */
 export function decideAutomergeEligibility({author, authorType, sender, dependencyNames, updateType, allowList, updateTypes, killSwitch}) {
@@ -46,7 +49,7 @@ export function decideAutomergeEligibility({author, authorType, sender, dependen
         refuse       = reason => ({eligible: false, disarm: dependabotPr, reason: line(reason)});
 
     if (String(killSwitch ?? '').trim().toLowerCase() === 'off') {
-        return refuse('the repository variable NEO_AUTOMERGE_SKILLS is off')
+        return refuse('the repository variable NEO_AUTOMERGE_DEPENDABOT is off')
     }
 
     if (!dependabotPr) {
@@ -59,14 +62,17 @@ export function decideAutomergeEligibility({author, authorType, sender, dependen
 
     const
         names   = list(dependencyNames),
-        outside = names.filter(name => !list(allowList).includes(name)),
+        anyName = admitsAny(allowList),
+        outside = anyName ? [] : names.filter(name => !list(allowList).includes(name)),
         type    = String(updateType ?? '').replace(/^version-update:semver-/, '');
 
-    if (names.length === 0) return refuse('the update names no dependency');
+    if (!anyName && names.length === 0) return refuse('the update names no dependency');
     if (outside.length > 0) return refuse(`dependencies outside the allow-list: ${outside.join(', ')}`);
-    if (!list(updateTypes).includes(type)) return refuse(`update type '${updateType || 'none'}' is not one of: ${list(updateTypes).join(', ')}`);
+    if (!admitsAny(updateTypes) && !list(updateTypes).includes(type)) {
+        return refuse(`update type '${updateType || 'none'}' is not one of: ${list(updateTypes).join(', ')}`)
+    }
 
-    return {eligible: true, disarm: false, reason: line(`${names.join(', ')}: a ${type} update by dependabot[bot]`)}
+    return {eligible: true, disarm: false, reason: line(`${names.join(', ') || 'an unnamed dependency'}: a ${type || 'untyped'} update by dependabot[bot]`)}
 }
 
 // Canonicalized on both sides, as in check-version-bump.mjs: a symlinked argv[1] still runs the entrypoint.

@@ -2,9 +2,11 @@
 /**
  * @summary Contract checks for the reusable Dependabot auto-merge workflow and the two scripts it runs.
  *
- * Three parts. The decision's fixture events run the real `decideAutomergeEligibility`: a Dependabot update of an
- * allow-listed dependency is eligible; a lookalike author, another account's push, a mixed-dependency update, a
- * major bump and the kill switch are not, each with its reason line, and only a Dependabot pull request is disarmed.
+ * Three parts. The decision's fixture events run the real `decideAutomergeEligibility`. Under the workflow's own
+ * defaults, read from its source, any Dependabot pull request is eligible, majors and unparsed updates included.
+ * Under a caller's lists, a dependency or update type outside them is refused. A lookalike author, another
+ * account's push and the kill switch are refused either way, each with its reason line, and only a Dependabot pull
+ * request is disarmed.
  * The handoff's controls run the real `handOff` against a recorded `gh`: it arms, bound to the admitted head, only
  * when the live reads show auto-merge on and a required check; a missing, empty, unreadable or malformed read, or a
  * moved head, mutates nothing. Its command line does the same through a stub `gh` on PATH. The workflow's contract
@@ -51,9 +53,11 @@ for (const [label, update, reason, disarm] of [
     ['a major bump',                               {updateType: 'version-update:semver-major'},         "update type 'version-update:semver-major' is not one of: patch, minor", true],
     ['no update type',                             {updateType: ''},                                    "update type 'none'", true],
     ['no dependency',                              {dependencyNames: ''},                               'the update names no dependency', true],
-    ['the kill switch',                            {killSwitch: 'off'},                                 'NEO_AUTOMERGE_SKILLS is off', true],
-    ['the kill switch, any case',                  {killSwitch: ' OFF '},                               'NEO_AUTOMERGE_SKILLS is off', true],
-    ["the kill switch on a person's pull request", {killSwitch: 'off', author: 'tobiu', authorType: 'User'}, 'NEO_AUTOMERGE_SKILLS is off', false]
+    ['the kill switch',                            {killSwitch: 'off'},                                 'NEO_AUTOMERGE_DEPENDABOT is off', true],
+    ['the kill switch, any case',                  {killSwitch: ' OFF '},                               'NEO_AUTOMERGE_DEPENDABOT is off', true],
+    ["the kill switch on a person's pull request", {killSwitch: 'off', author: 'tobiu', authorType: 'User'}, 'NEO_AUTOMERGE_DEPENDABOT is off', false],
+    ['another account pushed, under `*`',          {allowList: '*', updateTypes: '*', sender: 'neo-opus-grace'}, 'sent by neo-opus-grace', true],
+    ['the kill switch, under `*`',                 {allowList: '*', updateTypes: '*', killSwitch: 'off'}, 'NEO_AUTOMERGE_DEPENDABOT is off', true]
 ]) {
     const answer = decide(update);
 
@@ -64,6 +68,23 @@ for (const [label, update, reason, disarm] of [
 
 assert.ok(!decide({author: 'x\neligible=true', authorType: 'User'}).reason.includes('\n'),
     'a reason is one line, so a newline in a login cannot write a second output');
+
+// The workflow's own defaults, read from its source, so a narrowed default turns these arms red
+const defaults = Object.fromEntries([...readFileSync(workflowPath, 'utf8')
+    .matchAll(/^ {6}(dependency_allow_list|update_types):\n(?: {8}.*\n)*? {8}default: '?([^'\n]*)'?\n/gm)]
+    .map(([, input, value]) => [input, value]));
+
+assert.deepEqual(defaults, {dependency_allow_list: '*', update_types: '*'}, 'both list inputs default to every update');
+
+for (const [label, update] of [
+    ['a dependency no list names', {dependencyNames: 'left-pad, webpack'}],
+    ['a major bump',               {updateType: 'version-update:semver-major'}],
+    ['an update with no metadata', {dependencyNames: '', updateType: ''}]
+]) {
+    const answer = decide({allowList: defaults.dependency_allow_list, updateTypes: defaults.update_types, ...update});
+
+    assert.equal(answer.eligible, true, `${label}, under the defaults: ${answer.reason}`)
+}
 
 // --- The handoff ----------------------------------------------------------------------------------------
 
@@ -260,7 +281,8 @@ export function validateReusableDependabotAutomerge(source) {
     if (!eligibility.includes("if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.sender.login == 'dependabot[bot]'")) {
         failures.push("metadata read on another account's event")
     }
-    if (!eligibility.includes('AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_SKILLS }}')) failures.push('kill switch not read');
+    if (!eligibility.includes('        continue-on-error: true\n        uses: dependabot/fetch-metadata@v2')) failures.push('a failed metadata read fails the job');
+    if (!eligibility.includes('AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_DEPENDABOT }}')) failures.push('kill switch not read');
 
     if (!handoff) failures.push('missing handoff job');
     if (!handoff.includes('needs: eligibility') ||
@@ -336,7 +358,10 @@ expectMutationFailure('sender dropped', source,
     value => value.replace('AUTOMERGE_SENDER: ${{ github.event.sender.login }}', "AUTOMERGE_SENDER: dependabot[bot]"), 'sender not read from the event');
 expectMutationFailure('metadata on every event', source,
     value => value.replace(" && github.event.sender.login == 'dependabot[bot]'", ''), "metadata read on another account's event");
-expectMutationFailure('kill switch dropped', source, value => value.replace('AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_SKILLS }}', 'AUTOMERGE_KILL_SWITCH: on'), 'kill switch not read');
+expectMutationFailure('kill switch dropped', source, value => value.replace('AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_DEPENDABOT }}', 'AUTOMERGE_KILL_SWITCH: on'), 'kill switch not read');
+expectMutationFailure('kill switch under its old name', source,
+    value => value.replace('vars.NEO_AUTOMERGE_DEPENDABOT', 'vars.NEO_AUTOMERGE_SKILLS'), 'kill switch not read');
+expectMutationFailure('metadata failure fails the job', source, value => value.replace('        continue-on-error: true\n', ''), 'a failed metadata read fails the job');
 expectMutationFailure('handoff ungated', source,
     value => value.replace("    if: needs.eligibility.outputs.eligible == 'true' || needs.eligibility.outputs.disarm == 'true'\n", ''), 'handoff not gated on the decision');
 expectMutationFailure('handoff skipped', source,
