@@ -202,15 +202,15 @@ Skills are authored on `dev`:
 - maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot merges do neither;
 - Dependabot brings it to each consumer.
 
-**A consumer's Dependabot skills bump merges itself.** Its caller of `reusable-dependabot-automerge.yml` hands the
-pull request to GitHub's auto-merge when Dependabot sent the event, every dependency it updates is on the allow-list
-(`neo-agent-skills` and this repository's reusable-baseline tag) and the update is a patch or minor. Before arming,
-the workflow reads the consumer live: *Allow auto-merge* on, at least one required status check in the base branch's
-rulesets, and the head still the admitted commit. A failed read turns the run red and arms nothing. GitHub then merges
-once those checks pass. Each later event decides again, and an ineligible one takes the arming back, so a fix another
-account pushes never merges this way. No agent merges: critical gate 1's `machine_merge` line names this one machine
-path. The operator sets *Allow auto-merge* and the ruleset's required checks per consumer. The repository variable
-`NEO_AUTOMERGE_SKILLS=off` stops new armings and takes each armed one back at its next event.
+**A repository's Dependabot pull requests merge themselves.** Its caller of `reusable-dependabot-automerge.yml` hands
+every pull request Dependabot opens to GitHub's auto-merge, majors included, unless the caller narrows
+`dependency_allow_list` or `update_types`. Before arming, the workflow reads the repository live: *Allow auto-merge*
+on, at least one required status check in the base branch's rulesets, and the head still the admitted commit. A failed
+read turns the run red and arms nothing. GitHub then merges once the **required** checks pass, so the ruleset decides
+what green means. Each later event decides again, and one another account sent takes the arming back, so a fix a peer
+pushes never merges this way. No agent merges: critical gate 1's `machine_merge` line names this one machine path. The
+operator sets *Allow auto-merge* and the ruleset's required checks per repository. The repository variable
+`NEO_AUTOMERGE_DEPENDABOT=off` stops new armings and takes each armed one back at its next event.
 
 Dependabot changes to shipped dependency declarations or reusable workflows are included in the
 next maintainer release. Lock-only updates refresh repository validation; consumers resolve

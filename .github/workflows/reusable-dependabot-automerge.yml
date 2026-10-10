@@ -1,6 +1,7 @@
-# Hands a Dependabot update of an allow-listed dependency to GitHub's auto-merge. GitHub then merges it once
-# the base branch's required status checks pass. Nothing here merges by itself, and no agent runs
-# `gh pr merge` (critical gate 1's machine-merge line).
+# Hands a Dependabot pull request to GitHub's auto-merge: by default every one, majors included, or only the
+# dependencies and update types a caller lists. GitHub then merges it once the base branch's required status
+# checks pass, so "green" means what the repository's ruleset requires. Nothing here merges by itself, and
+# no agent runs `gh pr merge` (critical gate 1's machine-merge line).
 #
 # Callers own the trigger, the permissions and a published release tag:
 #
@@ -12,14 +13,17 @@
 #     pull-requests: write
 #   jobs:
 #     automerge:
+#       if: github.event.pull_request.user.login == 'dependabot[bot]'
 #       uses: neomjs/neo-agent-skills/.github/workflows/reusable-dependabot-automerge.yml@vX.Y.Z
+#
+# The `if` skips every other pull request before a runner starts; the decision checks the author again.
 #
 # Both jobs run one script each from this workflow's own commit. `eligibility` decides from the event.
 # `handoff` reads the repository live and arms only when "Allow auto-merge" is on, the base branch's rulesets
 # require a status check, and the head is still the admitted commit. A failed read turns `handoff` red and
 # arms nothing (scripts/dependabot-automerge-handoff.mjs). Every event decides afresh: a Dependabot pull
 # request that stops being eligible, for example after another account pushes to it, loses the auto-merge
-# this workflow armed. `NEO_AUTOMERGE_SKILLS=off` stops new armings and takes back each armed pull request
+# this workflow armed. `NEO_AUTOMERGE_DEPENDABOT=off` stops new armings and takes back each armed pull request
 # at its next event.
 #
 # A merge GitHub performs for this workflow's token starts no `push` workflow runs on the base branch
@@ -35,15 +39,15 @@ on:
   workflow_call:
     inputs:
       dependency_allow_list:
-        description: Comma-separated dependency names a Dependabot pull request may update and still merge itself.
+        description: Comma-separated dependency names a Dependabot pull request may update and still merge itself, or `*` for any.
         required: false
         type: string
-        default: neo-agent-skills, neomjs/neo-agent-skills/.github/workflows/reusable-pr-baseline.yml
+        default: '*'
       update_types:
-        description: Comma-separated semver update types that may merge themselves.
+        description: Comma-separated semver update types (patch, minor, major) that may merge themselves, or `*` for any.
         required: false
         type: string
-        default: patch, minor
+        default: '*'
       merge_method:
         description: How GitHub merges once the required checks pass (squash, merge or rebase).
         required: false
@@ -65,9 +69,11 @@ jobs:
     steps:
       # Read on Dependabot's own events only. After another account's push the decision refuses on the sender,
       # and fetch-metadata fails when that push replaced Dependabot's commit, which would stop the take-back.
+      # A pull request it cannot parse still reaches the decision: `*` admits it, and a caller's list refuses it.
       - name: Read the update
         id: metadata
         if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.sender.login == 'dependabot[bot]'
+        continue-on-error: true
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ github.token }}
@@ -98,7 +104,7 @@ jobs:
           AUTOMERGE_UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
           AUTOMERGE_ALLOW_LIST: ${{ inputs.dependency_allow_list }}
           AUTOMERGE_UPDATE_TYPES: ${{ inputs.update_types }}
-          AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_SKILLS }}
+          AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_DEPENDABOT }}
         run: node .neo-agent-skills/scripts/dependabot-automerge-eligibility.mjs
 
   handoff:
