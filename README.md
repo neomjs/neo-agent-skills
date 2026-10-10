@@ -202,6 +202,14 @@ Skills are authored on `dev`:
 - maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot merges do neither;
 - Dependabot brings it to each consumer.
 
+**A consumer's Dependabot skills bump merges itself.** Its caller of `reusable-dependabot-automerge.yml` hands the
+pull request to GitHub's auto-merge when every dependency it updates is on the allow-list (`neo-agent-skills` and
+this repository's reusable-baseline tag) and the update is a patch or minor. GitHub merges once the consumer's
+required status checks pass on the current head. No agent merges: critical gate 1's `machine_merge` line names this
+one machine path. The operator sets two things per consumer: *Allow auto-merge*, and required status checks on the
+base branch. Without them the workflow goes red and merges nothing. The repository variable `NEO_AUTOMERGE_SKILLS=off`
+stops it.
+
 Dependabot changes to shipped dependency declarations or reusable workflows are included in the
 next maintainer release. Lock-only updates refresh repository validation; consumers resolve
 dependencies through their own lockfiles.

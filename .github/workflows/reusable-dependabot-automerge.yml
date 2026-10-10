@@ -1,0 +1,114 @@
+# Hands a Dependabot update of an allow-listed dependency to GitHub's auto-merge. GitHub then merges it once
+# the caller's required status checks pass on the current head, and waits again after every rebase. Nothing
+# here merges by itself, and no agent runs `gh pr merge` (critical gate 1's machine-merge line).
+#
+# Callers own the trigger, the permissions and a published release tag:
+#
+#   on:
+#     pull_request:
+#       types: [opened, synchronize, reopened]
+#   permissions:
+#     contents: write
+#     pull-requests: write
+#   jobs:
+#     automerge:
+#       uses: neomjs/neo-agent-skills/.github/workflows/reusable-dependabot-automerge.yml@vX.Y.Z
+#
+# Fail-closed: a repository without "Allow auto-merge", or without required status checks on its base
+# branch, turns `enable` red and merges nothing. The repository variable `NEO_AUTOMERGE_SKILLS=off` stops
+# every merge without a code change.
+#
+# A merge GitHub performs for this workflow's token starts no `push` workflow runs on the base branch
+# (GitHub's GITHUB_TOKEN rule). The pull request's own required checks are the evidence; the next merged
+# pull request's push runs catch up.
+
+name: Reusable Dependabot Auto-Merge
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      dependency_allow_list:
+        description: Comma-separated dependency names a Dependabot pull request may update and still merge itself.
+        required: false
+        type: string
+        default: neo-agent-skills, neomjs/neo-agent-skills/.github/workflows/reusable-pr-baseline.yml
+      update_types:
+        description: Comma-separated semver update types that may merge themselves.
+        required: false
+        type: string
+        default: patch, minor
+      merge_method:
+        description: How GitHub merges once the required checks pass (squash, merge or rebase).
+        required: false
+        type: string
+        default: squash
+
+jobs:
+  eligibility:
+    name: Eligibility
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      eligible: ${{ steps.decide.outputs.eligible }}
+      reason: ${{ steps.decide.outputs.reason }}
+    steps:
+      - name: Read the update
+        id: metadata
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ github.token }}
+
+      # The decision runs from this workflow's own commit, never from the pull request's head:
+      # `job.workflow_*` name this reusable file's repository and commit; `github.*` would name the caller's.
+      - name: Checkout this workflow's decision
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .neo-agent-skills
+          sparse-checkout: scripts/dependabot-automerge-eligibility.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Decide
+        id: decide
+        env:
+          AUTOMERGE_AUTHOR: ${{ github.event.pull_request.user.login }}
+          AUTOMERGE_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          AUTOMERGE_DEPENDENCY_NAMES: ${{ steps.metadata.outputs.dependency-names }}
+          AUTOMERGE_UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          AUTOMERGE_ALLOW_LIST: ${{ inputs.dependency_allow_list }}
+          AUTOMERGE_UPDATE_TYPES: ${{ inputs.update_types }}
+          AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_SKILLS }}
+        run: node .neo-agent-skills/scripts/dependabot-automerge-eligibility.mjs
+
+  enable:
+    name: Enable auto-merge
+    needs: eligibility
+    if: needs.eligibility.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Hand the pull request to GitHub's auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_METHOD: ${{ inputs.merge_method }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          case "${MERGE_METHOD}" in
+            squash|merge|rebase) ;;
+            *) echo "merge_method '${MERGE_METHOD}' is not squash, merge or rebase."; exit 1 ;;
+          esac
+          gh pr merge --auto "--${MERGE_METHOD}" "${PR_URL}"

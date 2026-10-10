@@ -62,6 +62,9 @@ jobs:
       - name: Reusable PR baseline contract
         run: node scripts/test-reusable-pr-baseline.mjs
 
+      - name: Reusable Dependabot auto-merge contract and decision
+        run: node scripts/test-reusable-dependabot-automerge.mjs
+
       - name: Ticket archaeology contract and packed CLI
         run: node scripts/test-ticket-archaeology.mjs
 
