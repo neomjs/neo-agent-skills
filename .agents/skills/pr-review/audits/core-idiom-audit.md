@@ -1,7 +1,6 @@
-# Core-Idiom Audit (instance & reactive-state work)
+# Core-Idiom Audit (instance, reactive-state and stateful-owner work)
 
-Load-on-demand payload behind the guide's "7.5.1 Core-Idiom Audit" pointer. Applies to diffs that create, mutate,
-resolve, or destroy Neo instances — or manage reactive state — in ANY directory: the class
+Load-on-demand payload behind the guide's §7.5.1 pointer. Applies in ANY directory: the class
 system spans hemispheres (`ai/` services and daemons are `Neo.setupClass` classes too).
 
 ## The checks
@@ -19,17 +18,20 @@ system spans hemispheres (`ai/` services and daemons are `Neo.setupClass` classe
    is the declarative multi-consumer binding surface, never "survival").
 4. **Service lifecycle (Brain-side weight):** long-running services honor `initAsync`/`ready()`
    (settle-or-reject on restart) and `registerAsync`/`trap` (destroy cancels pending async).
+5. **Stateful owner shape:** read the touched module that owns instances, resources, effects or
+   generations, with its creator and destructor. Trace each effect from the host's call site to
+   the code that runs: a subclass or override of a `Neo.setupClass` class must be able to replace
+   it, and one owner ends its lifetime (the creator destroys what it created; a borrowed handle is
+   released, never destroyed). A handler bag over closure state, an effect body calling statics by
+   class name, or a host naming the class at its call site defeats replacement even inside a
+   registered class: registration is not dispatch. Name the bypassed path and the unowned
+   lifetime; a returned callback alone is no defect.
 
 ## The exemption
 
-Pure data-plane logic (parsers, validators, transition tables) as plain util modules passes —
-childapp-precedented. The audit covers instance mutation + reactive state only.
-
-## Context-window substitution
+Pure data-plane logic (parsers, validators, transition tables, stateless helpers and callbacks)
+passes as plain modules. A closure that owns instances, resources or effects does not, whatever
+its JSDoc calls it. Nothing here asks to turn every module into a Base class.
 
 A reviewer whose window cannot afford the `src/core/Base.mjs` read MAY satisfy this audit via
-`ask_knowledge_base` on the specific idiom (verified live: the KB surfaces the `set()` batching,
-`setSilent`, and resolution contracts unprompted).
-
-Empirical anchor: the 2026-07-04 create-module correction arc — two idiom violations shipped
-past a full review cycle; the author-side gate is ticket-intake's "Core-Idiom Pre-Flight" item (9.6).
+`ask_knowledge_base` on the specific idiom.

@@ -3,11 +3,6 @@
 This document outlines the authoritative protocol for structuring Pull Request Reviews within the Neo.mjs project.
 Whether you are a human reviewer or an autonomous Agent evaluating code, you must adhere to this structure.
 
-This protocol ensures that feedback is:
-1. **Constructive and Engaging:** Encouraging to first-time contributors while remaining technically precise.
-2. **Actionable:** Clearly delineating block-level requirements before a merge can occur.
-3. **Graph-Extractable:** Structured with specific Markdown tags so the background Retrospective Agent (Gemma 4:31B) can mathematically ingest the feedback into the Native Edge Graph.
-
 > **Measurement Trigger:** For review-density or skill-baggage work, use [Loaded-Surface Measurement Methodology](./measurement-methodology.md) and record `wc -c`; ordinary PR reviews do not load it.
 
 ## §0 — Patch-blind premise snapshot (BEFORE the diff)
@@ -15,7 +10,7 @@ This protocol ensures that feedback is:
 Build — and write down — your premise of the change **before** reading the patch as the source of truth. You can reject a toaster-when-we-need-a-car before reading a line; a green checklist over a wrong premise is theater. Capture four fields. The snapshot is **patch-blind** — the *premise authority* is the substrate, not the patch ("I wrote this first" is itself theater).
 
 1. **Inputs read before the patch** — the ticket/issue, the changed-file list, the current `dev` source of the touched files, sibling precedent, and the source-of-authority substrate (ADRs, `learn/`, the owning service). **NOT the PR's own self-description as the primary premise** — the PR body is a claim to verify, not the authority. Build the premise from the affected files (intent belongs in their JSDoc — `src/core/Base.mjs` is the bar), their neighbors, and their imports; use `memory-mining` / `ask_knowledge_base` when the code is thin. Intent you can't find anywhere is the finding: ticket the gap. **Intent authority:** PR claims to change / retire / amend / supersede / correct a prior position → mine the body's `Origin Session ID`: the premise is intent-vs-diff, not claims-vs-diff, and semantic search misses silently (see the [correction-culture guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/correction-culture.md)).
-2. **Expected solution-shape** (1–3 sentences) — what *should* a correct change here look like? Explicitly include **"what boundary should this NOT hardcode?"** and **"what test-isolation should exist?"**, so the snapshot reaches the portability + test-isolation dimensions before the diff frames them away. Behavior-changing work starts from the beneficiary: what must they newly do, know or supply, and did the surface's product reader resolve a new obligation before implementation (`ticket-intake` §0)? On an FM surface, the journey step and the installed candidate are inputs.
+2. **Expected solution-shape** (1–3 sentences) — what *should* a correct change here look like? Explicitly include **"what boundary should this NOT hardcode?"** and **"what test-isolation should exist?"**, so the snapshot reaches the portability + test-isolation dimensions before the diff frames them away. A touched owner of instances, resources or effects is read with its creator and destructor, and its Neo shape belongs in this field ([core-idiom audit](../audits/core-idiom-audit.md) check 5). Behavior-changing work starts from the beneficiary: what must they newly do, know or supply, and did the surface's product reader resolve a new obligation before implementation (`ticket-intake` §0)? On an FM surface, the journey step and the installed candidate are inputs.
 3. **Patch-verdict** — does the diff **match / improve / contradict** the expected shape? Name the specific evidence that changed (or confirmed) your mind. "Matches" with no evidence is not a verdict.
 4. **Premise-coherence** — the value-coherence verdict, or a scoped "N/A — no value-surface".
 
@@ -24,7 +19,7 @@ Build — and write down — your premise of the change **before** reading the p
 ## 1. Core Philosophy
 - **For Internal Agents (Peer-Review):** Be objective, clinical, and strict. Enforce the "Fat Ticket" protocol and strict JSDoc completeness.
 - **For External/First-Time Contributors:** Start with positive reinforcement. Acknowledge their effort. Provide explicit, helpful examples when asking for changes. **Discharge it in the template's opening slot** — full form `Peer-Review Opening`, micro form `Opening` (`#97`).
-- **For Self-Review (same session):** Use first-person, introspective tone. The review is a structured reflection, not praise. Replace "you did X" with "I chose X because...". Focus on documenting *rationale*, *trade-offs*, and *gaps you are aware of* rather than scoring your own work favorably. Be harsher on self-scoring — actively hunt for blind spots. Self-review is a **fallback mode** for intent capture; it does NOT substitute for the cross-family requirement. See `pull-request §6.1` for the authoritative cross-family mandate.
+- **For Self-Review (same session):** first person, a structured reflection rather than praise: "I chose X because…", with the *rationale*, *trade-offs* and *known gaps*. Score yourself harder and hunt your blind spots. Self-review is a **fallback** for intent capture and never substitutes for cross-family review (`pull-request §6.1`).
 
 ## 2. Agent Operational Mandates: The Reflection Phase
 If you write a GitHub PR review, step out of Driver mode and follow this reviewer checklist:
@@ -34,7 +29,7 @@ If you write a GitHub PR review, step out of Driver mode and follow this reviewe
 2. **Exact-head evidence:** inspect source at exact `headRefOid`. Exact-head required CI is the default unit/integration evidence; run locally only for a named falsifier. Docs/template-only changes need no runtime evidence. Never score `[EXECUTION_QUALITY]` from static diff or author prose.
 3. **Self-review detection:** extract `Resolves #N`; query current-session Memory Core for `#N`. If you authored it this session, use first-person clinical self-review; otherwise standard peer-review.
 4. **Tech Debt Radar:** trigger `tech-debt-radar` for fundamental architecture shifts or `refactor(ai)` PRs.
-5. **Scope discipline:** polish minor misses inside the PR; ticket out-of-scope superior refactors instead of cramming them into the active close-target.
+5. **Scope discipline:** polish minor misses inside the PR. A wrong shape the patch introduces or deepens is this PR's Required Action. Verified inherited debt beyond a safe repair gets a real issue in this review, whatever the verdict: link the existing one or file it, with evidence and an owner. It never blocks the safe fix, and out of scope routes the debt rather than waiving it. An unverified suspicion stays tagged `hypothesis — needs V-B-A before implementation` and mints no ticket.
 6. **V-B-A:** falsify every factual/review claim before asserting it. Token presence is not meaning; use source reads for semantic claims.
 7. **Execution:** `manage_pr_review` is the sole fail-closed pre-submit budget gate. Direct `gh pr review` / UI is bypass-with-telemetry: run the meter and add `[review-budget-bypass] reason: ...`; post-submit lint cannot undo it.
 8. **Structure map:** before verdict, run `npm run ai:structure-map -- --files --loc` for PRs touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement; otherwise record N/A. Brain-hosted, so absent elsewhere — never add `--silent`, which hides npm's `Missing script` and leaves an empty exit-1 that reads as a pass.
@@ -73,8 +68,7 @@ Round 1 scores every metric explicitly in the full template. **Round 2 does not 
 The Round-1 scores stand as the PR's record. A metric only moves again on an exceptional verdict (Drop+Supersede), where the premise itself changed.
 
 ## 4. Graph Ingestion Tags
-To bridge the gap between human/agent code review and the internal Agent OS memory, you MUST use the following explicit markdown tags for any critical feedback.
-The Retrospective daemon explicitly regex-matches these tags during REM sleep:
+Critical feedback MUST carry these tags; the Retrospective daemon regex-matches them into Agent OS memory during REM sleep:
 
 *   **`[KB_GAP]`**: Use this to document missing concepts, misunderstandings of neo core logic, or areas where the developer (or agent) clearly lacked documentation.
 *   **`[TOOLING_GAP]`**: Use this to document failures in the development workflow, broken test commands, or MCP tools that failed during the generation of the PR.
@@ -92,7 +86,7 @@ Before review prose/tags, read the [reference-hygiene guide](https://github.com/
 *   **Zero-Issue PR Semantics:** If a PR has no required actions, replace the checkbox list with a single explicit sentence: *"No required actions — eligible for human merge."* (Note: this means eligibility, not an authorization for the reviewing agent to execute it). Do NOT pre-tick placeholder items (e.g., `- [x] All checks pass and no required changes identified.`) — that reads as box-checking rather than genuine review. Null state is its own form; don't dress it as action.
 
 ### 5.1 Suggesting Empirical Isolation Tests
-When challenging a specific architectural pattern or complex implementation detail as suspect (e.g., an unnecessary retry loop, an overly complex state sync), you should explicitly suggest the author perform an **Empirical Isolation Test**. Instead of engaging in a theoretical debate, ask the author to temporarily disable or strip the challenged pattern and run a binary isolation test to prove or disprove its necessity. This shifts the review from architectural argument to empirical verification.
+When you suspect a pattern (an unneeded retry loop, an over-complex state sync), ask for an **Empirical Isolation Test** instead of debating it: the author strips or disables the pattern and runs a binary test that proves or disproves its necessity.
 
 ### 5.2 Close-Target Audit
 
@@ -233,10 +227,6 @@ Rhetorical drift is stated framing diverging from substrate truth. It applies to
 
 Author options: tighten prose, expand implementation, or defend why the metaphor accurately bridges the implementation.
 
-#### Reviewer-Seeded Future Work
-
-Future-work suggestions, non-blocking observations, and follow-up ideas are review assertions. V-B-A the premise before planting them; otherwise tag them explicitly as `hypothesis — needs V-B-A before implementation`.
-
 ### 7.5 Test-Evidence & Location Audit
 
 10% AC/scope sanity layer unless execution disproves the diff. Verify claims and canonical test placement; green tests cannot override a wrong premise or owner.
@@ -251,7 +241,7 @@ Authors own existing non-CI coverage for touched surfaces. Reviewers validate re
 
 ### 7.5.1 Core-Idiom Audit
 
-Instance/reactive-state diffs (any dir): load `audits/core-idiom-audit.md`.
+Diffs that create, mutate, resolve or destroy Neo instances, manage reactive state, or touch a module owning instances, resources or effects (any dir): load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
 
 ### 7.5.2 Identity-Claim Audit
 
