@@ -27,9 +27,9 @@ views: swept <s> · needing love <m> · unassessed: <keys, or "none">
 
 **Reach and outbound** — <from the section · or: unknown (no seat-side source yet)>
 
-**Waits for the operator's word** — as of <time> · source: <the section · gh search (may lag) + per-candidate readiness read>
+**Waits for the operator's word** — as of <time> · source: <the section · gh search (may lag) + the merge-readiness projection per candidate>
 
-- <#N · repo · approved <date> · `ready for the operator` · or `approved · still owed: <review by @x | CI | a rebase>` · link>
+- <#N · repo · approved <date> · `ready for the operator` (projection: ready) · or `approved · not ready: <the projection's reasons>` · or `approved · readiness unverified: <missing input>` · link>
 - decisions outside pull requests: not covered by this read
 
 Remainder: <links>

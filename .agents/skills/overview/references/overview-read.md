@@ -73,15 +73,18 @@ here goes through the cloud producer):
   section's host-edge reader (Brain #957) or the outbound analytics (D#19500) exist.
 - **what waits for the operator's word.** Discovery first: open pull requests across the
   organization with an approving review (`gh search prs --owner neomjs --state open
-  --review approved`; the index may lag, say so). **Then readiness, per candidate**: read
-  `state`, the still-requested reviewers, the checks and mergeability (`gh pr view
-  <n> --json state,reviewRequests,statusCheckRollup,mergeable`). A candidate is
-  `ready for the operator` only with no reviewer still requested, checks green and the
-  PR mergeable; otherwise it prints `approved · still owed: <review by @x | CI | a
-  rebase>`. Where the Brain's readiness projection has issued a canonical
-  `[merge-eligible]` marker, that marker wins over this read. Decisions that are not
-  pull requests — a Discussion gate, a design approval, a cut — are **outside this read's
-  coverage**, and the block says so in one line.
+  --review approved`; the index may lag, say so). **Then readiness, per candidate, from
+  the source-owned projection only**: `get_conversation` with `projection:
+  'merge-readiness'` for the candidate (see the tool's description; it feeds the fetched
+  state, checks, still-requested reviewers, holds and the cross-family verdict to the
+  Brain's `validateMergeReady`). The projection's `verdict` is the only source of the
+  affirmative label: `ready for the operator` prints when the projection says ready and
+  never otherwise; a negative verdict prints `approved · not ready: <the projection's
+  reasons>`; an `unavailable` verdict prints `approved · readiness unverified` with the
+  missing input the projection names. This skill computes no readiness of its own: a
+  `gh pr view` of reviewers or checks may add detail beneath a line, never the label.
+  Decisions that are not pull requests — a Discussion gate, a design approval, a cut —
+  are **outside this read's coverage**, and the block says so in one line.
 
 ### 3a. Six cases the rules must survive (synthetic, labelled; not installed claims)
 
@@ -91,8 +94,10 @@ here goes through the cloud producer):
 | clean + defect | `memories · none observed` + `system · service cards clip` (both installed) | `swept 2 · needing love 1` — `system` |
 | missing / unreadable | no receipt for `tasks`; or #505 unreadable | `tasks: unassessed` · or every key `unassessed (reason)` — never 0 needing love |
 | scope collision | `system · clips` installed 10:00 · `system · none observed` source 11:00 | governing: the installed 10:00 line; beneath: `source 11:00 · none observed`; `needing love 1` |
-| approved, reviewer owed | approved by A, a review still requested of B | `approved · still owed: review by B` — not ready |
-| approved, CI red | approved, a check failing | `approved · still owed: CI` — not ready |
+| approved, reviewer owed | approved by A, a review still requested of B; projection: not ready (reviewRequests) | `approved · not ready: a review still requested of B` |
+| approved, CI red | approved, a check failing; projection: not ready (checks) | `approved · not ready: checks` |
+| approved, hold | OPEN · APPROVED · CLEAN · checks green · no reviewer requested · an active reviewer hold; projection: not ready (hold) | `approved · not ready: hold by <holder>` — the fields alone would have said ready; the projection governs |
+| projection unavailable | approved; the projection answers `unavailable` (an input not fetched) | `approved · readiness unverified: <missing input>` — never `ready` |
 
 ## 4. The screen
 
