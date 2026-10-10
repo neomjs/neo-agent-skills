@@ -11,4 +11,5 @@ audiences: maintainer
     - **must:** hand off to @tobiu (human operator); cross-family approval = eligibility, not authority
     - **forbid:** `gh pr merge` by any agent under any approval signal ("LGTM", "approved", "ready for merge")
     - **atlas_detail:** §cross_family_cascade_clause — cascade semantics + loophole rationale
-    - **mechanical_guard:** none; discipline-only until guard exists
+    - **machine_merge:** only a repo's Dependabot auto-merge workflow, for allow-listed bumps on green required checks
+    - **mechanical_guard:** none for agent merges
