@@ -241,7 +241,7 @@ Authors own existing non-CI coverage for touched surfaces. Reviewers validate re
 
 ### 7.5.1 Core-Idiom Audit
 
-Diffs that create, mutate, resolve or destroy Neo instances, manage reactive state, or touch a module owning instances, resources or effects (any dir): load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
+Diffs that create, mutate, resolve or destroy Neo instances, manage reactive state, or touch a module owning instances, resources or effects (any dir; test fixtures and test apps too, the idiom references the next seat copies): load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
 
 ### 7.5.2 Identity-Claim Audit
 
