@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 /** @summary Checks publication authority from merged PR receipts and the workflow boundaries that consume it. */
 
-import assert                         from 'node:assert/strict';
-import {readFileSync}                 from 'node:fs';
-import {isDependabot, releaseOrigin, run} from './release-origin.mjs';
+import assert                                             from 'node:assert/strict';
+import {spawnSync}                                        from 'node:child_process';
+import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {tmpdir}                                           from 'node:os';
+import {delimiter, join}                                  from 'node:path';
+import {fileURLToPath}                                    from 'node:url';
+import {isDependabot, releaseOrigin, run}                 from './release-origin.mjs';
 
 const sha = 'a'.repeat(40), repository = 'neomjs/neo-agent-skills',
       context = {sha, repository},
@@ -61,4 +65,50 @@ assert.match(corpus, /check-version-bump\.mjs --base "\$\{BASE_SHA\}" --event "\
 assert.match(corpus, /run: node scripts\/test-release-origin\.mjs/);
 assert.match(workflow, /run: npm test/, 'post-merge validation still runs for Dependabot');
 
-console.log('release-origin: author, exact merge provenance, failure and workflow boundaries passed');
+// The origin step's own run block, under bash with stub `gh` and `sleep` on PATH: GitHub links a merge commit to its
+// PR asynchronously, so the step must read again rather than skip a release whose receipt is a few seconds late.
+const originStep = (/- name: Classify the exact merged PR\n[\s\S]*?\n {8}run: \|\n((?: {10}.*\n)+)/.exec(workflow)?.[1] ?? '')
+    .replace(/^ {10}/gm, '');
+
+assert.ok(originStep.includes('release-origin.mjs'), 'the origin step\'s run block was found');
+
+const stubDir  = mkdtempSync(join(tmpdir(), 'release-origin-')),
+      repoRoot = fileURLToPath(new URL('..', import.meta.url)),
+      origin   = (emptyReads, author = receipt) => {
+          const output = join(stubDir, 'output'), calls = join(stubDir, 'calls');
+
+          writeFileSync(output, '');
+          writeFileSync(calls, '');
+
+          const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', originStep], {cwd: repoRoot, encoding: 'utf8', env: {
+              ...process.env,
+              PATH             : `${stubDir}${delimiter}${process.env.PATH}`,
+              GITHUB_OUTPUT    : output,
+              GITHUB_REPOSITORY: repository,
+              GITHUB_SHA       : sha,
+              STUB_CALLS       : calls,
+              STUB_EMPTY_READS : String(emptyReads),
+              STUB_RECEIPT     : JSON.stringify([[author]])
+          }});
+
+          return {code: result.status, output: readFileSync(output, 'utf8'), reads: readFileSync(calls, 'utf8').length}
+      };
+
+try {
+    writeFileSync(join(stubDir, 'gh.cjs'), `const fs = require('node:fs');
+fs.appendFileSync(process.env.STUB_CALLS, '.');
+const reads = fs.readFileSync(process.env.STUB_CALLS, 'utf8').length;
+process.stdout.write(reads > Number(process.env.STUB_EMPTY_READS) ? process.env.STUB_RECEIPT : '[[]]');
+`);
+    writeFileSync(join(stubDir, 'gh'), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/gh.cjs" "$@"\n`, {mode: 0o755});
+    writeFileSync(join(stubDir, 'sleep'), '#!/bin/sh\nexit 0\n', {mode: 0o755});
+
+    assert.deepEqual(origin(0), {code: 0, output: 'publish=true\n', reads: 1}, 'an indexed receipt publishes at once');
+    assert.deepEqual(origin(2), {code: 0, output: 'publish=true\n', reads: 3}, 'a receipt that appears on the third read still publishes');
+    assert.deepEqual(origin(Infinity), {code: 1, output: '', reads: 6}, 'a receipt that never appears fails closed after six reads');
+    assert.deepEqual(origin(1, bot), {code: 0, output: 'publish=false\n', reads: 2}, 'a late Dependabot receipt still grants no release')
+} finally {
+    rmSync(stubDir, {recursive: true, force: true})
+}
+
+console.log('release-origin: author, exact merge provenance, failure, workflow boundaries and the late-receipt retry passed');

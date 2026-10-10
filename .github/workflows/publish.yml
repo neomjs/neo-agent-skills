@@ -35,9 +35,18 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+        # GitHub links a merge commit to its PR asynchronously, so a run that starts seconds after the merge can
+        # read no receipt yet. Each failed read waits and asks again; the sixth failure fails closed.
         run: |
-          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" |
-            node scripts/release-origin.mjs --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2 3 4 5 6; do
+            if receipt=$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" |
+                node scripts/release-origin.mjs --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY"); then
+              echo "$receipt" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$attempt" -lt 6 ]; then sleep 10; fi
+          done
+          exit 1
 
   test:
     runs-on: ubuntu-latest
