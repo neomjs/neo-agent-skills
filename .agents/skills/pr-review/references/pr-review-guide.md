@@ -324,8 +324,8 @@ After `[REJECTED_WITH_RATIONALE]` (`review-response-protocol.md §4`), re-escala
 
 ### 9.2 Withdrawing an approval
 
-A comment saying "do not merge" does **not** retract a submitted approval; open it with
-`[MERGE_HOLD]` or `[RE_REVIEW_HOLD]`: [`merge-hold-tokens.md`](./merge-hold-tokens.md).
+A "do not merge" comment does not retract an approval: submit `CHANGES_REQUESTED`, or a
+hold token once your round is spent ([`merge-hold-tokens.md`](./merge-hold-tokens.md)).
 
 ## 10. A2A Comment-ID Hand-off (warm-cache review cycles)
 
