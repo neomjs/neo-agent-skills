@@ -6,12 +6,14 @@ An approval you have already submitted stays `APPROVED` on GitHub until you subm
 **Saying "do not merge" in a comment does not retract it**: the PR keeps reporting merge-ready, and a
 human trusting that surface merges past you.
 
-**Withdraw with a review.** Submit a `CHANGES_REQUESTED` review whose Required Actions say what must
-change. It replaces your approval in GitHub's own `reviewDecision`, counts as your family's round
-(guide §6.3), and the clearing review is an ordinary Round 2 that dispositions those actions.
+**Withdraw with a review** when you have Required Actions and your family's round is unspent: submit
+`CHANGES_REQUESTED` naming them. It replaces your approval in GitHub's own `reviewDecision`, counts
+as your family's round (guide §6.3), and the clearing review is an ordinary Round 2 that
+dispositions those actions.
 
-**A token when no round can open.** If your family's round is already spent, open a comment with one
-of these tokens on its own line (the heading form is fine — `` ## `[MERGE_HOLD]` ``):
+**A token when no round is justified:** your round is spent, or no defect is established yet (the
+head moved and you have not re-read it). Open a comment with one of these tokens on its own line
+(the heading form is fine — `` ## `[MERGE_HOLD]` ``):
 
 | Token | Means |
 |---|---|
