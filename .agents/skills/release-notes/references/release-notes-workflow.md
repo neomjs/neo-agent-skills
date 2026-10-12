@@ -80,11 +80,11 @@ The authoring surface is **`.github/RELEASE_NOTES/v{version}.md`** in the engine
 
 1. **Pre-flight requires it** (`publish.mjs` §1): the release ERRORS if the file is absent. The version comes from `package.json` (bumped manually before the cut).
 2. The file is **committed and iterated on dev** ahead of the cut (§1) — the v13.0 lineage precedent, formalized.
-3. At cut time publish.mjs appends the **atomic-changelog-hash line** (post squash-to-main), parses the file — frontmatter stripped, first H1 extracted as the release title — and runs `gh release create` (cascades to npm).
+3. `publish.mjs finish` releases the merged note (frontmatter stripped, first H1 = title) with the **atomic-changelog-hash line** in the release body, via `gh release create` on the merge commit (cascades to npm).
 4. **publish.mjs keeps the file**: the authored note is the archive, and nothing re-materializes it. The SECOND runbook command, `npm run ai:post-release-sync` (fail-closed preflight; publish prints it), uploads the Knowledge Base and writes nothing into the engine. The corpus picks the release up from GitHub Releases.
 5. **Its guards:** `PublishReleaseNoteOrphan.spec.mjs` pins the authored path, the kept file and the flat layout; the release-note link scan in `Generate.spec.mjs` refuses mutable GitHub links.
 6. Known observation (epic-tracked): `buildScripts/docs/index/release.mjs` scans flat files recursively, so a committed staging note surfaces its version in `releases.json` when the docs index regenerates pre-cut.
-7. **The cut itself is human-only** (`§critical_gates`): agents prepare (notes, `prepare.mjs` validation, checklist) and hand off; `publish.mjs` execution and the dev→main release line belong to the operator.
+7. **The cut's one human step is merging the release PR** (`§critical_gates`): agents run `publish.mjs prepare --ticket <prep leaf> --body-file <body>` to open it, then `finish`. Re-runs resume; the cut record stays open until npm and the Portal verify.
 
 ## §7 Cut-readiness checklist — `MACHINE-ENFORCEABLE-CANDIDATE`
 
@@ -95,7 +95,7 @@ The notes epic's final iteration passes when:
 - [ ] Scope numbers regenerated at the cut boundary (§2 re-run) and reconciled in-document
 - [ ] Every claim anchor-verified (§4); the numbers-verify sweep (the `#14327` class, "sequence LAST") has run against the final text
 - [ ] The staging note is `.github/RELEASE_NOTES/v{version}.md`, matching `package.json`'s bump
-- [ ] The operator publish-handoff comment is posted on the cut-mechanics leaf (checklist + explicit "publish is yours")
+- [ ] `publish.mjs prepare --rehearse --ticket <prep leaf> --body-file <body>` passes
 
 ## Lifecycle position
 
