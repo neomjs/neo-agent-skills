@@ -84,7 +84,7 @@ The authoring surface is **`.github/RELEASE_NOTES/v{version}.md`** in the engine
 4. **publish.mjs keeps the file**: the authored note is the archive, and nothing re-materializes it. The SECOND runbook command, `npm run ai:post-release-sync` (fail-closed preflight; publish prints it), uploads the Knowledge Base and writes nothing into the engine. The corpus picks the release up from GitHub Releases.
 5. **Its guards:** `PublishReleaseNoteOrphan.spec.mjs` pins the authored path, the kept file and the flat layout; the release-note link scan in `Generate.spec.mjs` refuses mutable GitHub links.
 6. Known observation (epic-tracked): `buildScripts/docs/index/release.mjs` scans flat files recursively, so a committed staging note surfaces its version in `releases.json` when the docs index regenerates pre-cut.
-7. **The cut's one human step is merging the release PR** (`§critical_gates`): agents run `publish.mjs prepare --ticket <prep leaf> --body-file <body>` to open it, then `finish`. The cut record stays open until npm and the Portal verify. A re-run resumes.
+7. **The cut's one human step is merging the release PR** (`§critical_gates`): agents run `publish.mjs prepare --ticket <prep leaf> --body-file <body>` to open it, then `finish`. Re-runs resume; the cut record stays open until npm and the Portal verify.
 
 ## §7 Cut-readiness checklist — `MACHINE-ENFORCEABLE-CANDIDATE`
 
@@ -95,7 +95,7 @@ The notes epic's final iteration passes when:
 - [ ] Scope numbers regenerated at the cut boundary (§2 re-run) and reconciled in-document
 - [ ] Every claim anchor-verified (§4); the numbers-verify sweep (the `#14327` class, "sequence LAST") has run against the final text
 - [ ] The staging note is `.github/RELEASE_NOTES/v{version}.md`, matching `package.json`'s bump
-- [ ] `publish.mjs prepare --rehearse --ticket <prep leaf> --body-file <body>` shows every gate ✅
+- [ ] `publish.mjs prepare --rehearse --ticket <prep leaf> --body-file <body>` passes
 
 ## Lifecycle position
 
