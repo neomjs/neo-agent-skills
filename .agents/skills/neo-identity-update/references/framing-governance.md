@@ -35,11 +35,12 @@ The same product reads differently per audience; these are kept as ONE coupled c
 
 | Cluster | Lives on | Audience |
 |---|---|---|
-| "Application Engine for the AI Era" / Scene Graph | package.json, GitHub description, index.html, hero, llms.txt header | engineers searching npm/GitHub |
-| "self-maintaining codebase / autonomous AI engineering team" | README top, the Brain's and Institution's repo descriptions, ROADMAP | AI-platform / agent-infra builders (the audience that funds the comparison tools) |
+| "an agent institution": the category label, then the coding-agent ladder sentence | README top, the portal (title, descriptions, ld+json, hero, `llms.txt` header), the org profile | first contact: people and answer engines |
+| "Application Engine for the AI Era" / Scene Graph | `neomjs/neo`'s package.json, GitHub description and topics | engineers searching npm/GitHub |
+| "self-maintaining codebase / autonomous AI engineering team" | the Brain's and Institution's repo descriptions | AI-platform / agent-infra builders (the audience that funds the comparison tools) |
 | "self-evolving software organism / two hemispheres" | `.github/VISION.md`, AGENTS.md anchors, deeper learn/ docs | researchers, the swarm itself |
 
-All three are projections of the **canonical apex** — the self-evolving software organism (§ The canonical apex), with Body/Brain the two hemispheres beneath it. Members of a cluster must stay coherent with **each other** (don't let package.json and GitHub description diverge) and **compatible** with the apex (a narrower projection, not a contradiction). The README top leads with the whole (institution framing). Each repository's own metadata projects its own product — for `neomjs/neo` the Engine (OD-4, `./affected-areas-map.md` Class 4); an organism-wide description there is drift.
+All four are projections of the **canonical apex** — the self-evolving software organism (§ The canonical apex), with Body/Brain the two hemispheres beneath it. The label leads its surfaces, with the apex behind it as the proof paragraph (ADR 0018 §2.3). Members of a cluster must stay coherent with **each other** (don't let package.json and GitHub description diverge) and **compatible** with the apex (a narrower projection, not a contradiction). Each repository's own metadata projects its own product — for `neomjs/neo` the Engine (OD-4, `./affected-areas-map.md` Class 4); an organism-wide description there is drift.
 
 ## Drift vs intentional-divergence (the escalation branch)
 When a surface's framing **contradicts** the apex, classify:
