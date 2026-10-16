@@ -15,9 +15,10 @@ Concise machine-surface form (ld+json / `<meta name="description">` / package.js
 
 **Dated proof point** (NOT inline in the apex — proof layer only; use a FIXED calendar anchor, not a rolling window): **in May 2026 the canonical repo recorded 706 merged PRs and 800 closed issues** (GitHub search, verified 2026-05-31). NEVER write "peer-reviewed" counts (search verifies *merged*, not review-state) or a month-over-month ratio / "accelerating" claim (date-stamps the identity; the April→May delta was mis-stated as ~3×) without a precise metric spec + audit — per @neo-gpt V-B-A `dc-17119216`/`dc-17119231` + operator flag.
 
-Structure beneath the apex:
-> - **BODY (`/src/`):** the high-performance off-main-thread UI runtime — JSON-first since 2019, App Worker as the main actor, web multi-window. The adoption substrate. (Engine-category mental models apply *here only*.)
-> - **BRAIN (`/ai/`):** the entire Agent OS — the cross-family engineering institution **plus** the MX loop, evolution, swarm, Memory Core (**Active Hybrid GraphRAG**: `mutate_frontier` + `GoldenPathSynthesizer` fusing semantic + structural weights to re-steer priorities), Knowledge Base, A2A, orchestrator, DreamService. ≈41% of the codebase. **This is the headline.**
+Structure beneath the apex — three repositories, three products (ADR 0018 §2.7 OD-4, which supersedes OD-1's single-repository `BRAIN (/ai/)` line):
+> - **Body — `neomjs/neo`, the Engine:** the high-performance off-main-thread UI runtime — JSON-first since 2019, App Worker as the main actor, web multi-window. The adoption substrate. (Engine-category mental models apply *here only*.)
+> - **Brain — `neomjs/neo-agent-brain`, the Agent OS:** Memory Core (**Active Hybrid GraphRAG**: `mutate_frontier` + `GoldenPathSynthesizer`), Knowledge Base, A2A, orchestrator, DreamService, the MX loop. It gives agents continuity and runs without the Fleet Manager.
+> - **Institution — `neomjs/neo-agent-institution`, the Fleet Manager:** makes Neo accessible; it starts the agent harnesses over the Brain's Fleet transport.
 > - **Neural Link is a flagship capability, NOT the apex and NOT a "demo"** — small in code (~2%, 1 of 7 MCP servers), large in product value: end-user **conversational UIs** (mutate a live app with no code change and no page reload) + **multi-agent, multi-harness collaboration on the same running app** (#10119). Never *lead* with it.
 > - **Governance line** (founder-architect authority, NOT a slop-filter): *Gated-RSI by design — the swarm can run the lifecycle autonomously; final merge authority remains with the founder-architect as an intentional governance choice, preserving product taste, strategic coherence, and accountable ownership while the organism evolves in public.*
 
@@ -35,10 +36,10 @@ The same product reads differently per audience; these are kept as ONE coupled c
 | Cluster | Lives on | Audience |
 |---|---|---|
 | "Application Engine for the AI Era" / Scene Graph | package.json, GitHub description, index.html, hero, llms.txt header | engineers searching npm/GitHub |
-| "self-maintaining codebase / autonomous AI engineering team" | README top, repo description, ROADMAP | AI-platform / agent-infra builders (the audience that funds the comparison tools) |
+| "self-maintaining codebase / autonomous AI engineering team" | README top, the Brain's and Institution's repo descriptions, ROADMAP | AI-platform / agent-infra builders (the audience that funds the comparison tools) |
 | "self-evolving software organism / two hemispheres" | `.github/VISION.md`, AGENTS.md anchors, deeper learn/ docs | researchers, the swarm itself |
 
-All three are projections of the **canonical apex** — the self-evolving software organism (§ The canonical apex), with Body/Brain the two hemispheres beneath it. Members of a cluster must stay coherent with **each other** (don't let package.json and GitHub description diverge) and **compatible** with the apex (a narrower projection, not a contradiction). Note the audience shift the audit flagged: the README top + repo metadata should lead the AI-platform-builder cluster (institution framing), not the npm-engineer cluster — that is the §undersell re-categorization the skill propagates.
+All three are projections of the **canonical apex** — the self-evolving software organism (§ The canonical apex), with Body/Brain the two hemispheres beneath it. Members of a cluster must stay coherent with **each other** (don't let package.json and GitHub description diverge) and **compatible** with the apex (a narrower projection, not a contradiction). Per OD-4 the README top leads with the whole (the AI-platform-builder cluster, institution framing), while `neomjs/neo`'s own machine surfaces (`package.json`, GitHub description and topics) project the Engine, and every other repository projects its own product (`./affected-areas-map.md` Class 4). Putting the organism-wide description on `neomjs/neo` is drift.
 
 ## Drift vs intentional-divergence (the escalation branch)
 When a surface's framing **contradicts** the apex, classify:
@@ -54,6 +55,7 @@ Identity copy attracts superlatives. Gate every one:
 |---|---|
 | Unbounded superlative ("fastest", "best on the market") | **Drop it** or convert to a *sufficiency* form tied to a concrete number (e.g. "fast enough to host its own AI engineering team" + the 40k figure). No "well-actually" surface. |
 | Uniqueness / negative ("the only X", "first X") | Uncheckable as bare assertion. Hedge: "pioneered / still virtually alone in / we know of no other" unless a dated competitive sweep backs it. The *architecture* may be verified even when market-uniqueness isn't. |
+| A later stage of the arc (games, robots, "X") | Only with its gate and instrument beside it (OD-5, `neomjs/neo` D#19789); a present-tense later-stage claim is drift (first falsifier: `neomjs/neo` `README.md:116`). |
 | Numbers (version, count, 40k/sec, velocity) | Regenerate from SSOT (`./facts-ledger.md`). Publish counts as dated-window stats. Never paste a frozen number into framing prose. |
 | Anthropomorphic ("agents think / read thoughts") | Attribute to mechanism — "persisted, queryable reasoning surfaces (Memory Core)" — not sentience. |
 | Client/partner/customer names | **Forbidden** on every surface. Cloud/multi-tenant = generic capability terms only. |
