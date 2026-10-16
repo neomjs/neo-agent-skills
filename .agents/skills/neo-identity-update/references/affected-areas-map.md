@@ -38,7 +38,7 @@ Changed via gh/web, invisible to grep.
 
 | Surface | How to read/edit | Identity encoded |
 |---|---|---|
-| Description + topics: `neo`, `neo-agent-brain`, `neo-agent-institution`, `neo-agent-skills`, `devindex`, the org | `gh repo view neomjs/<repo> --json description,repositoryTopics`; `gh repo edit` | Each projects its own OD-4 product (`neo` = the Engine); log before/after in the PR body |
+| Description + topics: `neo`, `neo-agent-brain`, `neo-agent-institution`, `neo-agent-skills`, `devindex`, the org | `gh repo view neomjs/<repo> --json description,repositoryTopics`; `gh repo edit` | Each repository projects its own product (`neo` = the Engine, OD-4), the org the whole; log before/after in the PR body |
 | npm registry page | derives from `package.json` on publish | npm tagline + keywords |
 | Discord / Slack / LinkedIn / Sponsors | external dashboards | Community/author identity |
 
