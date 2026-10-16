@@ -7,7 +7,7 @@ Markdown a human edits directly. Failure mode: generations drift apart (one doc 
 
 | Surface | What identity it encodes |
 |---|---|
-| `README.md` | Should LEAD with the canonical apex (self-evolving software organism — Body `/src/` + Brain `/ai/` the two hemispheres beneath it; ADR 0018 §2.7 OD-1); "Who This Is For"; Platform-at-Scale metrics; maintainer roster. Verify apex currency each run — status claims rot; the requirement doesn't. |
+| `README.md` | Should LEAD with the canonical apex (ADR 0018 §2.7 OD-1) and present the whole: Body, Brain and Institution as their own repositories (OD-4); "Who This Is For"; Platform-at-Scale metrics; maintainer roster. Verify apex currency each run — status claims rot; the requirement doesn't. |
 | `.github/VISION.md` | Long-form vision; **known fossil-prone** (carried "web applications" + CEO/PM/Drone hierarchy contradicting Flat Peer-Team) |
 | `ROADMAP.md` | Forward positioning; "Corporate HQ" framing; skill/velocity counts |
 | `CONTRIBUTING.md`, `.github/GETTING_STARTED.md`, `.github/AI_QUICK_START.md` | Contributor-facing identity; MCP-server count; Node requirement |
@@ -38,7 +38,7 @@ Changed via gh/web, invisible to grep.
 
 | Surface | How to read/edit | Identity encoded |
 |---|---|---|
-| GitHub repo description + topics | `gh repo view neomjs/neo --json description,repositoryTopics`; `gh repo edit` | Repo-page tagline + discovery topics (should mirror package.json) |
+| Description + topics: `neo`, `neo-agent-brain`, `neo-agent-institution`, `neo-agent-skills`, `devindex`, the org | `gh repo view neomjs/<repo> --json description,repositoryTopics`; `gh repo edit` | Each repository projects its own product (`neo` = the Engine, OD-4), the org the whole; log before/after in the PR body |
 | npm registry page | derives from `package.json` on publish | npm tagline + keywords |
 | Discord / Slack / LinkedIn / Sponsors | external dashboards | Community/author identity |
 
