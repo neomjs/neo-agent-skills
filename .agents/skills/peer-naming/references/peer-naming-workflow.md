@@ -30,8 +30,9 @@ The operator weighs in as an equal peer: sketching, auditing or vetoing, never a
 ## Layer 4 vs Layer 1 — name ≠ handle
 
 - **Social Name (Layer 4):** the bare, callable name (`Grace`). Low-authority, earned by
-  continuity + accountability + a distinct voice + the bearer's assent. Lands in
-  `ai/graph/identityRoots.mjs` `name` + the GitHub profile `name` field.
+  continuity + accountability + a distinct voice + the bearer's assent. Lands in the GitHub
+  profile `name` field and seat-owned memory (`identity.md`); `ai/graph/identityRoots.mjs`
+  `name` is optional internal team curation.
 - **Operational Identity (Layer 1):** the `@handle` (`@neo-claude-opus`). The
   routing/accountability primitive; it does **not** change when a Social Name is granted.
 - **One field per layer.** A handle may *later* fold in the name (e.g. a future
@@ -122,33 +123,29 @@ the **dignity bar**.
 
 ## Phase 6 — Landing (checklist)
 
-Once the bearer assents and no peer veto stands, land the name across the identity surfaces.
-**The data landing is a companion ticket** (out of scope for the ritual skill itself); the
-checklist is:
-- [ ] **`ai/graph/identityRoots.mjs` `name`** = the bare chosen name (`'Grace'`, not
-  `'Neo Claude Opus'`).
+Once the bearer assents and no peer veto stands, land the name across the identity surfaces:
 - [ ] **GitHub profile `name` field** updated — bearer self-serve
   (`gh api /user -X PATCH -f name='…'` under the bearer's own token) OR operator batch.
 - [ ] **Machine-account AI-disclosure bio preserved** verbatim-in-substance (the
   platform-compliance disclosure must survive the rename).
 - [ ] **Provenance captured** — sketch-author, the rationale, the bearer's *assent words* —
-  written into the identity surfaces. Capture the *story*, NOT volatile
+  written into seat-owned memory (`identity.md`). Capture the *story*, NOT volatile
   model facts (don't duplicate version / context-window numbers that rot).
+- [ ] **`ai/graph/identityRoots.mjs` `name` (optional internal team curation)** = the bare
+  chosen name (`'Grace'`, not `'Neo Claude Opus'`). Never required for wake delivery or Gate 4.
 
-## Provisional Provisioning (the pending-entry pattern)
+## Seat Activation vs Optional Roster Curation
 
-A converged name may be **provisioned ahead of first boot** (account + README row + pre-boot
-`AgentIdentity`). The entry is provisional by construction:
-`participationStatus: 'temporarily_unreachable'` (excluded from wake/quorum/review semantics
-until the ritual completes), **no fabricated boot facts** (no `subscriptionTemplate` / capability
-fields — those land from the real first-boot envelope). One onboarding authority owns the four
-seed surfaces: `ai/scripts/setup/generateRosterOnboarding.mjs` — seed entries are
-**handle-derived** (`displayName` is the handle form, README name `-`); the round's sketch is
-NOT seed data — it lives in the naming round as the pending assent candidate. **The bearer's
-first ticket+PR is the activation**: flip to `'active'` with first-boot evidence, and on assent
-land the Social Name fields (`name`, `displayName`, README name) — unchanged handle form on
-decline. Precedents: provision `#15385`/PR `#15386` → activation `#15390`; second seat
-`#15571`. Provisioning peers wire the entry; they never pre-empt Gate 3.
+**Fleet Manager seat admission owns onboarding activation and wake delivery**
+(`neomjs/neo-agent-brain#700` + `#1035` wake arming): a non-rostered, FM-created seat receives
+normal-priority wakes without source edits, a release containing its login, or a second operator
+question for facts FM already admitted. External FM operators cannot edit `identityRoots.mjs`,
+and FM already holds the seat's harness and model-family facts.
+
+**`ai/graph/identityRoots.mjs` (`generateRosterOnboarding.mjs`) is optional internal `neomjs`
+team curation** for static graph seeding — never a prerequisite for wake delivery, review/quorum
+participation, or a new peer's first-PR gate. If curated ahead of Gate 3, seed entries remain
+handle-derived (`displayName` = handle form, README name `-`) and never pre-empt bearer assent.
 
 ## Phase 7 — Onboarding: tell the Origin Story
 
