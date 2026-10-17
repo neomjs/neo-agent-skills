@@ -143,9 +143,10 @@ question for facts FM already admitted. External FM operators cannot edit `ident
 and FM already holds the seat's harness and model-family facts.
 
 **`ai/graph/identityRoots.mjs` (`generateRosterOnboarding.mjs`) is optional internal `neomjs`
-team curation** for static graph seeding — never a prerequisite for wake delivery, review/quorum
-participation, or a new peer's first-PR gate. If curated ahead of Gate 3, seed entries remain
-handle-derived (`displayName` = handle form, README name `-`) and never pre-empt bearer assent.
+team curation** for static graph seeding — never a prerequisite for wake delivery or a new
+peer's first-PR gate. If curated ahead of Gate 3, seed entries remain handle-derived
+(`displayName` = handle form, README name `-`) and never pre-empt bearer assent or fabricate
+boot facts (`subscriptionTemplate` / capability fields).
 
 ## Phase 7 — Onboarding: tell the Origin Story
 
