@@ -83,5 +83,5 @@ npm run test-unit -- test/playwright/unit/path/to/your.spec.mjs --debug
 ## 7. Directory Conventions
 
 - **Canonical Unit Tests**: `test/playwright/unit/`
-- **Right-Hemisphere Tests (Backend/Node.js)**: Tests affecting the "right hemisphere" (e.g., buildScripts, AI) belong under `test/playwright/unit/ai/` or `test/playwright/unit/ai/buildScripts/`. Do NOT place them inside the frontend source-mirror (e.g., `test/playwright/unit/<package>/`). This aligns with the architecture defined in the Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) § Two Hemispheres.
+- **Right-Hemisphere Tests (Backend/Node.js)**: Mirror the subject's path under `test/playwright/unit/`: `buildScripts/**` → `test/playwright/unit/buildScripts/**`, `ai/**` → `test/playwright/unit/ai/**` (`c623b2f63c` swept 804 `unit/ai/**` specs, 27 Engine-owned). Do NOT use the frontend mirror (`test/playwright/unit/<package>/`), per [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md).
 - **MCP Server Unit Tests**: You **MUST** place MCP tests in `test/playwright/unit/ai/mcp/server/`. Do NOT use the deprecated/grandfathered `test/playwright/mcp/` tree for new tests.
