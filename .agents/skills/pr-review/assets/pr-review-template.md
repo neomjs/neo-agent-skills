@@ -83,16 +83,14 @@ Verify symmetry between stated framing and mechanical implementation:
 
 ### 🧱 Conciseness Rule — Collapsed-N/A Audits
 
-When 2+ expanded audit dimensions below evaluate **N/A** for the PR scope (e.g., test-reliability fix, docs-only change, micro-refactor), collapse them under a single section using the explicit canonical-anchor format:
+When 2+ expanded audit dimensions below evaluate **N/A** for the PR scope, collapse only the N/A emoji subset (space-separated, single-space-emdash after `Audits`):
 
 ```
 ### N/A Audits — 📑 🪜 📡 🔗 🧪
-N/A across listed dimensions: <one-line reason for the PR-scope justification>.
+N/A across listed dimensions: <one-line PR-scope justification>.
 ```
 
-(Substitute only the emoji subset that's actually N/A. Use spaces between emojis, single-space-emdash separator after `Audits`.)
-
-**Mixing rule (CRITICAL)**: substantive audit sections — any non-N/A finding — MUST be expanded individually under their canonical header. Never collapse a dimension with actual findings. Mixing collapsed-N/A-block with substantive-expanded-sections is the substrate-correct shape for non-trivial-scope PRs that have ONE substantive audit dimension + many N/A dimensions.
+**Mixing rule (CRITICAL)**: expand any non-N/A audit dimension individually under its canonical header; never collapse a dimension with actual findings.
 
 ---
 
@@ -188,10 +186,11 @@ Expand these audits only when their trigger fires; otherwise omit them rather th
 *(Required per guide §7.5. Current-head CI is the default unit/integration evidence; reviewers run tests only as named falsifiers.)*
 
 - [ ] Execution evidence: exact-head required CI [green at `<SHA>` / N/A — docs-template] + author per-surface non-CI receipt [present and current-head-appropriate / obvious omission flagged / N/A — docs-template]
+- [ ] AC-table cross-read: each `## AC Evidence` row survives the body's own `## Test Evidence` and `## Post-Merge Validation` sections (no `CI-covered` row contradicted by `Outside-CI` / an unrun job; no blocking pre-merge gate filed as post-merge follow-up)
 - [ ] Reviewer falsifier: [N/A — no named behavioral concern / command + named concern + result]
 - [ ] Test location: [pass for added/moved tests / N/A]
 
-**Findings:** [Pass / author evidence gap / falsifier failed / incorrect test placement]
+**Findings:** [Pass / author evidence gap / AC-table contradiction flagged / falsifier failed / incorrect test placement]
 
 ---
 
