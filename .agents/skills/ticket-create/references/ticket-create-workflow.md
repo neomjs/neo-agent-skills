@@ -148,7 +148,7 @@ Skeleton tickets are forbidden — so are world atlases: sections complete, each
 - **Out of Scope** — what this ticket deliberately does NOT do.
 - **Avoided Traps** / **Gold Standards Rejected** *(when applicable)* — alternatives considered and rejected with rationale (especially generic LLM/React patterns that fail in Neo.mjs's multi-threaded architecture).
 - **Related** — sibling tickets, superseded tickets, dependencies, PRs.
-- **Origin Session ID** — `Origin Session ID: <uuid>` on its own line near the end of the body.
+- **Origin Session ID** — `Origin Session ID: <uuid>` on its own line near the end of the body; optional but highly recommended for genuinely single-session tickets.
 - **Handoff Retrieval Hints** — Semantic query patterns (`query_raw_memories`, `query_summaries`) or exact commit-range anchors (**REQUIRED** for architecturally substantive or multi-session tickets; e.g. `Retrieval Hint: "cross-harness MCP singleton cache divergence"`).
 
 ### 5.1 Reference Hygiene: Backtick-Escape for Descriptive `#N`
