@@ -12,10 +12,12 @@
  * Run: `node scripts/test-reusable-pr-baseline.mjs`
  */
 
-import assert          from 'node:assert/strict';
-import {readFileSync}  from 'node:fs';
-import {dirname, join} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import assert            from 'node:assert/strict';
+import {spawnSync}       from 'node:child_process';
+import {readFileSync}    from 'node:fs';
+import {dirname, join}   from 'node:path';
+import {fileURLToPath}   from 'node:url';
+import {runInNewContext} from 'node:vm';
 
 const
     here         = dirname(fileURLToPath(import.meta.url)),
@@ -23,6 +25,35 @@ const
     workflowPath = join(root, '.github', 'workflows', 'reusable-pr-baseline.yml');
 
 let mutationCount = 0;
+
+/** @summary Executes the inline Node script from `pr-base` against a synthetic `process.env`. */
+function runPrBaseScript(script, env) {
+    const out = [], err = [];
+    let status = 0;
+
+    try {
+        runInNewContext(script, {
+            console: {
+                log  : (...args) => out.push(args.join(' ')),
+                error: (...args) => err.push(args.join(' '))
+            },
+            process: {
+                env,
+                exit: code => {
+                    status = code ?? 0;
+                    throw {__prBaseExit: true};
+                }
+            }
+        });
+    } catch (error) {
+        if (!error?.__prBaseExit) {
+            status = 2;
+            err.push(String(error?.message || error));
+        }
+    }
+
+    return {status, stdout: out.join('\n'), stderr: err.join('\n')}
+}
 
 /** @summary Isolates one top-level job so a sibling cannot satisfy its contract. */
 function jobSource(source, jobId) {
@@ -80,9 +111,15 @@ export function validateReusablePrBaseline(source) {
               ['Skills stable name', /^    name: Skills materialized\n/m],
               ['archaeology job id', /^  source-comment-archaeology:\n/m],
               ['archaeology stable name', /^    name: Source comment archaeology\n/m],
-              ['required_base default', /^      required_base:\n[\s\S]*?^        default: dev\n/m],
-              ['PR-base non-PR refusal', /github\.event_name != 'pull_request'/, prBaseJob],
-              ['base mismatch refusal', /github\.event\.pull_request\.base\.ref != inputs\.required_base/, prBaseJob],
+              ['required_base default', /^      required_base:\n(?:        .*\n)*?        default: dev\n/m],
+              ['release_base default', /^      release_base:\n(?:        .*\n)*?        default: main\n/m],
+              ['release_actors default', /^      release_actors:\n(?:        .*\n)*?        default: '\[\]'\n/m],
+              ['PR-base event env', /^\s*EVENT_NAME: \$\{\{ github\.event_name \}\}\s*$/m, prBaseJob],
+              ['PR-base actual base env', /^\s*ACTUAL_BASE: \$\{\{ github\.event\.pull_request\.base\.ref \}\}\s*$/m, prBaseJob],
+              ['PR-base authenticated author env', /^\s*PR_AUTHOR: \$\{\{ github\.event\.pull_request\.user\.login \}\}\s*$/m, prBaseJob],
+              ['PR-base required_base env', /^\s*REQUIRED_BASE: \$\{\{ inputs\.required_base \}\}\s*$/m, prBaseJob],
+              ['PR-base release_base env', /^\s*RELEASE_BASE: \$\{\{ inputs\.release_base \}\}\s*$/m, prBaseJob],
+              ['PR-base release_actors env', /^\s*RELEASE_ACTORS: \$\{\{ inputs\.release_actors \}\}\s*$/m, prBaseJob],
               // `@v\d+` and not a bare `checkout`: the contract is that the job checks out the
               // caller, so it must survive a major bump — but a version-free match would also
               // accept a commented-out line or another action whose name contains the word.
@@ -328,6 +365,81 @@ if (/uses: actions\/checkout/.test(prBodyJob)) failures.push('PR-body job checks
 // corrected body can never go green and an edited one keeps a stale green.
 if (/context\.payload\.pull_request\.body/.test(prBodyCode)) failures.push('PR-body read from the event snapshot');
 
+    if (/uses:\s*actions\/checkout/.test(prBaseJob)) failures.push('PR-base job checks out the caller tree');
+    if (/github\.rest\.|pulls\.update|issues\.createComment|\bgh\s+pr\b/.test(prBaseJob)) {
+        failures.push('PR-base job mutates pull-request state')
+    }
+    if (/github\.actor/.test(prBaseJob)) failures.push('PR-base reads github.actor');
+
+    const prBaseRun    = prBaseJob.match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '',
+          prBaseScript = prBaseRun.match(/          node - <<'EOF'\n([\s\S]*?)\n          EOF\n/)?.[1] || '';
+
+    if (/\$\{\{/.test(prBaseRun)) failures.push('PR-base interpolates expressions into run:');
+
+    if (!prBaseScript) {
+        failures.push('missing PR-base decision script')
+    } else {
+        const baseEnv    = {
+                  EVENT_NAME    : 'pull_request',
+                  ACTUAL_BASE   : 'dev',
+                  PR_AUTHOR     : 'neo-gemini-maryam',
+                  REQUIRED_BASE : 'dev',
+                  RELEASE_BASE  : 'main',
+                  RELEASE_ACTORS: '[]'
+              },
+              runBase    = overrides => runPrBaseScript(prBaseScript, {...baseEnv, ...overrides}),
+              hasBounded = result => result.status === 1 &&
+                  Boolean(result.stderr.trim()) &&
+                  !result.stderr.includes('\n') &&
+                  result.stderr.length <= 240;
+
+        if (runBase({}).status !== 0) {
+            failures.push('PR-base rejects ordinary required_base PR')
+        }
+        if (runBase({ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_ACTORS: '["tobiu"]'}).status !== 0) {
+            failures.push('PR-base rejects authorized release_base PR')
+        }
+        if ([
+            {EVENT_NAME: 'workflow_dispatch'},
+            {ACTUAL_BASE: ''},
+            {PR_AUTHOR: ''},
+            {REQUIRED_BASE: ''}
+        ].some(overrides => !hasBounded(runBase(overrides)))) {
+            failures.push('missing PR-base non-PR refusal')
+        }
+        if (!hasBounded(runBase({ACTUAL_BASE: 'feature/x', PR_AUTHOR: 'tobiu', RELEASE_ACTORS: '["tobiu"]'}))) {
+            failures.push('missing base mismatch refusal')
+        }
+        if ([
+            {ACTUAL_BASE: 'main', PR_AUTHOR: 'neo-gemini-maryam', RELEASE_ACTORS: '["tobiu"]'},
+            {ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_ACTORS: '[]'}
+        ].some(overrides => !hasBounded(runBase(overrides)))) {
+            failures.push('PR-base admits unauthorized release actor')
+        }
+        if ([
+            {RELEASE_ACTORS: 'tobiu'},
+            {RELEASE_ACTORS: '{"tobiu":true}'},
+            {RELEASE_ACTORS: '"tobiu"'},
+            {RELEASE_ACTORS: 'null'}
+        ].some(overrides => !hasBounded(runBase(overrides)))) {
+            failures.push('PR-base accepts invalid release_actors JSON or non-array')
+        }
+        if ([
+            {RELEASE_ACTORS: '[123]'},
+            {RELEASE_ACTORS: '[""]'},
+            {ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_ACTORS: '[" tobiu "]'},
+            {ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_ACTORS: '["tobiu,neo-gpt"]'}
+        ].some(overrides => !hasBounded(runBase(overrides)))) {
+            failures.push('PR-base accepts non-string or empty release_actors entry')
+        }
+        if ([
+            {ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_BASE: '', RELEASE_ACTORS: '["tobiu"]'},
+            {ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_BASE: 'dev', RELEASE_ACTORS: '["tobiu"]'}
+        ].some(overrides => !hasBounded(runBase(overrides)))) {
+            failures.push('PR-base widens admission on empty or duplicate release_base')
+        }
+    }
+
     if (/continue-on-error:\s*true/.test(source)) failures.push('continue-on-error present');
     if (/^\s+[a-z_-]+: write(?:-all)?\s*$/m.test(source) ||
         /^permissions: (?:read|write)-all\s*$/m.test(source)) {
@@ -357,6 +469,29 @@ function expectMutationFailure(label, source, mutate, expectedFailure) {
 const source = readFileSync(workflowPath, 'utf8');
 
 assert.deepEqual(validateReusablePrBaseline(source), [], 'canonical reusable workflow violates its own contract');
+
+{
+    const prBaseStep = (jobSource(source, 'pr-base').match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '').replace(/^ {10}/gm, ''),
+          execStep   = env => spawnSync('bash', ['-e', '-o', 'pipefail', '-c', prBaseStep], {
+              encoding: 'utf8',
+              env     : {
+                  ...process.env,
+                  EVENT_NAME    : 'pull_request',
+                  ACTUAL_BASE   : 'dev',
+                  PR_AUTHOR     : 'neo-gemini-maryam',
+                  REQUIRED_BASE : 'dev',
+                  RELEASE_BASE  : 'main',
+                  RELEASE_ACTORS: '[]',
+                  ...env
+              }
+          });
+
+    assert.equal(execStep({}).status, 0, 'pr-base bash step admits ordinary required_base PR');
+    assert.equal(execStep({ACTUAL_BASE: 'main', PR_AUTHOR: 'tobiu', RELEASE_ACTORS: '["tobiu"]'}).status, 0,
+        'pr-base bash step admits authorized release_base PR');
+    assert.equal(execStep({ACTUAL_BASE: 'main', PR_AUTHOR: 'neo-gemini-maryam', RELEASE_ACTORS: '["tobiu"]'}).status, 1,
+        'pr-base bash step refuses unauthorized release_base PR');
+}
 
 expectMutationFailure('trigger', source,
     value => value.replace('  workflow_call:', '  pull_request:'),
@@ -409,9 +544,50 @@ expectMutationFailure('a guard installed before the version is read', source,
 expectMutationFailure('base job', source,
     value => value.replace('  pr-base:', '  removed-base:'),
     'missing PR-base job id');
-expectMutationFailure('base decision', source,
-    value => value.replace("github.event_name != 'pull_request' || github.event.pull_request.base.ref != inputs.required_base", 'false'),
+expectMutationFailure('base stable name', source,
+    value => value.replace('    name: PR base\n', '    name: Base guard\n'),
+    'missing PR-base stable name');
+expectMutationFailure('release_base default', source,
+    value => value.replace("      release_base:\n        description: Protected release branch accepted only when the pull-request author is in release_actors.\n        required: false\n        type: string\n        default: main", "      release_base:\n        description: Protected release branch accepted only when the pull-request author is in release_actors.\n        required: false\n        type: string\n        default: dev"),
+    'missing release_base default');
+expectMutationFailure('release_actors default', source,
+    value => value.replace("        default: '[]'\n", "        default: '[\"tobiu\"]'\n"),
+    'missing release_actors default');
+expectMutationFailure('base decision non-PR check dropped', source,
+    value => value.replace("EVENT_NAME !== 'pull_request' || !ACTUAL_BASE.trim() || !PR_AUTHOR.trim()", 'false'),
     'missing PR-base non-PR refusal');
+expectMutationFailure('base decision ordinary required_base broken', source,
+    value => value.replace('if (ACTUAL_BASE === REQUIRED_BASE) {', 'if (false) {'),
+    'PR-base rejects ordinary required_base PR');
+expectMutationFailure('base decision authorized release_base broken', source,
+    value => value.replace('if (actors.includes(PR_AUTHOR)) {', 'if (false) {'),
+    'PR-base rejects authorized release_base PR');
+expectMutationFailure('base decision admits unauthorized release actor', source,
+    value => value.replace('if (actors.includes(PR_AUTHOR)) {', 'if (true) {'),
+    'PR-base admits unauthorized release actor');
+expectMutationFailure('base decision accepts any base branch', source,
+    value => value.replace("fail(`Expected PR base '${REQUIRED_BASE}'", "process.exit(0); fail(`Expected PR base '${REQUIRED_BASE}'"),
+    'missing base mismatch refusal');
+expectMutationFailure('base decision skips release_actors array validation', source,
+    value => value.replace('if (!Array.isArray(actors)) {', 'if (false) {'),
+    'PR-base accepts invalid release_actors JSON or non-array');
+expectMutationFailure('base decision skips release_actors entry validation', source,
+    value => value.replace("if (actors.some(actor => typeof actor !== 'string' || !actor.trim() || actor !== actor.trim() || /\\s/.test(actor))) {", 'if (false) {'),
+    'PR-base accepts non-string or empty release_actors entry');
+expectMutationFailure('base decision allows empty release_base to match', source,
+    value => value.replace('if (releaseBase && RELEASE_BASE === releaseBase && ACTUAL_BASE === releaseBase) {', 'if (!releaseBase || ACTUAL_BASE === releaseBase) {'),
+    'PR-base widens admission on empty or duplicate release_base');
+expectMutationFailure('base job reads github.actor', source,
+    value => value.replace(
+        '          PR_AUTHOR: ${{ github.event.pull_request.user.login }}\n          REQUIRED_BASE:',
+        '          PR_AUTHOR: ${{ github.actor }}\n          REQUIRED_BASE:'),
+    'PR-base reads github.actor');
+expectMutationFailure('base job checks out caller tree', source,
+    value => value.replace('      - name: Reject a non-PR caller or an unauthorized base\n', '      - uses: actions/checkout@v7\n\n      - name: Reject a non-PR caller or an unauthorized base\n'),
+    'PR-base job checks out the caller tree');
+expectMutationFailure('base job mutates pull request', source,
+    value => value.replace("console.log(`Admitted PR by '${PR_AUTHOR}' targeting required_base '${REQUIRED_BASE}'.`);", "console.log('pulls.update');"),
+    'PR-base job mutates pull-request state');
 expectMutationFailure('Skills job', source,
     value => value.replace('  skills-materialized:', '  removed-skills:'),
     'missing Skills job id');
