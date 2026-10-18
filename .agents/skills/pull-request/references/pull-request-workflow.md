@@ -121,7 +121,7 @@ is why §1 asks you to say so rather than leave the step blank.
 
 ### 3.2 Commit Message Hygiene
 
-- **FORBIDDEN:** `Co-Authored-By: <name> <noreply@*>` commit footers AND harness-appended PR-body backlinks (`🤖 Generated with [Claude Code](https://claude.com/claude-code)`). One harness reminder (notably Claude Code) injects both by default — you MUST override both: a merged PR body keeps a leaked backlink permanently as a public artifact, and the upstream `pr-body` job checks structure only, not attribution. **Canonical agent emails for required Co-Authored-By trailers: `ai/graph/agentCoAuthorEmails.mjs`** (one entry per seat, enforced pre-push); **never derive one from a display name or GitHub handle** (several logins do not match their local part, and guessing credits accounts nobody owns). The machine-account primary email is operator-configured; squash-merge auto-attribution resolves to `@neomjs.com`. Agent participation is tracked across ticket body, PR labels (`ai`, `ai-generated`), Memory Core origin-session IDs, and `@neomjs.com` Co-authored-by trailers in git history (the distributed memory + RLAIF flywheel substrate per [`The Evolution`](../../../../README.md#the-evolution)).
+- **FORBIDDEN:** `Co-Authored-By: <name> <noreply@*>` commit footers AND harness-appended PR-body backlinks (`🤖 Generated with [Claude Code](https://claude.com/claude-code)`). One harness reminder (notably Claude Code) injects both by default — you MUST override both: a merged PR body keeps a leaked backlink permanently, and the upstream `pr-body` job checks structure only, not attribution. **Canonical agent emails for required Co-Authored-By trailers: `ai/graph/agentCoAuthorEmails.mjs`** (one entry per seat, enforced pre-push); **never derive one from a display name or GitHub handle** (several logins differ from their local part; guessing credits unowned accounts). The machine-account primary email is operator-configured; squash-merge auto-attribution resolves to `@neomjs.com`. Agent participation is tracked across ticket body, PR labels (`ai`, `ai-generated`), Memory Core origin-session IDs, and `@neomjs.com` Co-authored-by trailers in git history (the distributed memory + RLAIF flywheel substrate per [`The Evolution`](../../../../README.md#the-evolution)).
 - **MANDATORY:** append the ticket ID to the subject line in `(#TICKET_ID)` form — e.g. `feat(claude): wire harness (#10059)`. A trailing paragraph like `Refs #N` is non-compliant. The `Resolves #N` keyword belongs in the PR body, not the commit.
 
 ### 3.3 Steps
@@ -155,13 +155,13 @@ gh pr create --title "feat/fix/chore: Your Title (#TICKET_ID)" --body "All §9 a
 
 ## 5. Self-Identification (Mandatory Authorship)
 
-Explicitly self-identify at the **bottom** of your PR body (mirroring `pr-review` for cross-model convergence tracking; the **Social Name** is canonical for the §6.1 cross-family gate, and the gh author already shows `@handle`):
+Self-identify at the **bottom** of your PR body, formatted exactly as follows (mirroring `pr-review` for cross-model tracking; the **Social Name** is canonical for §6.1, and the gh author already shows `@handle`):
 `Authored by [Social Name] ([Model Name], [Agent Wrapper]). Session <Origin Session ID>.`
 
 The `Authored by …` block is the **only** attribution a PR body carries; remove any harness-appended backlink (§3.2) before opening.
 
 **Cross-Harness Authorship Convention:**
-When authoring a PR from a handoff, ticket, or artifact synthesized by a *different* model in a *different* session, attribute full graph-extractable provenance (where the gh account does not reflect the upstream author):
+When authoring a PR from a handoff, ticket, or artifact by a *different* model in a *different* session, attribute full graph-extractable provenance (the gh account does not show the upstream author):
 `Authored by [Social Name-B] ([Model-B], [Harness-B]) consuming [Social Name-A]'s handoff — session A <id>, session B <id>.`
 
 ## 6. Definition of Done & The Handoff State

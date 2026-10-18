@@ -41,7 +41,7 @@ Per §9 Strategic-Fit Step-Back:
 *   **Target Epic / Issue ID:** Resolves #[Issue Number]
 *   **Related Graph Nodes:** [Any other related node IDs or conceptual tags]
 *   **Origin Session ID:** [Neo Memory Core UUID, not harness/task/transcript]
-- [ ] PR body attribution: `Authored by …` is the only attribution in the PR body (no harness-appended backlink such as `🤖 Generated with [Claude Code]`)
+- [ ] PR body attribution: `Authored by …` is the only attribution; no harness-appended backlink (e.g. `🤖 Generated with [Claude Code]`).
 
 ---
 
@@ -97,7 +97,7 @@ N/A across listed dimensions: <one-line PR-scope justification>.
 
 ### 🎯 Close-Target Audit
 
-*(Required per guide §5.2 when the PR body or commits contain `Closes #N` / `Resolves #N` / `Fixes #N` keywords; binding on real overclaims, not a substitute for premise or placement. Mark N/A without close-target keywords.)*
+*(Required per guide §5.2 when the PR body or commits contain `Closes #N` / `Resolves #N` / `Fixes #N`; binding on real overclaims, not a premise/placement substitute. Mark N/A without close-target keywords.)*
 
 For every issue named as close-target, verify it does NOT carry the `epic` label:
 
@@ -121,7 +121,7 @@ For every issue named as close-target, verify it does NOT carry the `epic` label
 
 ### 🪜 Evidence Audit
 
-*(Required when close-target ACs include observable runtime effect on a surface the CI / agent sandbox cannot reach — substrate / harness / wake / restart / UI-with-visual-AC / CLI-with-host-behavior PRs; binding on real evidence mismatch, not a replacement for architecture review. Mark N/A when ACs are fully covered by unit tests / static contract.)*
+*(Required when close-target ACs include observable runtime effect on a surface the CI/agent sandbox cannot reach — substrate / harness / wake / restart / UI-with-visual-AC / CLI-with-host-behavior PRs; binding on real evidence mismatch, not a replacement for architecture review. Mark N/A when ACs are covered by unit tests / static contract.)*
 
 Reference: the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) for L1-L4 ladder + sandbox-vs-achievable ceiling distinction.
 
