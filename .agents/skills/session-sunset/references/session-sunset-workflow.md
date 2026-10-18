@@ -62,25 +62,27 @@ Detect your checkout class **mechanically** — never guess from harness names. 
   if [ -z "$(git status --porcelain)" ]; then
       git switch dev
       git pull origin dev
-      node ai/scripts/setup/initServerConfigs.mjs --migrate-config
+      if [ -f ai/scripts/setup/initServerConfigs.mjs ]; then
+          node ai/scripts/setup/initServerConfigs.mjs --migrate-config
+      fi
   else
       echo 'dirty tree — skip refresh, surface in handover'
   fi
   ```
 
-  The pull refreshes code; the `--migrate-config` run reconciles the gitignored `config.mjs` operator-overlay with the pulled `config.template.mjs` leaves — a pull alone is NOT enough, because daemons and MCP servers read the overlay, not the template. Because the AI harness initializes MCP servers *before* an agent's first turn, sunset is the only window where this refresh lands in time for the next session's boot. **Any failure (dirty tree, switch/pull/script error) is surfaced in the Step 3 handover comment and the final sunset payload — the refresh is best-effort and must NEVER block sunset completion.**
+  The pull refreshes code; in `neo-agent-brain` (where `ai/` lives post-split), `--migrate-config` reconciles the gitignored `config.mjs` operator-overlay with pulled `config.template.mjs` leaves — a pull alone is NOT enough, because daemons and MCP servers read the overlay, not the template. Because the AI harness initializes MCP servers *before* an agent's first turn, sunset is the only window where this refresh lands in time for the next session's boot. **Any failure (dirty tree, switch/pull/script error) is surfaced in the Step 3 handover comment and the final sunset payload — the refresh is best-effort and must NEVER block sunset completion.**
 
-  > **Division of labor + retirement condition (Substrate Accretion Defense):** the orchestrator's `primary-dev-sync` task (shipped via the daemon substrate; config-migrate cascade added 2026-06) automates freshness for the **operator's primary checkout only** — the deployment deliberately syncs ONE repo. Per-agent clones are never daemon-pulled: an FF-pull racing an *active* agent session is the hazard, and sunset is the safe window precisely because the session is terminating. This agent-side step is therefore the **durable owner** of agent-clone freshness, not an interim awaiting daemon coverage. It retires only if the clone topology itself changes (agents stop owning dedicated clones, or a session-liveness-aware sync lane ships).
+  > **Division of labor + retirement condition (Substrate Accretion Defense):** the orchestrator's `primary-dev-sync` task (shipped via the daemon substrate; config-migrate cascade added 2026-06) automates freshness for the **operator's primary checkout only** — the deployment deliberately syncs ONE repo. Per-agent clones are never daemon-pulled: an FF-pull racing an *active* agent session is the hazard, and sunset is the safe window precisely because the session is terminating. This agent-side step is therefore the **durable owner** of agent-clone freshness across all org clones, while its `--migrate-config` reconcile is `neo-agent-brain`-scoped (the `[ -f ... ]` guard scopes repo topology after the `ai/` split, not retirement: the reconcile retires only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire; the pull retires only if clone topology changes or a session-liveness-aware sync lane ships).
 
 - **Linked worktree — push only:** do NOT switch to `dev` (the primary holds it; git refuses to share a branch across worktrees). Ensure your current PR branch is fully committed and pushed (`git push origin HEAD`). The next agent session will either resume this worktree or bootstrap a new one from the primary's refreshed `dev`.
 
 #### Primary-Checkout Staleness Probe (Linked worktree only) — per #11013
 
-The "main checkout's updated `dev`" assumption above only holds if the operator has actually pulled origin/dev into the primary checkout. In practice, primary's `dev` can fall arbitrarily behind because:
+The "main checkout's updated `dev`" assumption above only holds if the operator has pulled `origin/dev` into the primary checkout. Primary's `dev` can fall behind because:
 
-- Worktree agents (correctly per the Linked-worktree rule above) do NOT pull dev into primary.
+- Worktree agents (per the Linked-worktree rule above) do NOT pull `dev` into primary.
 - Operators don't always run `git pull origin dev` between sunset events.
-- Daemons running from primary — `orchestrator-daemon` (the canonical Agent OS scheduled-maintenance daemon per the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) M3; currently MVP-shape via #11008, full class extraction in flight under #11009) plus its current and future siblings (`wake-daemon` for wake delivery, `DreamService` for ingestion, KB sync pipeline) — silently read pre-merge code when primary is stale.
+- In `neo-agent-brain`, daemons running from primary — `orchestrator-daemon` (per the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) M3) and its siblings (`wake-daemon`, `DreamService`, KB sync pipeline) — read pre-merge code when primary is stale.
 
 **Mandatory sunset probe (Isolated Worktree branch only):**
 
@@ -99,7 +101,7 @@ BEHIND=$(git -C "$PRIMARY_ROOT" rev-list --count dev..origin/dev 2>/dev/null || 
 
 **Conditional handover-comment block (fire only when `BEHIND > 0`):**
 
-> ⚠️ **Primary-checkout reminder:** the operator's primary checkout (`<PRIMARY_ROOT>`) `dev` branch is **`<BEHIND>` commits behind `origin/dev`**. The `orchestrator-daemon` (Agent OS canonical scheduled-maintenance daemon) and its siblings (`wake-daemon`, `DreamService`, KB sync pipeline) read pre-merge code until refresh. Run `git -C <PRIMARY_ROOT> pull origin dev` **then `node <PRIMARY_ROOT>/ai/scripts/setup/initServerConfigs.mjs --migrate-config`** in your main checkout to refresh `orchestrator-daemon` and downstream-daemon state. **A `git pull` alone is not enough:** it updates the committed `config.template.mjs`, but the daemons read the gitignored `config.mjs` operator-overlay — which only reconciles to new template leaves via `--migrate-config`, so without it the daemons run fresh code against stale config.
+> ⚠️ **Primary-checkout reminder:** the operator's primary checkout (`<PRIMARY_ROOT>`) `dev` branch is **`<BEHIND>` commits behind `origin/dev`**. Run `git -C <PRIMARY_ROOT> pull origin dev` in your main checkout (and when `<PRIMARY_ROOT>` is `neo-agent-brain`, where `ai/` and the Agent OS daemons `orchestrator-daemon`, `wake-daemon`, `DreamService`, and KB sync live, also run `node <PRIMARY_ROOT>/ai/scripts/setup/initServerConfigs.mjs --migrate-config` so the gitignored `config.mjs` operator-overlay reconciles to pulled `config.template.mjs` leaves).
 
 When `BEHIND == 0`, suppress the block — no handover-comment noise on a fresh primary.
 
