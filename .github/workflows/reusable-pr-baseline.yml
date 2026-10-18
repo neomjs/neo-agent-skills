@@ -32,6 +32,19 @@ on:
         required: false
         type: string
         default: dev
+      release_base:
+        description: Protected release branch accepted only when the pull-request author is in release_actors.
+        required: false
+        type: string
+        default: main
+      release_actors:
+        description: >-
+          JSON array of exact pull-request author logins permitted to target release_base
+          (for example, '["tobiu"]'). Empty by default so no release exception applies unless
+          the caller explicitly opts in.
+        required: false
+        type: string
+        default: '[]'
       node_version:
         description: Node.js version used to install and verify the consumer lockfile.
         required: false
@@ -110,14 +123,72 @@ jobs:
     name: PR base
     runs-on: ubuntu-latest
     steps:
-      - name: Reject a non-PR caller or the wrong base
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != inputs.required_base }}
+      # Ordinary PRs target `required_base` (default `dev`). A caller that opts in via a JSON string array
+      # `release_actors` may also admit exact pull-request author logins targeting `release_base` (default
+      # `main`). Every input and event field enters through `env:` and is validated fail-closed.
+      - name: Reject a non-PR caller or an unauthorized base
         env:
+          EVENT_NAME: ${{ github.event_name }}
           ACTUAL_BASE: ${{ github.event.pull_request.base.ref }}
-          EXPECTED_BASE: ${{ inputs.required_base }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          REQUIRED_BASE: ${{ inputs.required_base }}
+          RELEASE_BASE: ${{ inputs.release_base }}
+          RELEASE_ACTORS: ${{ inputs.release_actors }}
         run: |
-          echo "Expected PR base '${EXPECTED_BASE}', observed '${ACTUAL_BASE:-not-a-pull-request}'."
-          exit 1
+          node - <<'EOF'
+          const {
+              EVENT_NAME     = '',
+              ACTUAL_BASE    = '',
+              PR_AUTHOR      = '',
+              REQUIRED_BASE  = '',
+              RELEASE_BASE   = '',
+              RELEASE_ACTORS = ''
+          } = process.env;
+
+          const fail = message => {
+              console.error(message.replace(/[\r\n]+/g, ' ').slice(0, 240));
+              process.exit(1);
+          };
+
+          if (EVENT_NAME !== 'pull_request' || !ACTUAL_BASE.trim() || !PR_AUTHOR.trim()) {
+              fail(`PR base policy requires a pull_request event with base.ref and user.login (event='${EVENT_NAME}', base='${ACTUAL_BASE}', author='${PR_AUTHOR}').`);
+          }
+
+          if (!REQUIRED_BASE.trim() || REQUIRED_BASE !== REQUIRED_BASE.trim()) {
+              fail(`Invalid required_base '${REQUIRED_BASE}': expected a non-empty branch ref.`);
+          }
+
+          let actors;
+          try {
+              actors = JSON.parse(RELEASE_ACTORS);
+          } catch {
+              fail('Invalid release_actors JSON: expected a JSON string array of exact logins.');
+          }
+
+          if (!Array.isArray(actors)) {
+              fail(`Invalid release_actors: expected a JSON array, got ${actors === null ? 'null' : typeof actors}.`);
+          }
+
+          if (actors.some(actor => typeof actor !== 'string' || !actor.trim() || actor !== actor.trim() || /\s/.test(actor))) {
+              fail('Invalid release_actors entry: every actor must be a non-empty exact login string without whitespace.');
+          }
+
+          if (ACTUAL_BASE === REQUIRED_BASE) {
+              console.log(`Admitted PR by '${PR_AUTHOR}' targeting required_base '${REQUIRED_BASE}'.`);
+              process.exit(0);
+          }
+
+          const releaseBase = RELEASE_BASE.trim();
+          if (releaseBase && RELEASE_BASE === releaseBase && ACTUAL_BASE === releaseBase) {
+              if (actors.includes(PR_AUTHOR)) {
+                  console.log(`Admitted release PR by '${PR_AUTHOR}' targeting release_base '${releaseBase}'.`);
+                  process.exit(0);
+              }
+              fail(`Unauthorized release PR targeting '${releaseBase}' by '${PR_AUTHOR}': allowed release_actors=${JSON.stringify(actors)}; ordinary PRs must target '${REQUIRED_BASE}'.`);
+          }
+
+          fail(`Expected PR base '${REQUIRED_BASE}'${releaseBase && actors.length ? ` (or '${releaseBase}' for authorized release_actors)` : ''}, observed '${ACTUAL_BASE}' (author '${PR_AUTHOR}').`);
+          EOF
 
   skills-materialized:
     name: Skills materialized
