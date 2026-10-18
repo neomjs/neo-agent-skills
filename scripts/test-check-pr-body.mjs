@@ -63,7 +63,7 @@ function cli(args, body) {
     assert.equal(cli([], goodBody()).code, 0)
 }
 
-// ── THE #28 DEFECT: naming an anchor in prose must NOT satisfy it ──────────────────────────────
+// ── THE SUBSTRING DEFECT: naming an anchor in prose must NOT satisfy it ────────────────────────
 //
 // The previous gate used `body.includes(anchor)` against the whole body. Every anchor also appears
 // in bodies that DISCUSS the anchors, so a body that never carried the section passed by mentioning
@@ -333,6 +333,94 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     assert.ok(pkg.files.includes('scripts/check-pr-body.mjs'), 'the guard must ship in the package')
 }
 
+/** @summary Returns semantic-contract violations for the self-hosted `pr-body` job in `skill-corpus.yml`. */
+function validateSkillCorpusPrBody(source) {
+    const failures  = [],
+          marker    = '  pr-body:\n',
+          start     = source.indexOf(marker),
+          tail      = start === -1 ? '' : source.slice(start),
+          nextJob   = tail.slice(marker.length).search(/\n  [a-z0-9_-]+:\n/i),
+          prBodyJob = start === -1 ? '' : (nextJob === -1 ? tail : tail.slice(0, marker.length + nextJob + 1)),
+          code      = prBodyJob.split('\n').filter(line => !/^\s*#/.test(line)).join('\n'),
+          headStep  = prBodyJob.match(/- name: Checkout pull-request head PR-body guard\n[\s\S]*?(?=\n      - |\s*$)/)?.[0] || '',
+          required  = [
+              ['PR trigger types', /^on:\n  pull_request:\n    types: \[opened, edited, synchronize, reopened, ready_for_review\]\n/m, source],
+              ['pr-body job id', /^  pr-body:\n/m, prBodyJob],
+              ['pr-body stable name', /^    name: PR body\n/m, prBodyJob],
+              ['pr-body pull_request guard', /^    if: \$\{\{ github\.event_name == 'pull_request' \}\}\n/m, prBodyJob],
+              ['pr-body pull-requests read grant', /^      pull-requests: read\n/m, prBodyJob],
+              ['registry version read', /^\s*version="\$\(npm view neo-agent-skills version\)"\s*$/m, prBodyJob],
+              ['isolated runner root', /^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-pr-body\s*$/m, prBodyJob],
+              ['isolated exact install', /npm install --prefix "\$\{SKILLS_ROOT\}" --ignore-scripts --package-lock=false --no-save/, prBodyJob],
+              ['exact released package spec', /"neo-agent-skills@\$\{SKILLS_VERSION\}"/, prBodyJob],
+              ['live PR body fetch', /github\.rest\.pulls\.get/, prBodyJob],
+              ['released close-target bin', /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-pr-body"\n\s*--body-file "\$\{BODY_FILE\}" --close-target-only/, prBodyJob],
+              ['released full-anchor bin', /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-pr-body"\n\s*--body-file "\$\{BODY_FILE\}"\s*$/m, prBodyJob],
+              ['head checkout ref', /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m, headStep],
+              ['head checkout path', /^\s*path: \.head\s*$/m, headStep],
+              ['head sparse guard path', /^\s*sparse-checkout: scripts\/check-pr-body\.mjs\s*$/m, headStep],
+              ['head close-target guard', /node \.head\/scripts\/check-pr-body\.mjs\n\s*--body-file "\$\{BODY_FILE\}" --close-target-only/, prBodyJob],
+              ['head full-anchor guard', /node \.head\/scripts\/check-pr-body\.mjs\n\s*--body-file "\$\{BODY_FILE\}"\s*$/m, prBodyJob]
+          ];
+
+    required.forEach(([label, pattern, target]) => {
+        if (!pattern.test(target)) failures.push(`missing ${label}`)
+    });
+
+    if ((prBodyJob.match(/if: \$\{\{ startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\) \|\| contains\(github\.event\.pull_request\.labels\.\*\.name, 'ai'\) \}\}/g) || []).length !== 2) {
+        failures.push('anchor boundary must gate both released and head anchor steps')
+    }
+    if ((prBodyJob.match(/if: \$\{\{ github\.event\.pull_request\.user\.type != 'Bot' \}\}/g) || []).length !== 2) {
+        failures.push('non-Bot close-target gate must cover both released and head steps')
+    }
+    if (!/if: \$\{\{ github\.event\.pull_request\.user\.type == 'Bot' \}\}/.test(prBodyJob)) {
+        failures.push('missing Bot close-target report step')
+    }
+    const releasedIdx = prBodyJob.indexOf('neo-agent-skills-pr-body"'),
+          headIdx     = prBodyJob.indexOf('path: .head');
+
+    if (releasedIdx === -1 || headIdx === -1 || releasedIdx > headIdx) {
+        failures.push('released guard must execute before head checkout')
+    }
+    const writeCall = code.match(/writeFileSync\([^)]*\)/);
+    if (!writeCall || !/\bdata\.body\b/.test(writeCall[0])) {
+        failures.push('live body response is not written to BODY_FILE')
+    }
+    if (/context\.payload\.pull_request\.body/.test(code) || code.split('\n').some(line => /\$\{\{[^}]*\bbody\b/.test(line))) {
+        failures.push('PR body read from event payload or interpolated into shell')
+    }
+    if (/\d+\.\d+\.\d+/.test(prBodyJob)) {
+        failures.push('semver literal in pr-body job')
+    }
+
+    return failures
+}
+
+{
+    const workflow = readFileSync(join(here, '../.github/workflows/skill-corpus.yml'), 'utf8');
+
+    assert.deepEqual(validateSkillCorpusPrBody(workflow), [], 'skill-corpus.yml pr-body contract must pass');
+
+    const mutations = [
+        ['dropping edited event type', s => s.replace('opened, edited, synchronize', 'opened, synchronize'), 'missing PR trigger types'],
+        ['dropping pull_request job guard', s => s.replace("  pr-body:\n    name: PR body\n    if: ${{ github.event_name == 'pull_request' }}\n", "  pr-body:\n    name: PR body\n"), 'missing pr-body pull_request guard'],
+        ['reading version from package.json instead of registry', s => s.replace('version="$(npm view neo-agent-skills version)"', 'version="$(jq -r .version package.json)"'), 'missing registry version read'],
+        ['dropping released guard invocation', s => s.replaceAll('"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"', 'node .head/scripts/check-pr-body.mjs'), 'missing released close-target bin'],
+        ['dropping head guard invocation', s => s.replaceAll('node .head/scripts/check-pr-body.mjs', '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"'), 'missing head close-target guard'],
+        ['pinning a literal version', s => s.replace('"neo-agent-skills@${SKILLS_VERSION}"', '"neo-agent-skills@0.1.46"'), 'missing exact released package spec'],
+        ['reading stale event payload body', s => s.replace('data.body', 'context.payload.pull_request.body'), 'PR body read from event payload or interpolated into shell']
+    ];
+
+    mutations.forEach(([label, mutate, expected]) => {
+        const mutated  = mutate(workflow),
+              failures = validateSkillCorpusPrBody(mutated);
+
+        assert.notEqual(mutated, workflow, `${label}: mutation must change workflow`);
+        assert.ok(failures.includes(expected), `${label}: expected "${expected}", got ${failures.join(', ')}`)
+    })
+}
+
 scratch.forEach(dir => rmSync(dir, {force: true, recursive: true}));
 
 console.log('check-pr-body: contract arms green.');
+

@@ -15,6 +15,7 @@ permissions:
 
 on:
   pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
   push:
     branches: [dev, main]
 
@@ -198,3 +199,101 @@ jobs:
             || { echo "tracked file deleted"; exit 1; }
 
           echo "regression arm holds: refused, $AFTER tracked file(s) intact"
+
+  # Steps mirror `reusable-pr-baseline.yml#pr-body` (whose comments carry the per-step why) and add
+  # the head `scripts/check-pr-body.mjs` pass after the released verdict so a PR modifying the guard
+  # cannot pass itself.
+  pr-body:
+    name: PR body
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Resolve the released version from the registry
+        id: version
+        run: |
+          version="$(npm view neo-agent-skills version)"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "npm registry returned no valid release version for neo-agent-skills ('${version}')."
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install immutable released PR-body guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+          SKILLS_VERSION: ${{ steps.version.outputs.version }}
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      - name: Read the live pull-request body
+        uses: actions/github-script@v9
+        env:
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
+        with:
+          script: |
+            const {data} = await github.rest.pulls.get({
+                owner      : context.repo.owner,
+                repo       : context.repo.repo,
+                pull_number: context.payload.pull_request.number
+            });
+
+            require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
+
+      - name: Validate the close target (released guard)
+        if: ${{ github.event.pull_request.user.type != 'Bot' }}
+        env:
+          BODY_FILE  : ${{ runner.temp }}/pr-body.md
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+        run: >-
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
+          --body-file "${BODY_FILE}" --close-target-only
+
+      - name: Report a bot's unjudged close target
+        if: ${{ github.event.pull_request.user.type == 'Bot' }}
+        env:
+          AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+        run: >-
+          echo "${AUTHOR_LOGIN} is a GitHub App, whose pull request resolves no ticket,
+          so its close target is not judged."
+
+      - name: Validate the required anchors (released guard)
+        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
+        env:
+          BODY_FILE  : ${{ runner.temp }}/pr-body.md
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+        run: >-
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
+          --body-file "${BODY_FILE}"
+
+      - name: Checkout pull-request head PR-body guard
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: .head
+          sparse-checkout: scripts/check-pr-body.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Validate the close target (head guard)
+        if: ${{ github.event.pull_request.user.type != 'Bot' }}
+        env:
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
+        run: >-
+          node .head/scripts/check-pr-body.mjs
+          --body-file "${BODY_FILE}" --close-target-only
+
+      - name: Validate the required anchors (head guard)
+        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
+        env:
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
+        run: >-
+          node .head/scripts/check-pr-body.mjs
+          --body-file "${BODY_FILE}"
