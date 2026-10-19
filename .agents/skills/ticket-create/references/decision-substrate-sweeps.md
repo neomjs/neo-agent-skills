@@ -68,7 +68,7 @@ Reuse adjacency results: read affected tickets, drafts, research recommendations
 1. Cite the accepted decision and compare each recommendation with the **current outcome and required interactions**, not just its technical feasibility. A reusable reference does not authorize a superseded research/delivery path. Keep, narrow, transfer or retire each prescription; move unique obligations, evidence and dissent to a named surviving owner first. Existing research can own the remainder without another ticket.
 2. Update the old entry heads and both sides' successor links. Retire obsolete unchecked instructions explicitly; preserve history under a historical heading. A finally rejected narrow implementation closes `not_planned` per `ticket-intake` §4. Its unresolved quality outcome, research or epic does not close with it; partial overlap leaves remaining obligations current. Epic closure uses `epic-resolution`.
 3. Apply own-authored or explicitly authorized changes. For foreign bodies/ACs, follow `ticket-create` §11: propose exact text and record the owner/application still owed. A pending proposal is not applied reconciliation.
-4. Read back bodies, links and states: each old entry must reveal its disposition and current owner without archaeology. Record pending owner actions on the governing artifact and report them separately from verified updates; unapplied cleanup is not complete.
+4. Read back bodies, links and states: each old entry must reveal its disposition and current owner without archaeology. For immutable memories/handovers, record exact superseded IDs → current authority; preserve history. Record pending owner actions separately from verified updates; unapplied cleanup is not complete.
 
 ## Empirical anchor
 
