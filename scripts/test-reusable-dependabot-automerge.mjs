@@ -281,7 +281,7 @@ export function validateReusableDependabotAutomerge(source) {
     if (!eligibility.includes("if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.sender.login == 'dependabot[bot]'")) {
         failures.push("metadata read on another account's event")
     }
-    if (!eligibility.includes('        continue-on-error: true\n        uses: dependabot/fetch-metadata@v2')) failures.push('a failed metadata read fails the job');
+    if (!/^ {8}continue-on-error: true\n {8}uses: dependabot\/fetch-metadata@\S+$/m.test(eligibility)) failures.push('a failed metadata read fails the job');
     if (!eligibility.includes('AUTOMERGE_KILL_SWITCH: ${{ vars.NEO_AUTOMERGE_DEPENDABOT }}')) failures.push('kill switch not read');
 
     if (!handoff) failures.push('missing handoff job');
@@ -325,6 +325,11 @@ const inJob = (jobId, from, to) => value => {
 const source = readFileSync(workflowPath, 'utf8');
 
 assert.deepEqual(validateReusableDependabotAutomerge(source), [], 'canonical workflow violates its own contract');
+
+const movedMetadataRef = source.replace(/(uses: dependabot\/fetch-metadata@)\S+/, (_, step) => `${step}v99`);
+
+assert.notEqual(movedMetadataRef, source, 'metadata ref control: fixture mutation changed nothing');
+assert.deepEqual(validateReusableDependabotAutomerge(movedMetadataRef), [], "the metadata step's ref is Dependabot's to move");
 
 expectMutationFailure('trigger', source, value => value.replace('  workflow_call:', '  pull_request:'), 'missing workflow-call trigger');
 expectMutationFailure('pull_request_target', source, value => value.replace('  workflow_call:', '  pull_request_target:\n  workflow_call:'), 'pull_request_target present');
