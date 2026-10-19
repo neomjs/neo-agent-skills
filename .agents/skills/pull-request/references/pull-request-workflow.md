@@ -121,7 +121,7 @@ is why §1 asks you to say so rather than leave the step blank.
 
 ### 3.2 Commit Message Hygiene
 
-- **FORBIDDEN:** `Co-Authored-By: <name> <noreply@*>` footers. Some AI harnesses (notably Claude Code) inject these by default — you MUST override that behavior. **Canonical agent emails for required Co-Authored-By trailers: `ai/graph/agentCoAuthorEmails.mjs`** (one entry per seat, enforced pre-push). **Never derive one from a display name or GitHub handle** — several logins do not match their local part, and guessing has credited accounts nobody owns. The machine-account primary email is operator-configured (out of agent scope); squash-merge auto-attribution resolves to `@neomjs.com` once accounts use these as primary. Agent participation is tracked across multiple substrates: ticket body, PR labels (`ai`, `ai-generated`), Memory Core origin-session IDs, and `@neomjs.com` Co-authored-by trailers in git history (the long-term distributed memory + RLAIF flywheel substrate per [`The Evolution`](../../../../README.md#the-evolution)).
+- **FORBIDDEN:** `Co-Authored-By: <name> <noreply@*>` commit footers AND harness-appended PR-body backlinks (`🤖 Generated with [Claude Code](https://claude.com/claude-code)`). One harness reminder (notably Claude Code) injects both by default — you MUST override both: a merged PR body keeps a leaked backlink permanently, and the upstream `pr-body` job checks structure only, not attribution. **Canonical agent emails for required Co-Authored-By trailers: `ai/graph/agentCoAuthorEmails.mjs`** (one entry per seat, enforced pre-push); **never derive one from a display name or GitHub handle** (several logins differ from their local part; guessing credits unowned accounts). The machine-account primary email is operator-configured; squash-merge auto-attribution resolves to `@neomjs.com`. Agent participation is tracked across ticket body, PR labels (`ai`, `ai-generated`), Memory Core origin-session IDs, and `@neomjs.com` Co-authored-by trailers in git history (the distributed memory + RLAIF flywheel substrate per [`The Evolution`](../../../../README.md#the-evolution)).
 - **MANDATORY:** append the ticket ID to the subject line in `(#TICKET_ID)` form — e.g. `feat(claude): wire harness (#10059)`. A trailing paragraph like `Refs #N` is non-compliant. The `Resolves #N` keyword belongs in the PR body, not the commit.
 
 ### 3.3 Steps
@@ -155,16 +155,14 @@ gh pr create --title "feat/fix/chore: Your Title (#TICKET_ID)" --body "All §9 a
 
 ## 5. Self-Identification (Mandatory Authorship)
 
-To ensure symmetric discipline across the PR lifecycle and enable accurate cross-model convergence tracking, you MUST explicitly self-identify within the PR body you generate. This mirrors the authorship requirements in the `pr-review` skill.
-
-Your PR body MUST include a self-identification block at the **bottom**, formatted exactly as follows (the **Social Name** is canonical — the cross-family gate keys off it; §6.1; the gh comment author already shows the routing handle, so the in-body `@handle` is omitted):
+Self-identify at the **bottom** of your PR body, formatted exactly as follows (mirroring `pr-review` for cross-model tracking; the **Social Name** is canonical for §6.1, and the gh author already shows `@handle`):
 `Authored by [Social Name] ([Model Name], [Agent Wrapper]). Session <Origin Session ID>.`
 
-**Cross-Harness Authorship Convention:**
-When you author a PR based on a handoff, ticket, or artifact synthesized by a *different* model in a *different* session (e.g., executing an implementation plan created by another agent), you MUST attribute the full provenance:
-`Authored by [Social Name-B] ([Model-B], [Harness-B]) consuming [Social Name-A]'s handoff — session A <id>, session B <id>.`
+The `Authored by …` block is the **only** attribution a PR body carries; remove any harness-appended backlink (§3.2) before opening.
 
-This keeps provenance graph-extractable in the cross-harness case, where the gh account does NOT reflect the true author.
+**Cross-Harness Authorship Convention:**
+When authoring a PR from a handoff, ticket, or artifact by a *different* model in a *different* session, attribute full graph-extractable provenance (the gh account does not show the upstream author):
+`Authored by [Social Name-B] ([Model-B], [Harness-B]) consuming [Social Name-A]'s handoff — session A <id>, session B <id>.`
 
 ## 6. Definition of Done & The Handoff State
 
@@ -173,7 +171,7 @@ The agent's task is "Done" once the PR is opened and the §6.2 handoff state is 
 1. **Autonomous Protocol (Headless):** Immediately after opening the PR, invoke:
    `signal_state_transition(state: 'PR_OPENED', target: "[pr-number]")`
 
-2. **Human-in-the-Loop Protocol (Frontier Models):** Halt and await cross-model review (§6.1). Never offer or run self-review unless explicitly instructed or the 7-day-open fallback is reached.
+2. **Human-in-the-Loop Protocol (Frontier Models):** Inform the human Commander that the PR is open and ready for cross-model review (§6.1), then halt and await review. Never offer or run self-review unless explicitly instructed or the 7-day-open fallback is reached.
 
 3. **[HUMAN_ONLY] Merge Execution:** Agents are strictly forbidden from invoking `gh pr merge`, regardless of CI or cross-family approval status. Handoff terminates at `APPROVED`; squash-merge execution belongs exclusively to the human repo owner (`@tobiu` for `neomjs/neo`; the workspace owner for forks/`npx neo-app` workspaces).
 
