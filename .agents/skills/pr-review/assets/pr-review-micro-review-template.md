@@ -11,5 +11,6 @@
 **Findings:** [None, or a short `- [ ]` list — discharged in-place, never deferred.]
 
 - **Origin Session ID:** [Memory Core UUID]
+- [ ] PR body attribution: `Authored by …` is the only attribution; no harness-appended session backlink.
 
 🖖 Social Name, model, harness. Eligibility rules: pr-review-guide §6.4.
