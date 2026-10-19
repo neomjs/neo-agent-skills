@@ -36,7 +36,7 @@ Before Discussion prose, read the Brain-owned [reference-hygiene contract](https
 Close Discussion bodies and substantive comments (divergence cycles, sweeps, graduation signals) with `Name (Model, Harness) · session <uuid>` — the fields GitHub does not render. Acks and one-line replies are exempt.
 
 ## 3. Author's Note Convention (The `#10119` Annotation Pattern)
-Keep the current decision in the **body** (`#10119` pattern); comments hold its history and feedback. Fold changes into the core sections, leaving a brief dated update/link at the bottom so the proposal leads. A corrective comment alone does not update the authoritative head. Notify participants when needed.
+Keep the current decision in the **body** (`#10119` pattern), using `manage_discussion({action:'update_body',…})`; comments hold history and feedback. Fold changes into the core sections, with a dated update/link below. A corrective comment alone leaves the head stale. Notify participants when needed.
 
 <!-- trigger: an accepted fold changes or abandons an approach with older work still pointing to it → apply ../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation -->
 

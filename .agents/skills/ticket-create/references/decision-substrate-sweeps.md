@@ -1,6 +1,6 @@
 # Decision-substrate sweeps — arms `(iii)`, `(iv)` and `(v)` of §1a
 
-§1a's artifact sweeps find tickets, not decision rationale. A `NOT_PLANNED` predecessor is a ruling: read its reason, not only its title.
+Declined predecessors carry decisions; read their reasons.
 
 ## (iii) Memory Core rationale sweep
 
@@ -63,12 +63,12 @@ Prose discipline that leaves no artifact cannot be checked, and these arms exist
 
 If content belongs on a surviving parent, port it there in the same turn. An accepted direction-changing fold, graduation or successor publication must also reconcile the older work it replaces. A new exploratory option alone retires nothing.
 
-Reuse adjacency results: read affected tickets, drafts, research recommendations, tool assumptions and active handovers/checklists, following links as needed. Identify predecessors before filing; apply dispositions once successor IDs exist. Abandonment without a new successor reconciles immediately against existing outcome/research owners:
+Reuse adjacency results and predecessor PR links: read affected tickets, open PRs (draft or ready), research recommendations, tool assumptions and active handovers/checklists. Find predecessors before filing; disposition them once successor IDs exist. Abandonment reconciles immediately against existing outcome/research owners:
 
 1. Cite the accepted decision and compare each recommendation with the **current outcome and required interactions**, not just its technical feasibility. A reusable reference does not authorize a superseded research/delivery path. Keep, narrow, transfer or retire each prescription; move unique obligations, evidence and dissent to a named surviving owner first. Existing research can own the remainder without another ticket.
-2. Update the old entry heads and both sides' successor links. Retire obsolete unchecked instructions explicitly; preserve history under a historical heading. A finally rejected narrow implementation closes `not_planned` per `ticket-intake` §4. Its unresolved quality outcome, research or epic does not close with it; partial overlap leaves remaining obligations current. Epic closure uses `epic-resolution`.
+2. Update old entry heads and both sides' successor links. Retire obsolete instructions; preserve history. Close superseded PRs with decision/successor links, or retarget surviving scope. A finally rejected narrow implementation ticket closes `not_planned` per `ticket-intake` §4; unresolved outcomes stay open, and partial overlap leaves remaining obligations current. Epic closure uses `epic-resolution`.
 3. Apply own-authored or explicitly authorized changes. For foreign bodies/ACs, follow `ticket-create` §11: propose exact text and record the owner/application still owed. A pending proposal is not applied reconciliation.
-4. Read back bodies, links and states: each old entry must reveal its disposition and current owner without archaeology. For immutable memories/handovers, record exact superseded IDs → current authority; preserve history. Record pending owner actions separately from verified updates; unapplied cleanup is not complete.
+4. For immutable entries, put exact superseded IDs → current authority on the surviving owner's current entry and active handover. Preserve history. Read back bodies, links, states and mappings; mutable old heads must reveal disposition/owner. Report pending owner actions separately; unapplied cleanup is incomplete.
 
 ## Empirical anchor
 
