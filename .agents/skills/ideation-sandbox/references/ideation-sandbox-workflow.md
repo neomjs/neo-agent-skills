@@ -36,10 +36,9 @@ Before Discussion prose, read the Brain-owned [reference-hygiene contract](https
 Close Discussion bodies and substantive comments (divergence cycles, sweeps, graduation signals) with `Name (Model, Harness) · session <uuid>` — the fields GitHub does not render. Acks and one-line replies are exempt.
 
 ## 3. Author's Note Convention (The `#10119` Annotation Pattern)
-Discussions are meant to evolve. Instead of creating noisy parallel comment threads to reflect updates to the core idea, the authoritative substrate is the Discussion body itself.
-- Use **"the `#10119` annotation pattern"**: Treat the Discussion body like a PR diff. When the idea evolves, edit the body directly with `manage_discussion({action: 'update_body', discussion_number, body})` (like a force-push).
-- Add annotation markers at the **bottom of the body** (or use re-poll-comment deltas) so the **proposal leads** — e.g. `> **Update 2026-04-24:** Refined a section per feedback.`
-- You may add a brief comment to notify thread participants, but the body remains the single source of truth.
+Keep the current decision in the **body** (`#10119` pattern), using `manage_discussion({action:'update_body',…})`; comments hold history and feedback. Fold changes into the core sections, with a dated update/link below. A corrective comment alone leaves the head stale. Notify participants when needed.
+
+<!-- trigger: an accepted fold changes or abandons an approach with older work still pointing to it → apply ../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation -->
 
 ## 4. Iterative Review Workflow
 The ideation lifecycle mirrors the PR review protocol. Comments serve as review feedback. When an Open Question (OQ) is resolved through discussion, the author edits the body to reflect the decision.
@@ -184,7 +183,7 @@ For the canonical markdown template (post-Epic `#11796` family-keyed shape, same
 
 At §6.2 quorum: file the target artifact for its real `#N` → record `[GRADUATED_TO_TICKET: #N]` plus §6.6 / `Decision Record:` sections → close RESOLVED. Pre-quorum reservations follow `ticket-create-workflow.md §1d`: keep `[PROVISIONAL_UNGRADUATED: D#N]` (and any PR draft with `Refs`) until quorum; then promote, record, remove the marker, and only then become ready/merge-eligible. `Decision Record: REQUIRED` => file/update ADR; name merge gate. Full sequence: [`audits/consensus-mandate.md §author-actions`](../audits/consensus-mandate.md).
 
-Closure: [`audits/discussion-lifecycle-closure.md`](../audits/discussion-lifecycle-closure.md); guard: `npm run ai:audit-discussion-lifecycle`.
+Before reporting graduation complete, apply [same-turn reconciliation](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation) to superseded trails, including direct ADR/PR graduations. Closure: [`audits/discussion-lifecycle-closure.md`](../audits/discussion-lifecycle-closure.md); guard: `npm run ai:audit-discussion-lifecycle`.
 
 ### 6.8 Two-Axis Substrate: Discussion-Graduation + PR-Merge
 

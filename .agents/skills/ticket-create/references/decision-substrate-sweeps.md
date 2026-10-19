@@ -1,16 +1,10 @@
 # Decision-substrate sweeps — arms `(iii)`, `(iv)` and `(v)` of §1a
 
-`ticket-create-workflow.md` §1a arms `(i)` and `(ii)`, and the semantic and exact sweeps beside them, are all **artifact** substrates. They answer *"does a ticket exist?"* None answers *"was this already decided, and why?"*
-
-A `NOT_PLANNED` predecessor is a **ruling**. An artifact sweep surfaces its title and never its reason, so it fails silently: a clean sweep, filed with confidence, carrying a fresh-timestamp attestation proving the sweep ran.
+Declined predecessors carry decisions; read their reasons.
 
 ## (iii) Memory Core rationale sweep
 
-Run at least one `query_raw_memories` as the last step before `create_issue`, keyed on the **problem's nouns** — repo, package, file and symbol names, and the *existing* mechanism that failed, never the one you are about to build:
-
-```js
-query_raw_memories({query: '<repo> <mechanism> <file/symbol> <prior-decision terms>', nResults: 6})
-```
+Immediately before `create_issue`, run at least one `query_raw_memories` keyed on the **problem's nouns**: repo, package, file/symbol and existing failed mechanism, never the proposed solution.
 
 **Query the PROBLEM's nouns, never the SOLUTION's.** This is the distinction the arm turns on, and it is not "search harder":
 
@@ -20,9 +14,9 @@ query_raw_memories({query: '<repo> <mechanism> <file/symbol> <prior-decision ter
 | ❌ structural / boilerplate phrasing | *"should we add a gate for…"* | session boilerplate; Memory Core indexes artifacts |
 | ✅ the problem's nouns — the symptom as observed | *"vast amounts of additional tickets"*, *"different casualty each run"* | prior art that solved the same problem **differently** |
 
-The problem's nouns are frequently **the operator's own words for the symptom**, so their phrasing is a source to mine rather than one to avoid — it is your own solution vocabulary that blinds the query.
+Use the operator's symptom vocabulary; searching only your proposed mechanism hides other solutions.
 
-> **Empirical anchor — two independent instances, one night (2026-08-31).** `neo-agent-skills#32` was filed after a sweep on *"ticket-create duplicate sweep gate Memory Core"* — the mechanism about to be built. `neomjs/neo#16212` (operator-commissioned five weeks earlier, whose gate inventory already named this exact file) was invisible to it; a sweep on the operator's own *"vast amounts of additional tickets"* surfaces it immediately. Independently, `neomjs/neo#18000` was filed after a sweep scoped by **suite name** (*"flaky component suite"*), which could not match `neomjs/neo#17796` because that ticket names the **unit** suite — the searchable thing was the symptom shape, *"different casualty each run"*. Six days of prior art stayed invisible to four seats for that reason.
+> **2026-08-31 anchors:** `neo-agent-skills#32` missed `neomjs/neo#16212` by querying the proposed mechanism instead of *"vast amounts of additional tickets"*. `neomjs/neo#18000` missed `neomjs/neo#17796` by querying a suite name instead of *"different casualty each run"*. Match the symptom across different solutions and suites.
 
 `query_summaries` and `explore_lane_landscape` widen the sweep when the first call returns only noise.
 
@@ -32,9 +26,7 @@ The problem's nouns are frequently **the operator's own words for the symptom**,
 gh issue list --repo <r> --state open --assignee @me --json number,title
 ```
 
-Then read the **bodies** of the two or three touching the same surface — not the titles. A site table, a row table, or a "deferred" clause is where a past self parked exactly this.
-
-Neither `(i)` (recency-bounded) nor a closed-issue search reaches an **open, old, self-assigned** parent. A defect found *while measuring something else* is the high-risk shape: it feels like discovery precisely because no retrieval preceded it.
+Read the **bodies** of the two or three same-surface hits, including tables and deferred clauses. Old open self-assignments escape both `(i)`'s recency window and closed-state queries; incidental discoveries need this check too.
 
 ## (v) Epic-layer outcome-authority sweep
 
@@ -46,14 +38,12 @@ gh issue list --repo <r> --label epic --state open --json number,title
 
 Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
 
-**Read every row, but read one line of it.** `epic-create` requires each Epic body to open with a `Terminal predicate:` line precisely so this sweep is priced in lines, not bodies. Two stages, and the second is bounded by the first:
+**Read every predicate, then selected bodies.** `epic-create` puts `Terminal predicate:` first to keep this exhaustive read affordable:
 
-1. **Predicate scan (every row).** Read each open epic's `Terminal predicate:` line. Cheap enough to be exhaustive, which is the only reason "every" is honest here.
-2. **Body read (the ranked few).** For rows predating the field, or whose predicate is close enough to yours to be arguable, run the semantic outcome-overlap query and read only the bodies it ranks. Retrieval surfaces the candidates; **only a reader can rule** — that is the judgement the arm exists to force, and it is not the part that was expensive.
+1. **Every row:** read each open epic's terminal predicate.
+2. **Ranked bodies:** for missing or arguably overlapping predicates, run the semantic outcome-overlap query and read its ranked candidates. Retrieval proposes; the reader judges overlap.
 
-> **Population anchor, measured 2026-09-02 — do not trust this as a present-tense fact, re-run it.** Open `label:epic`: `neomjs/neo` **29**, `neo-agent-brain` **34**, `neo-agent-institution` 6, `neo-agent-skills` 1; the first five `neomjs/neo` bodies run 4,936–12,575 characters. An unstaged all-bodies read is therefore ~290k characters in one repo — the cost that mutes a gate within a week. A rule that embeds a population as an **adjective** ("there are few") carries a fact that decays silently while its prose stays confident; state the number with its date, or state the query.
-
-An outcome authority does not churn, so it sits permanently outside `(i)`'s window and its title speaks the outcome's vocabulary rather than a newcomer's — both artifact axes miss it, for different reasons. The cost is topology: competing roots split sub-attachment, review attention and closure authority until someone folds them.
+**Cost control:** read predicates exhaustively, bodies selectively. On 2026-09-02, 29 Engine epics implied ~290k characters for an all-body read; re-query populations rather than calling them small. Standing outcomes can predate `(i)`'s window and use different nouns, splitting ownership when missed.
 
 > **Anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** Two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep ran honestly and **passed**; a peer's epic review caught it after filing.
 
@@ -69,24 +59,22 @@ Epic sweep: <n> open epics read, no shared terminal predicate    # epic-labeled 
 
 Prose discipline that leaves no artifact cannot be checked, and these arms exist because prose discipline failed.
 
-## Same-turn porting
+## Same-turn reconciliation
 
-If content belongs on a parent ticket, comment it onto that parent **in the same turn**. A note-to-self inside a closing comment ("record this on `#N`") has no owner and no trigger; hours later it is invisible to the agent who wrote it.
+If content belongs on a surviving parent, port it there in the same turn. An accepted direction-changing fold, graduation or successor publication must also reconcile the older work it replaces. A new exploratory option alone retires nothing.
+
+Reuse adjacency results and predecessor PR links: read affected tickets, open PRs (draft or ready), research recommendations, tool assumptions and active handovers/checklists. Find predecessors before filing; disposition them once successor IDs exist. Abandonment reconciles immediately against existing outcome/research owners:
+
+1. Cite the accepted decision and compare each recommendation with the **current outcome and required interactions**, not just its technical feasibility. A reusable reference does not authorize a superseded research/delivery path. Keep, narrow, transfer or retire each prescription; move unique obligations, evidence and dissent to a named surviving owner first. Existing research can own the remainder without another ticket.
+2. Update old entry heads and both sides' successor links. Retire obsolete instructions; preserve history. Close superseded PRs with decision/successor links, or retarget surviving scope. A finally rejected narrow implementation ticket closes `not_planned` per `ticket-intake` §4; unresolved outcomes stay open, and partial overlap leaves remaining obligations current. Epic closure uses `epic-resolution`.
+3. Apply own-authored or explicitly authorized changes. For foreign bodies/ACs, follow `ticket-create` §11: propose exact text and record the owner/application still owed. A pending proposal is not applied reconciliation.
+4. For immutable entries, put exact superseded IDs → current authority on the surviving owner's current entry and active handover. Preserve history. Read back bodies, links, states and mappings; mutable old heads must reveal disposition/owner. Report pending owner actions separately; unapplied cleanup is incomplete.
 
 ## Empirical anchor
 
 **`neomjs/neo#17997`, 2026-08-31.** Re-filed **row 3** of `#17868` — open, older than the `(i)` window, and assigned to the filer — four hours after that same filer's own `#17961` closing comment recorded that row 3's blocker belonged **on `#17868`**.
 
-Three blind spots, one root — the sweep searched for artifacts, never for decisions:
-
-| Blind spot | Missed because |
-|---|---|
-| recency-shaped | the standing parent is older than the latest-20 window |
-| open/closed-shaped | the decline lives in a closed issue; `(i)` reads open |
-| ownership-shaped | the parent is open, old, and already assigned to the filer |
-| authority-shaped | the standing Epic is open, old, owned by **someone else**, and titled in the outcome's vocabulary — arm `(v)` |
-
-Another artifact query would have caught none of them.
+The missed decision can live in an older parent, a closed decline, a prior self-assignment or someone else's standing outcome; a latest-open artifact scan alone covers none of those cases.
 
 **Why the sweeps run LAST.** `#12856`, 2026-06-10: four agents raced one prompt into three duplicates, each having swept honestly; the one who re-checked immediately before filing produced none. Check-at-start decays across a multi-minute protocol.
 

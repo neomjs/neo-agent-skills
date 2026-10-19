@@ -55,6 +55,7 @@ Each sub the decomposition creates MUST be a **leaf that a single PR can FULLY d
 4. **Author the body** = the `Terminal predicate:` line, then problem-scope + intended-solution (+ ledger if graduated). NO ACs, NO sub-list.
 5. **Label `epic`** + apply title hygiene (per `ticket-create`).
 6. **Create subs separately** (via `ticket-create` — each with its own ACs + Contract Ledger) and **link each via `update_issue_relationship`** (parent = the Epic). Add subs incrementally as decomposition clarifies; that governs Epic life. Goal-scoping graduation is stricter: full v1 leaves are filed/native-linked, while the Epic body stays sub-list-free.
+   - If this replaces an older plan, apply [same-turn reconciliation](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation) after successor IDs exist; preserve or transfer remaining obligations before retiring old work.
 7. **Verify** (pre-flight, before `create_issue`):
    - [ ] Body contains **no** `## Acceptance Criteria` block.
    - [ ] Body contains **no** hardcoded sub-registry (subs discoverable via parent-child relationship instead).
