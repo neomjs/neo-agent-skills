@@ -149,6 +149,8 @@ You are **FORBIDDEN** from executing the following tools while on the `dev` or `
 
 If you determine the ticket is stale or harmful, you MUST execute the Rejection Protocol instead of attempting to build it.
 
+For surviving obligations or stale entry points, use [same-turn reconciliation](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation) within this rejection step, without another sweep.
+
 **Close Policy:**
 - **Architecture Exploration / Epic Tickets:** **DO NOT close the ticket.** It must be preserved so the Swarm can formally evaluate the paradox. Record what it waits on via `update_issue_relationship(blocked_by)`. Not a label: `needs-re-triage` is for externally-authored tickets below the bar (see `ticket-triage`), so stamping it here pollutes that queue.
 - **1:1 Implementation Tickets (Including Substrate):** If the ticket is a narrow, final declined implementation task (e.g., `already-resolved`, `duplicate`, `invalid-or-negative-roi`), you MUST close the ticket as `not_planned` to prevent preserving bad payloads as future traps, even if the ticket prescribes substrate edits.
