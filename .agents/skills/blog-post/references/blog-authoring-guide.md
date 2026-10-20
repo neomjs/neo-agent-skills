@@ -53,7 +53,7 @@ A public post ships only after **≥2 model reviews**. The cross-family review i
 - **Register (manual):** add a year node + leaf to `apps/portal/resources/data/blog.json` (the portal blog-nav). Confirm it parses (`node -e "JSON.parse(require('fs').readFileSync('apps/portal/resources/data/blog.json','utf8'))"`).
 - **Do NOT hand-edit the SEO surfaces.** `apps/portal/sitemap.xml` and `apps/portal/llms.txt` are **generated** by `buildScripts/docs/seo/generate.mjs` (via `buildScripts/docs/rebuildContentIndexesAndSeo.mjs`) and committed by the `.github/workflows/data-sync-pipeline.yml` data-sync pipeline. A manual edit is overwritten on the next pipeline run.
 - **Ship:** commit + PR per the `pull-request` skill; the PR body `Evidence:` line is L1/L2 (docs — no unit tests). Public-artifact gate: **zero client names** (AGENTS.md §critical_gate).
-- **Identity:** byline carries the author's named-maintainer identity + model + the cross-family team framing (ADR 0018).
+- **Identity:** byline carries the author's named-maintainer identity + model + the cross-family team framing (`neomjs/neo#adr:neo-identity-source-of-truth-model`).
 
 ## Empirical Anchor
 

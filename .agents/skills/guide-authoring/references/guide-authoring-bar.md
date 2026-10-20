@@ -58,6 +58,26 @@ Before any APPROVE, re-grade the whole guide — not the delta:
 
 If any answer is "no", it is `REQUEST_CHANGES` — name the gap against the bar, not a nitpick. An approve that the operator then rejects is worse than no review.
 
+## 7. ADR Custody Redirects, Repository-Qualified Identity & Slug Citations — `MACHINE-ENFORCEABLE-CANDIDATE`
+
+Architecture Decision Records are owned per repository; [neomjs/neo-agent-brain#adr:adrs-as-graph-queryable-entities](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md) (`§§2.6–2.11`) is the single schema authority (do not copy its field tables into other skills or routers):
+
+- **Slug citations & required context (`§2.7.1`, `§2.11`):**
+  - Ordinary citations use `adr:<slug>` only when the current file/issue/PR has evidenced same-forge, same-repository context; `<org>/<repo>#adr:<slug>` when forge context is established; or `<forge>/<org>/<repo>#adr:<slug>` for explicit forge+repository (e.g. `neomjs/neo-agent-brain#adr:aiconfig-reactive-provider-ssot`, `neomjs/neo#adr:skill-anatomy-and-authoring-contract`).
+  - **Organization Discussions, Memory Core memories, and A2A messages (`§2.7.1`):** must explicitly qualify `<org>/<repo>#adr:<slug>` (or `<forge>/<org>/<repo>#adr:<slug>` when the origin envelope does not establish the forge). Never infer repository context from the hosting Discussion repo, seat, `cwd`, or `relatedTickets`.
+  - **Packaged skills (`.agents/skills/**`):** materialize across multiple repositories with no single destination repo context, so concrete citations in skill payloads must qualify `<org>/<repo>#adr:<slug>` (or `<forge>/<org>/<repo>#adr:<slug>`). Canonical 4-field machine keys (`adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>`, schema in `§2.6`) remain exact identity references when repository-rename/reuse disambiguation is needed.
+  - **Legacy numeric forms (`§2.7.1`):** existing numeric forms (`ADR 0018`, `adr-0006`, `<forge>/<org>/<repo>#adr-NNNN`) remain resolvable legacy references; new prose and skill payloads prefer qualified slug citations, and bare single-repository filenames (`<NNNN>-<slug>.md` outside a canonical URL) are rejected by `lint-skill-corpus`.
+- **Source-local slug & `Aliases` history (`§2.7.2`, `§2.11`):** Current slug is the lowercase ASCII kebab suffix of `NNNN-<slug>.md` (`^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`). On rename, add the former slug to the single canonical two-column `Attribute | Value` table between initial H1 and first H2 (`| **Aliases** | \`old-slug\`, \`former-slug\` |`; normalize legacy opening metadata in the same edit if needed). Fenced, blockquoted, list-nested, or later-section tables reserve nothing; duplicate rows refuse. Normal creation (`1` file edit) and rename (`1` file + `1` `Aliases` row edit in the same file) require **no second manifest or registration action**.
+- **Authoring-floor observation vs admission eligibility (`§2.6`):** Present-file and unfiltered git-history observations (which must disclose `incompleteHistory` when shallow clones or add/delete-only scans omit renames/moves) are advisory candidate aids only; only the admission owner's proved population (including move-out and historical reservations) certifies number eligibility.
+- **Worked fixtures (`§§2.6–2.10`):**
+  1. *Redirect pointer vs full ADR (`§2.9`):* A vacated source path retains only `type: redirect` and `target: adr:github.com:1347756127:neomjs%2Fneo-agent-institution:0038` in frontmatter plus a human locator link in prose — never ADR status/number/title frontmatter or competing decision text.
+  2. *Equal numbers in two repositories (`§2.6`):* `adr:github.com:1347756127:neomjs%2Fneo-agent-institution:0038` and `adr:github.com:1344062228:neomjs%2Fneo-agent-brain:0038` are distinct decisions; local numbers do not collide across `(forge, repositoryId)`.
+  3. *Rename with `Aliases` + repository rename/reuse (`§§2.6–2.7.2`):* Renaming `<NNNN>-<old-slug>.md` → `<NNNN>-<new-slug>.md` records `| **Aliases** | \`harness-docking-design\` |` on `neomjs/neo#adr:docking-design`; if a repository rename and old-name reuse ever conflict with reserved historical occupancy, disambiguate with the `§2.6` canonical key.
+  4. *Unavailable destination (`§2.10`):* When an admitted key's declared source is unreadable, report identity resolution and unavailable document as separate facts (`identityResolved: true, documentAvailable: false, stale: true`) rather than pruning or guessing.
+  5. *Missing identity proof / ambiguous bare alias (`§§2.7.1, 2.8`):* An unqualified alias or bare legacy number without evidenced origin context remains unresolved/ambiguous within reader scope — never infer provenance from current custodian, URL occupancy, or traversal order.
+
+*Retirement trigger:* Examples retire in favor of executable reader enforcement when the latter owns the same decision.
+
 ## Empirical Anchor
 
 The MemoryCore arc (`#14342` → `#14344` ~6/10 → `#14348` / `#14351` 9/10) and the KnowledgeBase rubber-stamp reversal (`#14346`), 2026-06-29. Each cycle caught exactly one failure mode above; this skill is those cycles distilled.

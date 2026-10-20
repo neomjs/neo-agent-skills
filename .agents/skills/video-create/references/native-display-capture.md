@@ -38,7 +38,7 @@ Create a fresh observational fingerprint for the intended target immediately bef
 - a topology snapshot and timestamp;
 - a safe screenshot or digest of the clean frame.
 
-The fingerprint is not durable routing authority. ADR 0029 §2.8.5 keeps semantic names, URLs, titles, timing, and runtime IDs from becoming physical-handle authority. Treat the fingerprint only as a short-lived selection/revalidation receipt.
+The fingerprint is not durable routing authority. `neomjs/neo#adr:docking-design` §2.8.5 keeps semantic names, URLs, titles, timing, and runtime IDs from becoming physical-handle authority. Treat the fingerprint only as a short-lived selection/revalidation receipt.
 
 ## 4. Recorder revalidation and frame zero
 
@@ -65,7 +65,7 @@ Native footage and application truth are complementary:
 
 Bind each receipt to the exact take ID, source head, timestamp range, and evidence claim. If the Neural Link server/OpenAPI/harness projection changed, rerun capability discovery and the smoke proof before capture.
 
-For a claim about physical close, ADR 0029 §2.8.5 is explicit: a native `close()` return is provisional. The receipt becomes terminal only after the connected runtime `windowId` disappears from topology. For focus/position or other physical effects, record the corresponding before/after observation and semantic state; never treat dispatch success as effect proof.
+For a claim about physical close, `neomjs/neo#adr:docking-design` §2.8.5 is explicit: a native `close()` return is provisional. The receipt becomes terminal only after the connected runtime `windowId` disappears from topology. For focus/position or other physical effects, record the corresponding before/after observation and semantic state; never treat dispatch success as effect proof.
 
 Independently opened, cross-origin, stale, or uncorrelated windows can remain observable, but physical control fails closed.
 

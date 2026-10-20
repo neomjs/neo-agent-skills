@@ -6,7 +6,7 @@ This payload provides the ADR-specific branch of the ticket-intake successor-ris
 
 Run this audit when any architecture-bearing ticket, Discussion, Epic, or PR:
 
-- cites an ADR, Decision Record, or `learn/agentos/decisions/` file;
+- cites an ADR (`<org>/<repo>#adr:<slug>`, same-repo `adr:<slug>`, or canonical key `adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>` per [neomjs/neo-agent-brain#adr:adrs-as-graph-queryable-entities](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md) and [`guide-authoring-bar.md §7`](../../guide-authoring/references/guide-authoring-bar.md#7-adr-custody-redirects-repository-qualified-identity--slug-citations--machine-enforceable-candidate)), Decision Record, or `learn/**/decisions/` file;
 - predates a related accepted ADR and prescribes a conflicting shape;
 - postdates an accepted ADR and proposes a different architecture;
 - introduces, amends, supersedes, or retires durable agent/workflow substrate;
@@ -19,7 +19,7 @@ If no related ADR exists and the proposal does not affect decision-record substr
 Before classifying, gather:
 
 - `Artifact`: ticket / Discussion / Epic / PR number, author, `createdAt`, and `updatedAt`.
-- `Related ADR(s)`: ADR number/path, `Status`, decision date if present, and current repo state.
+- `Related ADR(s)`: repository-qualified ADR identifier (`<org>/<repo>#adr:<slug>`, same-repo `adr:<slug>`, or §2.6 canonical key), canonical path, `Status`, and decision date if present. If a local file is a redirect stub (`type: redirect` + `target: <canonical-key>` per §2.9, or `Status: Moved`), resolve its `target` through the admitted catalog to the canonical repository/path — a redirect pointer is a custody redirect, **never** `Superseded` or `Retired`.
 - `Chronology`: whether the artifact predates, postdates, or is same-cycle with the ADR.
 - `Conflict surface`: the concrete contract, workflow, service boundary, or architectural premise that overlaps.
 - `Evidence`: source/docs/tests/tickets/Discussions/PRs proving alignment, conflict, supersession, or fresh challenge.
@@ -47,16 +47,16 @@ Do not classify from title similarity alone. The conflict must be tied to a spec
 
 ## 5. Required Output Shape
 
-When this audit fires, record a compact line in the current workflow artifact:
+When this audit fires, record a compact line in the current workflow artifact using the repository-qualified ADR reference (`<org>/<repo>#adr:<slug>` or same-repo `adr:<slug>`):
 
 ```md
-ADR successor-risk: <verdict> — artifact <#N/date>; ADR <####/status/date>; evidence <path|issue|PR|discussion>; route <continue|supersede|challenge|amendment-required|pending-authority>.
+ADR successor-risk: <verdict> — artifact <#N/date>; ADR <org>/<repo>#adr:<slug> (<status>/<date>); evidence <path|issue|PR|discussion>; route <continue|supersede|challenge|amendment-required|pending-authority>.
 ```
 
 For public artifacts that create new work, also include:
 
 ```md
-Decision Record impact: none | aligned-with ADR #### | depends-on ADR #### | amends ADR #### | supersedes ADR #### | challenges ADR ####
+Decision Record impact: none | aligned-with <org>/<repo>#adr:<slug> | depends-on <org>/<repo>#adr:<slug> | amends <org>/<repo>#adr:<slug> | supersedes <org>/<repo>#adr:<slug> | challenges <org>/<repo>#adr:<slug>
 ```
 
 ## 6. Workflow Surface Map

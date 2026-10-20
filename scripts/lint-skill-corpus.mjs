@@ -141,9 +141,25 @@ const
     DOCUMENT_REFERENCE_FILE     = join(SKILLS, 'document-references.v1.json'),
     DOCUMENT_REFERENCE_SELECTOR = 'learn/[A-Za-z0-9_./-]+\\.md',
     DOCUMENT_REFERENCE_EXACT_RE = new RegExp(`^(?:${DOCUMENT_REFERENCE_SELECTOR})$`),
+    DECISION_TOKEN_RE           = /^learn\/(?:[A-Za-z0-9_.-]+\/)?decisions\/(\d{4})-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md$/,
+    BARE_ADR_FILENAME_RE        = /(?<![A-Za-z0-9_./-])0\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*\.md\b/g,
+    HASH_ADR_TOKEN_RE           = /([A-Za-z0-9_./<>-]*#adr:[^\s`'")\]>,;:]*)/g,
+    STANDALONE_ADR_TOKEN_RE     = /(?<![A-Za-z0-9_./<>#-])\b(adr:[^\s`'")\]>,;]*)/g,
+    PCT_ENCODED_FIELD           = '(?:[A-Za-z0-9\\-._~]|%[0-9A-F]{2})+',
+    CANONICAL_ADR_KEY_RE        = new RegExp(`^adr:${PCT_ENCODED_FIELD}:${PCT_ENCODED_FIELD}:${PCT_ENCODED_FIELD}:(?!0000)\\d{4}$`),
+    ADR_SLUG_RE                 = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
+    ALLOWED_ADR_PLACEHOLDERS    = [
+        '<forge>/<org>/<repo>#adr:<slug>',
+        '<forge>/<organization>/<repository>#adr:<slug>',
+        '<org>/<repo>#adr:<slug>',
+        '<organization>/<repository>#adr:<slug>',
+        'adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>',
+        'adr:<forge>:<repositoryId>:<namespace>:<number>',
+        'adr:<slug>'
+    ],
     DOCUMENT_REFERENCE_OWNERS   = new Map([
-        ['neomjs/neo-agent-brain', 13],
-        ['neomjs/neo',             11]
+        ['neomjs/neo-agent-brain', 17],
+        ['neomjs/neo',             12]
     ]),
     DOCUMENT_REFERENCE_KINDS    = new Set(['load', 'target-write', 'prose']),
     DOCUMENT_REFERENCE_ROOT_KEYS = new Set(['schemaVersion', 'selector', 'rows']),
@@ -180,16 +196,17 @@ if (documentReferenceCensus.selector !== DOCUMENT_REFERENCE_SELECTOR) {
 }
 
 const
-    documentReferenceRows = Array.isArray(documentReferenceCensus.rows) ? documentReferenceCensus.rows : [],
-    documentRowsByToken    = new Map(),
-    ownerCounts            = new Map([...DOCUMENT_REFERENCE_OWNERS.keys()].map(owner => [owner, 0]));
+    documentReferenceRows    = Array.isArray(documentReferenceCensus.rows) ? documentReferenceCensus.rows : [],
+    documentRowsByToken      = new Map(),
+    decisionRowsByOwnerSlug  = new Map(),
+    ownerCounts              = new Map([...DOCUMENT_REFERENCE_OWNERS.keys()].map(owner => [owner, 0]));
 
 if (!Array.isArray(documentReferenceCensus.rows)) {
     errors.push('document-reference census rows must be an array.')
 }
 
-if (documentReferenceRows.length !== 24) {
-    errors.push(`document-reference census must contain exactly 24 rows; found ${documentReferenceRows.length}.`)
+if (documentReferenceRows.length !== 29) {
+    errors.push(`document-reference census must contain exactly 29 rows; found ${documentReferenceRows.length}.`)
 }
 
 for (const [index, row] of documentReferenceRows.entries()) {
@@ -213,7 +230,21 @@ for (const [index, row] of documentReferenceRows.entries()) {
     } else if (documentRowsByToken.has(row.token)) {
         errors.push(`document-reference census has duplicate row for ${row.token}.`)
     } else {
-        documentRowsByToken.set(row.token, row)
+        documentRowsByToken.set(row.token, row);
+
+        const decisionMatch = DECISION_TOKEN_RE.exec(row.token);
+
+        if (decisionMatch && typeof row.canonicalOwner === 'string') {
+            const
+                slug     = decisionMatch[2],
+                ownerKey = `${row.canonicalOwner}#${slug}`;
+
+            if (decisionRowsByOwnerSlug.has(ownerKey)) {
+                errors.push(`document-reference census has duplicate decision slug for ${ownerKey}.`)
+            } else {
+                decisionRowsByOwnerSlug.set(ownerKey, row)
+            }
+        }
     }
 
     if (!DOCUMENT_REFERENCE_OWNERS.has(row.canonicalOwner)) {
@@ -291,6 +322,72 @@ function recordDocumentReference({file, index, skillName, source, token}) {
     }
 }
 
+/**
+ * @summary Validates ADR slug/key references and rejects bare single-repo ADR filenames or malformed #adr: tokens.
+ */
+function recordAdrReferences({file, skillName, source}) {
+    let masked = source;
+
+    for (const placeholder of ALLOWED_ADR_PLACEHOLDERS) {
+        masked = masked.replaceAll(placeholder, ' '.repeat(placeholder.length))
+    }
+
+    for (const match of masked.matchAll(BARE_ADR_FILENAME_RE)) {
+        errors.push(`${file} references bare single-repository ADR filename ${match[0]} outside its canonical URL.`)
+    }
+
+    for (const match of masked.matchAll(HASH_ADR_TOKEN_RE)) {
+        const
+            token               = match[1].replace(/\.$/, ''),
+            [prefix, slug = ''] = token.split('#adr:'),
+            ownerMatch          = /^(?:([a-z0-9.-]+\.[a-z]{2,})\/)?([a-z0-9_.-]+\/[a-z0-9_.-]+)$/.exec(prefix),
+            validSlug           = ADR_SLUG_RE.test(slug);
+
+        if (!ownerMatch || !validSlug) {
+            errors.push(`${file} has malformed or unqualified #adr: reference ${token}; expected <org>/<repo>#adr:<slug> or <forge>/<org>/<repo>#adr:<slug>.`);
+            continue
+        }
+
+        const
+            owner    = ownerMatch[2],
+            ownerKey = `${owner}#${slug}`,
+            row      = decisionRowsByOwnerSlug.get(ownerKey);
+
+        if (!row) {
+            errors.push(`${file} references ${token}, which has no document-reference census row for ${ownerKey}.`);
+            continue
+        }
+
+        if (!observedDocumentSkills.has(row.token)) observedDocumentSkills.set(row.token, new Set());
+        observedDocumentSkills.get(row.token).add(skillName)
+    }
+
+    for (const match of masked.matchAll(STANDALONE_ADR_TOKEN_RE)) {
+        const token = match[1].replace(/[.:]$/, '');
+
+        if (CANONICAL_ADR_KEY_RE.test(token)) continue;
+
+        const
+            slug      = token.slice(4),
+            validSlug = ADR_SLUG_RE.test(slug);
+
+        if (!validSlug) {
+            errors.push(`${file} has malformed adr: reference ${token}; expected <org>/<repo>#adr:<slug> or canonical 4-field key.`);
+            continue
+        }
+
+        const row = decisionRowsByOwnerSlug.get(`neomjs/neo-agent-skills#${slug}`);
+
+        if (!row) {
+            errors.push(`${file} uses unqualified ${token} in a cross-repository skill payload; qualify as <org>/<repo>#adr:${slug}.`);
+            continue
+        }
+
+        if (!observedDocumentSkills.has(row.token)) observedDocumentSkills.set(row.token, new Set());
+        observedDocumentSkills.get(row.token).add(skillName)
+    }
+}
+
 for (const name of dirs) {
     const skillRoot = join(SKILLS, name);
 
@@ -304,6 +401,8 @@ for (const name of dirs) {
         for (const match of source.matchAll(new RegExp(DOCUMENT_REFERENCE_SELECTOR, 'g'))) {
             recordDocumentReference({file, index: match.index, skillName: name, source, token: match[0]})
         }
+
+        recordAdrReferences({file, skillName: name, source})
     }
 }
 
@@ -321,6 +420,12 @@ for (const [skillName, skill] of Object.entries(manifest.skills)) {
             token: match[0]
         })
     }
+
+    recordAdrReferences({
+        file: `skills.manifest.json:${skillName}.description`,
+        skillName,
+        source
+    })
 }
 
 for (const [token, row] of documentRowsByToken) {

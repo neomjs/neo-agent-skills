@@ -51,7 +51,7 @@ You must use the `ideation-sandbox` skill to post a GitHub Discussion proposing 
 - **No Direct PRs:** This skill produces Ideas (Discussions), never Code (Commits/PRs).
 - **Attribution:** The resulting GitHub Discussion MUST include an Author's Note citing the provenance of the friction point, using the `citations` array from Step 2. (e.g., *"External friction observed in [ecosystem] [date]; this Discussion abstracts and responds natively via Neo's architecture."*)
 - **Adjacency Sweep:** Before posting the Discussion, execute a duplicate sweep (per `ideation-sandbox` guidelines) to ensure the concept isn't already being discussed.
-- **Interaction Grain:** When an external system is a capability floor, author parity rows at interaction grain (what the user feels), never feature-name grain — coarse rows propagate as settled facts (anchor: ADR 0029 §4 row 1 / #14934).
+- **Interaction Grain:** When an external system is a capability floor, author parity rows at interaction grain (what the user feels), never feature-name grain — coarse rows propagate as settled facts (anchor: `neomjs/neo#adr:docking-design` §4.1 row 1 / #14934).
 
 ## Integrations & Context
 
