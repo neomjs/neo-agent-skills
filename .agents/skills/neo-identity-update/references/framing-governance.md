@@ -3,9 +3,9 @@
 Framing (taglines, positioning, audience) is **deliberately plural** — different surfaces address different audiences and may legitimately differ. Governance means keeping each surface *compatible with* the canonical apex, NOT identical to it.
 
 ## The canonical apex
-The apex is the operator-DECIDED frame below (ADR 0018 §2.7 OD-1) — the source of authority for "what Neo is." The `README.md` opening is the surface that should *lead* with this apex; every other framing is a governed projection of it. (If the README currently leads with an older frame, that is drift the skill corrects — the apex is the decided frame, not "whatever the README says today".)
+The apex is the operator-DECIDED frame below (`neomjs/neo#adr:neo-identity-source-of-truth-model` §2.7 OD-1) — the source of authority for "what Neo is." The `README.md` opening is the surface that should *lead* with this apex; every other framing is a governed projection of it. (If the README currently leads with an older frame, that is drift the skill corrects — the apex is the decided frame, not "whatever the README says today".)
 
-GRADUATED via Discussion #12234 (full cross-family triad, 2026-05-31; ADR 0018 §2.7 OD-1). Canonical apex line (human-facing — README + portal hero):
+GRADUATED via Discussion #12234 (full cross-family triad, 2026-05-31; `neomjs/neo#adr:neo-identity-source-of-truth-model` §2.7 OD-1). Canonical apex line (human-facing — README + portal hero):
 
 > **Neo.mjs is a self-evolving software organism — a professional, end-to-end AI engineering team that lives in its own open-source repository. Where the industry runs one AI agent and gets slop, Neo runs a swarm of minds from rival labs — Claude, Gemini, GPT — that read each other's reasoning through shared memory and Active Hybrid GraphRAG, catching what no single model can see in itself. Through the Neural Link possession interface, the swarm does not just read code; it inhabits live applications, inspecting semantic runtime state, mutating UI and data in real time, and turning conversational UIs from chat panels into agents collaborating inside the application. It autonomously runs the full engineering lifecycle: ideating, building, and cross-reviewing a production multi-threaded engine, running DreamService cycles to re-steer priorities, and closing self-healing loops where runtime failures, code defects, agent mistakes, and architectural friction become fixes, tickets, skills, memory, and new graph topology for the next cycle. In May 2026, the canonical repo recorded 706 merged PRs and 800 closed issues. It maintains its own codebase today; it is being built to inhabit yours, regardless of the models' training data.**
 
@@ -15,7 +15,7 @@ Concise form for machine surfaces that present the whole (never the word "slop")
 
 **Dated proof point** (NOT inline in the apex — proof layer only; use a FIXED calendar anchor, not a rolling window): **in May 2026 the canonical repo recorded 706 merged PRs and 800 closed issues** (GitHub search, verified 2026-05-31). NEVER write "peer-reviewed" counts (search verifies *merged*, not review-state) or a month-over-month ratio / "accelerating" claim (date-stamps the identity; the April→May delta was mis-stated as ~3×) without a precise metric spec + audit — per @neo-gpt V-B-A `dc-17119216`/`dc-17119231` + operator flag.
 
-Structure beneath the apex (ADR 0018 §2.7 OD-4: three repositories, three products):
+Structure beneath the apex (`neomjs/neo#adr:neo-identity-source-of-truth-model` §2.7 OD-4: three repositories, three products):
 > - **Body — `neomjs/neo`, the Engine:** the high-performance off-main-thread UI runtime — JSON-first since 2019, App Worker as the main actor, web multi-window. The adoption substrate. (Engine-category mental models apply *here only*.)
 > - **Brain — `neomjs/neo-agent-brain`, the Agent OS:** Memory Core (**Active Hybrid GraphRAG**), Knowledge Base, A2A, orchestrator, DreamService, the MX loop; gives agents continuity, runs without the Fleet Manager.
 > - **Institution — `neomjs/neo-agent-institution`, the Fleet Manager:** makes Neo accessible; starts the harnesses over the Brain's Fleet transport.
@@ -28,7 +28,7 @@ Structure beneath the apex (ADR 0018 §2.7 OD-4: three repositories, three produ
 
 Proof asset: blog #10074 (cross-family self-healing, first-person, verified-true).
 
-When the operator changes the apex, update this section and ADR 0018 §2.7 in the same PR.
+When the operator changes the apex, update this section and `neomjs/neo#adr:neo-identity-source-of-truth-model` §2.7 in the same PR.
 
 ## Audience-segmented clusters (deliberate — do NOT flatten)
 The same product reads differently per audience; these are kept as ONE coupled cluster each, governed for *compatibility* with the apex:
@@ -40,7 +40,7 @@ The same product reads differently per audience; these are kept as ONE coupled c
 | "self-maintaining codebase / autonomous AI engineering team" | the Brain's and Institution's repo descriptions | AI-platform / agent-infra builders (the audience that funds the comparison tools) |
 | "self-evolving software organism / two hemispheres" | `.github/VISION.md`, AGENTS.md anchors, deeper learn/ docs | researchers, the swarm itself |
 
-All four are projections of the **canonical apex** — the self-evolving software organism (§ The canonical apex), with Body/Brain the two hemispheres beneath it. The label leads its surfaces, with the apex behind it as the proof paragraph (ADR 0018 §2.3). Members of a cluster must stay coherent with **each other** (don't let package.json and GitHub description diverge) and **compatible** with the apex (a narrower projection, not a contradiction). Each repository's own metadata projects its own product — for `neomjs/neo` the Engine (OD-4, `./affected-areas-map.md` Class 4); an organism-wide description there is drift.
+All four are projections of the **canonical apex** — the self-evolving software organism (§ The canonical apex), with Body/Brain the two hemispheres beneath it. The label leads its surfaces, with the apex behind it as the proof paragraph (`neomjs/neo#adr:neo-identity-source-of-truth-model` §2.3). Members of a cluster must stay coherent with **each other** (don't let package.json and GitHub description diverge) and **compatible** with the apex (a narrower projection, not a contradiction). Each repository's own metadata projects its own product — for `neomjs/neo` the Engine (OD-4, `./affected-areas-map.md` Class 4); an organism-wide description there is drift.
 
 ## Drift vs intentional-divergence (the escalation branch)
 When a surface's framing **contradicts** the apex, classify:
@@ -62,5 +62,5 @@ Identity copy attracts superlatives. Gate every one:
 | Client/partner/customer names | **Forbidden** on every surface. Cloud/multi-tenant = generic capability terms only. |
 | Awards / external facts | Verify against an external source before public citation. |
 
-## Why a cross-family review gate (ADR 0018 §2.6)
+## Why a cross-family review gate (`neomjs/neo#adr:neo-identity-source-of-truth-model` §2.6)
 An identity edit is a single-author change to canonical framing — the self-authored-blind-spot risk class that cross-family review reliably catches (anchors: PRs #12146, #11999, #11962). Mandatory before merge; the human merge-gate is the backstop when only one family is active.

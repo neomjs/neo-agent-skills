@@ -30,14 +30,14 @@ Before writing any "fastest / only / first / Nth" into a surface, run the check 
 For ACTIONS, also run the liveness and proof-adjacency checks in `./cta-governance.md`. A CTA that points at a dead / low-retention / unverified surface cannot be primary. A strong claim with no nearby proof door fails the ACTIONS gate even if the prose is otherwise accurate.
 
 ## Step 4 — One PR, cross-family review
-- Branch + PR targeting `dev` (per repo pull-request workflow). Reference the identity ticket and ADR 0018.
+- Branch + PR targeting `dev` (per repo pull-request workflow). Reference the identity ticket and `neomjs/neo#adr:neo-identity-source-of-truth-model`.
 - **Mandatory: request a cross-family review.** Identity edits are single-author, high-blast canonical-framing changes — exactly the self-authored-blind-spot class cross-family review catches (anchors: PRs #12146, #11999, #11962). If only one family is active, the human merge-gate is the backstop; say so in the PR.
 - In the PR body, list the out-of-tree (Class 4) changes separately so the reviewer can confirm them.
 
 ## Step 5 — Post-merge
 - If a fact's SSOT or propagation tooling was missing (e.g. `prepare.mjs` didn't cover a surface), file the gap as a follow-up so the next update auto-propagates.
 - If a CTA needs operator-owned offer content, lead-capture routing, pricing, or business language, record the dependency instead of inventing it.
-- If you sharpened the apex, confirm ADR 0018 §2.7 reflects it.
+- If you sharpened the apex, confirm `neomjs/neo#adr:neo-identity-source-of-truth-model` §2.7 reflects it.
 
 ## Anti-patterns
 - Editing only the README and declaring identity "updated."

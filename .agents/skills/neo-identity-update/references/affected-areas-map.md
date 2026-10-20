@@ -7,7 +7,7 @@ Markdown a human edits directly. Failure mode: generations drift apart (one doc 
 
 | Surface | What identity it encodes |
 |---|---|
-| `README.md` | Should LEAD with the canonical apex (ADR 0018 §2.7 OD-1) and present the whole: Body, Brain and Institution as their own repositories (OD-4); "Who This Is For"; Platform-at-Scale metrics; maintainer roster. Verify apex currency each run — status claims rot; the requirement doesn't. |
+| `README.md` | Should LEAD with the canonical apex (`neomjs/neo#adr:neo-identity-source-of-truth-model` §2.7 OD-1) and present the whole: Body, Brain and Institution as their own repositories (OD-4); "Who This Is For"; Platform-at-Scale metrics; maintainer roster. Verify apex currency each run — status claims rot; the requirement doesn't. |
 | `.github/VISION.md` | Long-form vision; **known fossil-prone** (carried "web applications" + CEO/PM/Drone hierarchy contradicting Flat Peer-Team) |
 | `ROADMAP.md` | Forward positioning; "Corporate HQ" framing; skill/velocity counts |
 | `CONTRIBUTING.md`, `.github/GETTING_STARTED.md`, `.github/AI_QUICK_START.md` | Contributor-facing identity; MCP-server count; Node requirement |
@@ -52,7 +52,7 @@ Correct as-of a date; ages silently. Refresh in lock-step.
 
 ## Coverage notes
 - Heritage facts live in `.github/STORY.md`; README + portal About Us reference that home without duplicating milestone lists. OS-Awards claims need an acceptable external public source before publication.
-- Identity handles are routed through `ai/graph/identityRoots.mjs`; handle de-versioning is operator-owned (account rename), the skill only propagates. Model-version stays in the Brain-owned [Model Stats guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/ModelStats.md) per ADR 0012. Re-run a seam-keyed grep before claiming total coverage.
+- Identity handles are routed through `ai/graph/identityRoots.mjs`; handle de-versioning is operator-owned (account rename), the skill only propagates. Model-version stays in the Brain-owned [Model Stats guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/ModelStats.md) per `neomjs/neo-agent-brain#adr:model-stats-framework`. Re-run a seam-keyed grep before claiming total coverage.
 - Not yet fully swept: `apps/portal/view/about` (`/about-us`), live neomjs.com `<meta>`/ld+json, and the Engine-owned comparisons corpus. Re-run a fan-out before claiming total coverage.
 
 ## ACTIONS / CTA overlay

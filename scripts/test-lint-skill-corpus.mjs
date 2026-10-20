@@ -125,10 +125,10 @@ function projectedDocumentFindings(consumer) {
         agentsProjection = join(consumer, '.agents/skills'),
         census            = JSON.parse(readFileSync(join(agentsProjection, 'document-references.v1.json'), 'utf8')),
         rowsByToken        = new Map(census.rows.map(row => [row.token, row])),
-        rowsBySlug         = new Map(census.rows.flatMap(row => {
-            const match = /^learn\/(?:[A-Za-z0-9_.-]+\/)?decisions\/\d{4}-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/.exec(row.token);
+        rowsByOwnerSlug    = new Map(census.rows.flatMap(row => {
+            const match = /^learn\/(?:[A-Za-z0-9_.-]+\/)?decisions\/\d{4}-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md$/.exec(row.token);
 
-            return match ? [[match[1], row]] : []
+            return match ? [[`${row.canonicalOwner}#${match[1]}`, row]] : []
         })),
         findings          = [],
         observed          = new Set();
@@ -152,19 +152,15 @@ function projectedDocumentFindings(consumer) {
             if (!embedded) findings.push(`${file}: ${match[0]} is not embedded in ${row.resolution}.`)
         }
 
-        for (const match of source.matchAll(/(?:([a-z0-9.-]+\.[a-z]{2,}\/)?([a-z0-9_.-]+\/[a-z0-9_.-]+)#adr:|(?<![A-Za-z0-9_./<>#-])\badr:)([a-z0-9]+(?:-[a-z0-9]+)*)/g)) {
+        for (const match of source.matchAll(/(?:([a-z0-9.-]+\.[a-z]{2,}\/)?([a-z0-9_.-]+\/[a-z0-9_.-]+)#adr:)([a-z][a-z0-9]*(?:-[a-z0-9]+)*)/g)) {
             const
                 owner = match[2],
                 slug  = match[3],
-                row   = rowsBySlug.get(slug);
+                row   = rowsByOwnerSlug.get(`${owner}#${slug}`);
 
             if (!row) continue;
 
-            observed.add(row.token);
-
-            if (owner && owner !== row.canonicalOwner) {
-                findings.push(`${file}: #adr:${slug} uses owner ${owner}, expected ${row.canonicalOwner}.`)
-            }
+            observed.add(row.token)
         }
     }
 
@@ -369,12 +365,37 @@ const cases = [
         )
     }, 'forge-qualified ADR slug references are first-class D19816 citations'],
 
-    ['a same-repo adr:<slug> reference passes', 0, w => {
+    ['a same-repo adr:<slug> reference in a cross-repository skill fails', 1, w => {
         appendFileSync(
             join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
             '\nSee `adr:cross-process-cache-coherence`.\n'
         )
-    }, 'same-repo adr:<slug> shorthand is accepted when backed by a census decision row'],
+    }, 'skills materialize across repositories with no single destination repo context, so cross-repo ADR slugs must be qualified'],
+
+    ['a canonical 4-field ADR key (ADR 0006 §2.6) passes', 0, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `adr:github.com:1347756127:neomjs%2Fneo-agent-institution:0038`.\n'
+        )
+    }, 'canonical 4-field keys with RFC 3986 percent-encoded fields and numeric repositoryId are valid exact identity references'],
+
+    ['equal decision slugs across different canonical owners resolve by owner + slug', 0, w => {
+        editDocumentReferences(w, c => {
+            const row = c.rows.find(r => r.token === 'learn/agentos/decisions/0008-skill-anatomy-and-authoring-contract.md');
+            row.token      = 'learn/agentos/decisions/0008-cross-process-cache-coherence.md';
+            row.resolution = 'https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0008-cross-process-cache-coherence.md'
+        });
+        const
+            skillFile = join(w, '.agents/skills/create-skill/SKILL.md'),
+            manifestFile = join(w, '.agents/skills/skills.manifest.json'),
+            guideFile = join(w, '.agents/skills/guide-authoring/references/guide-authoring-bar.md'),
+            radarFile = join(w, '.agents/skills/tech-debt-radar/references/tech-debt-radar-guide.md');
+
+        writeFileSync(skillFile, readFileSync(skillFile, 'utf8').replace('0008-skill-anatomy-and-authoring-contract.md', '0008-cross-process-cache-coherence.md'));
+        writeFileSync(manifestFile, readFileSync(manifestFile, 'utf8').replace('0008-skill-anatomy-and-authoring-contract.md', '0008-cross-process-cache-coherence.md'));
+        writeFileSync(guideFile, readFileSync(guideFile, 'utf8').replace('neomjs/neo#adr:skill-anatomy-and-authoring-contract', 'neomjs/neo#adr:cross-process-cache-coherence'));
+        writeFileSync(radarFile, readFileSync(radarFile, 'utf8').replace('neomjs/neo#adr:skill-anatomy-and-authoring-contract', 'neomjs/neo#adr:cross-process-cache-coherence'))
+    }, 'decisionRowsByOwnerSlug keys by canonicalOwner + slug so two repositories can share a slug without colliding'],
 
     ['a bare single-repository ADR filename fails', 1, w => {
         appendFileSync(

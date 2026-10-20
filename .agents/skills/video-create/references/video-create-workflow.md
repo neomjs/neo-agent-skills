@@ -19,7 +19,7 @@ Start by copying `../assets/video-project-record-template.md`. That record is th
 
 It consumes, without duplicating:
 
-- `/neo-identity-update` and ADR 0018 for identity-bearing claims and framing;
+- `/neo-identity-update` and `neomjs/neo#adr:neo-identity-source-of-truth-model` for identity-bearing claims and framing;
 - `/neural-link` for semantic live-application inspection or interaction;
 - `/whitebox-e2e` and `/unit-test` for app-owned runnable/test evidence;
 - `/imagegen` for generated still-image mechanics;

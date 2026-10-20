@@ -1,6 +1,6 @@
 # Lane-Intent Protocol
 
-*(Per #11537, graduated from Discussion #11536 OQ1. Deep rationale + canonical examples + edge cases → `neomjs/neo-agent-brain#adr:lane-intent-pre-vba-signaling`.)*
+*(Per #11537, graduated from Discussion #11536 OQ1. Deep rationale + canonical examples + edge cases → `neomjs/neo-agent-brain#adr:lane-intent-coordination-primitive`.)*
 
 ## 0. The Essential
 
@@ -22,7 +22,7 @@
 2. **Long V-B-A required** — spans multiple turns OR heavy tooling (`/memory-mining`, `/tech-debt-radar`, deep `ask_knowledge_base`)
 3. **Real duplicate-work risk** — peer could plausibly start parallel exploration within the V-B-A window
 
-Missing ANY → just complete V-B-A locally + `[lane-claim]` directly. Canonical positive/negative examples + edge cases: `neomjs/neo-agent-brain#adr:lane-intent-pre-vba-signaling`.
+Missing ANY → just complete V-B-A locally + `[lane-claim]` directly. Canonical positive/negative examples + edge cases: `neomjs/neo-agent-brain#adr:lane-intent-coordination-primitive`.
 
 ## 2. Required A2A Shape
 
@@ -70,4 +70,4 @@ Recipient: AGENT:*
 
 - AGENTS.md §0 Invariant 7 — Map-tier entry-point (per #11534)
 - peer-role-mode §6.5 / §6.5.1 / §6.6 / §7 — `[lane-claim]` semantics + `[lane-override]` + authority hierarchy + anti-patterns
-- `neomjs/neo-agent-brain#adr:lane-intent-pre-vba-signaling` — substrate-evolution rationale + canonical examples + edge cases + sister primitives
+- `neomjs/neo-agent-brain#adr:lane-intent-coordination-primitive` — substrate-evolution rationale + canonical examples + edge cases + sister primitives

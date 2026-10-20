@@ -66,11 +66,22 @@
             ]
         },
         {
-            "token": "learn/agentos/decisions/0010-lane-intent-pre-vba-signaling.md",
+            "token": "learn/agentos/decisions/0010-lane-intent-coordination-primitive.md",
             "canonicalOwner": "neomjs/neo-agent-brain",
-            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0010-lane-intent-pre-vba-signaling.md",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0010-lane-intent-coordination-primitive.md",
             "referencingSkills": [
                 "lane-intent"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0012-model-stats-framework.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0012-model-stats-framework.md",
+            "referencingSkills": [
+                "neo-identity-update"
             ],
             "kinds": [
                 "load"
@@ -81,7 +92,9 @@
             "canonicalOwner": "neomjs/neo",
             "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0018-neo-identity-source-of-truth-model.md",
             "referencingSkills": [
-                "neo-identity-update"
+                "blog-post",
+                "neo-identity-update",
+                "video-create"
             ],
             "kinds": [
                 "load"
@@ -94,6 +107,19 @@
             "referencingSkills": [
                 "guide-authoring",
                 "tech-debt-radar"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0029-docking-design.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0029-docking-design.md",
+            "referencingSkills": [
+                "guide-authoring",
+                "industry-friction-radar",
+                "video-create"
             ],
             "kinds": [
                 "load"
