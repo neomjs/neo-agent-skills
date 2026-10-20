@@ -125,6 +125,11 @@ function projectedDocumentFindings(consumer) {
         agentsProjection = join(consumer, '.agents/skills'),
         census            = JSON.parse(readFileSync(join(agentsProjection, 'document-references.v1.json'), 'utf8')),
         rowsByToken        = new Map(census.rows.map(row => [row.token, row])),
+        rowsBySlug         = new Map(census.rows.flatMap(row => {
+            const match = /^learn\/(?:[A-Za-z0-9_.-]+\/)?decisions\/\d{4}-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/.exec(row.token);
+
+            return match ? [[match[1], row]] : []
+        })),
         findings          = [],
         observed          = new Set();
 
@@ -145,6 +150,21 @@ function projectedDocumentFindings(consumer) {
                 embedded = start >= 0 && source.slice(start, match.index + match[0].length) === row.resolution;
 
             if (!embedded) findings.push(`${file}: ${match[0]} is not embedded in ${row.resolution}.`)
+        }
+
+        for (const match of source.matchAll(/(?:([a-z0-9.-]+\.[a-z]{2,}\/)?([a-z0-9_.-]+\/[a-z0-9_.-]+)#adr:|(?<![A-Za-z0-9_./<>#-])\badr:)([a-z0-9]+(?:-[a-z0-9]+)*)/g)) {
+            const
+                owner = match[2],
+                slug  = match[3],
+                row   = rowsBySlug.get(slug);
+
+            if (!row) continue;
+
+            observed.add(row.token);
+
+            if (owner && owner !== row.canonicalOwner) {
+                findings.push(`${file}: #adr:${slug} uses owner ${owner}, expected ${row.canonicalOwner}.`)
+            }
         }
     }
 
@@ -333,6 +353,56 @@ const cases = [
     ['a DUPLICATE document kind fails', 1, w => editDocumentReferences(w, c => {
         c.rows[0].kinds.push(c.rows[0].kinds[0])
     }), 'duplicate kinds add no information and make the typed row non-canonical'],
+
+    // ── D19816 ADR slug & custody reference hygiene arm ─────────────────────────────────────────
+    ['a qualified <org>/<repo>#adr:<slug> reference passes', 0, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `neomjs/neo-agent-brain#adr:cross-process-cache-coherence`.\n'
+        )
+    }, 'repository-qualified ADR slug references are first-class D19816 citations'],
+
+    ['a qualified <forge>/<org>/<repo>#adr:<slug> reference passes', 0, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `github.com/neomjs/neo-agent-brain#adr:cross-process-cache-coherence`.\n'
+        )
+    }, 'forge-qualified ADR slug references are first-class D19816 citations'],
+
+    ['a same-repo adr:<slug> reference passes', 0, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `adr:cross-process-cache-coherence`.\n'
+        )
+    }, 'same-repo adr:<slug> shorthand is accepted when backed by a census decision row'],
+
+    ['a bare single-repository ADR filename fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `0001-cross-process-cache-coherence.md`.\n'
+        )
+    }, 'stripping learn/agentos/decisions/ to a bare filename bypasses repository custody'],
+
+    ['a shortened <repo>#adr:<slug> reference without <org>/ fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `neo-agent-brain#adr:cross-process-cache-coherence`.\n'
+        )
+    }, 'cross-repository ADR slug citations must include <org>/<repo>'],
+
+    ['a number-prefixed #adr:<NNNN>-<slug> reference fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `neomjs/neo-agent-brain#adr:0001-cross-process-cache-coherence`.\n'
+        )
+    }, 'D19816 slugs exclude the 4-digit repository-local ADR display number'],
+
+    ['a #adr:<slug> reference with the WRONG owner fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/structural-pre-flight/references/structural-pre-flight-workflow.md'),
+            '\nSee `neomjs/neo#adr:cross-process-cache-coherence`.\n'
+        )
+    }, 'qualified ADR slug references must agree with the census row canonicalOwner'],
 
     // ── net-growth escape hatch — only observable through the --base git-history path ────────────
     ['over-cap growth WITHOUT justification fails', 1, growCorpus,

@@ -20,7 +20,7 @@ Stage 1 — Pattern-match check: "Does this file's role match an established sib
             ✓ YES → fast-path: sibling-file-lift suffices; emit a one-line Pre-Flight
                               statement and proceed (under 30 seconds)
             ✗ NO  → full structural-pre-flight: ArchitectureOverview.md consultation,
-                    learn/agentos/decisions/ ADR sweep, chief-architect framing questions,
+                    repository-qualified ADR sweep, chief-architect framing questions,
                     map-maintenance discipline, optional ADR genesis
 ```
 
@@ -56,9 +56,9 @@ Fires when no clear sibling pattern matches the new file's role. The cost is ~5-
 Before drafting the file, you MUST read:
 
 1. **The Engine's [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md)** — specifically the **Structural Inventory** section (currently lines 350-382). This is the canonical map of the codebase's directory taxonomy.
-2. **Relevant ADRs in `learn/agentos/decisions/`** — these document cross-system architectural trade-offs that constrain directory choice. Examples:
-   - `0001-cross-process-cache-coherence.md` (singleton-cache reasoning)
-   - `0002-phase3-wake-substrate-standards-alignment.md` (wake-substrate standards)
+2. **Relevant ADRs in their canonical owning repositories** (per [ADR 0006](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md) and [`guide-authoring-bar.md §7`](../../guide-authoring/references/guide-authoring-bar.md#7-adr-custody-redirects-repository-qualified-identity--slug-citations--machine-enforceable-candidate)) — these document cross-system architectural trade-offs that constrain directory choice. Examples:
+   - `neomjs/neo-agent-brain#adr:cross-process-cache-coherence` (singleton-cache reasoning)
+   - `neomjs/neo-agent-brain#adr:phase3-wake-substrate-standards-alignment` (wake-substrate standards)
    - Any newer ADR whose subsystem overlaps your candidate destination.
 3. **The [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md)** when the new file lives in `ai/`-side substrate — this is the M-milestone source-of-authority for current architectural posture (M1 deployment-pipeline, M2 BaseServer, M3 Orchestrator, M4 Dream/Sandman, M5 NEO_MC_PRIMARY retirement, M6 SDK migration, M7 closeout). PR #11008 misplaced because authoring did not consult this document.
 4. **1-2 sibling files in EACH candidate destination directory** — even when the role doesn't match exactly. Reading siblings in `ai/scripts/` and `ai/daemons/` side-by-side reveals which directory the new file actually belongs in. The empirical anchor would have surfaced immediately.
@@ -101,7 +101,7 @@ Per Discussion #10447 OQ4 resolution, the threshold for filing an ADR vs an inli
 - **Cross-system trade-off** (touches multiple subsystems, sets a precedent for future code, affects load-bearing invariants): **file an ADR** in the repository that canonically owns the affected substrate. If the current checkout is not that owner, route a linked companion change there and keep the ADR-genesis gate failed; never create a consumer-local decisions tree.
 - **Localized constraint** (specific to one file or one method, doesn't generalize): **inline Anchor & Echo guard** in the JSDoc with `@see` references.
 
-**Example — ADR-class:** "Memory Core uses singleton cache instead of cross-process IPC because IPC overhead exceeds memory pressure cost at expected scale" (became `0001-cross-process-cache-coherence.md`).
+**Example — ADR-class:** "Memory Core uses singleton cache instead of cross-process IPC because IPC overhead exceeds memory pressure cost at expected scale" (became `neomjs/neo-agent-brain#adr:cross-process-cache-coherence`).
 
 **Example — Anchor-and-Echo-class:** "this method's `await` is intentional because the caller relies on serialized cache writes; do not refactor to parallel without re-reading `MailboxService#addMessage`."
 
@@ -133,7 +133,7 @@ When the new file lives in `src/` substrate (Left Hemisphere / Runtime Engine):
 
 - The Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) §Left Hemisphere + §Structural Inventory § Runtime Engine (Browser).
 - `learn/guides/<subsystem>/` — subsystem-specific guides (e.g., `learn/guides/grid/` for grid work).
-- `learn/agentos/decisions/` ADRs whose stated subsystem touches your candidate destination.
+- Canonical ADRs in their owning repositories (see [`guide-authoring-bar.md §7`](../../guide-authoring/references/guide-authoring-bar.md#7-adr-custody-redirects-repository-qualified-identity--slug-citations--machine-enforceable-candidate)) whose stated subsystem touches your candidate destination.
 - Sibling files in EACH candidate `src/{component,container,grid,data,state,worker,vdom,main,...}/` directory.
 
 ### 3.3 Test-tree authoring

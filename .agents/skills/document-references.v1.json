@@ -39,11 +39,38 @@
             ]
         },
         {
+            "token": "learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md",
+            "referencingSkills": [
+                "guide-authoring",
+                "structural-pre-flight",
+                "tech-debt-radar",
+                "ticket-intake"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
             "token": "learn/agentos/decisions/0008-skill-anatomy-and-authoring-contract.md",
             "canonicalOwner": "neomjs/neo",
             "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0008-skill-anatomy-and-authoring-contract.md",
             "referencingSkills": [
-                "create-skill"
+                "create-skill",
+                "guide-authoring",
+                "tech-debt-radar"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0010-lane-intent-pre-vba-signaling.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0010-lane-intent-pre-vba-signaling.md",
+            "referencingSkills": [
+                "lane-intent"
             ],
             "kinds": [
                 "load"
@@ -55,6 +82,18 @@
             "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0018-neo-identity-source-of-truth-model.md",
             "referencingSkills": [
                 "neo-identity-update"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/agentos/decisions/0019-aiconfig-reactive-provider-ssot.md",
+            "canonicalOwner": "neomjs/neo-agent-brain",
+            "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0019-aiconfig-reactive-provider-ssot.md",
+            "referencingSkills": [
+                "guide-authoring",
+                "tech-debt-radar"
             ],
             "kinds": [
                 "load"

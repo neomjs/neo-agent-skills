@@ -58,6 +58,18 @@ Before any APPROVE, re-grade the whole guide — not the delta:
 
 If any answer is "no", it is `REQUEST_CHANGES` — name the gap against the bar, not a nitpick. An approve that the operator then rejects is worse than no review.
 
+## 7. ADR Custody Redirects, Repository-Qualified Identity & Slug Citations — `MACHINE-ENFORCEABLE-CANDIDATE`
+
+Per [ADR 0006](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md) (`§§2.6–2.11`), Architecture Decision Records are distributed across the `neomjs` repositories that canonically own each substrate (`neomjs/neo`, `neomjs/neo-agent-brain`, `neomjs/neo-agent-institution`, `neomjs/neo-stage`, `neomjs/neo-agent-skills`). Never assume a single global `learn/agentos/decisions/` tree or globally unique 4-digit ADR numbers:
+
+- **Canonical 4-field graph key (`§2.6`):** Graph identity is `adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>` with percent-encoded key components (default namespace `default` when no namespace segment sits between `learn/` and `decisions/`, e.g. `adr:github.com:neomjs%2Fneo-agent-brain:agentos:0006` or `adr:github.com:neomjs%2Fneo-stage:default:0001`). `adrNumber` (`0001`) is a repository+namespace-local display number, never a global primary key.
+- **`Status: Moved` custody redirects (`§2.7`):** When an ADR moves to its canonical repository, the vacated path retains a minimal pointer stub (`Status: Moved`, `Date`, `Canonical Repository`, `Canonical Path`, `Canonical Key`) with one canonical link and zero duplicated decision prose (`check-adr-custody-pointers`).
+- **Ingestion & query contract (`§§2.8–2.9`):** `Status: Moved` is a custody redirect, **not** `Superseded` or `Retired`; ingestion skips `Status: Moved` stubs so only the canonical file produces an active `DECISION_RECORD` node. Query `get_decision_record` / `list_decision_records` with `repository` (`<org>/<repo>`) and `namespace`, or by canonical `id` (`adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>`).
+- **Slug citations in prose, tickets, PRs, and skills (`§§2.10–2.11`):** Each canonical ADR derives a repository-unique lowercase kebab-case `slug` from `<NNNN>-<slug>.md`. Cite ADRs by slug rather than bare numbers or bare single-repository filenames:
+  - **Same-repository shorthand:** `adr:<slug>` when the target repository matches the current document context.
+  - **Cross-repository qualified:** `<org>/<repo>#adr:<slug>` (or `<forge>/<org>/<repo>#adr:<slug>`, e.g. `neomjs/neo-agent-brain#adr:aiconfig-reactive-provider-ssot`, `neomjs/neo#adr:skill-anatomy-and-authoring-contract`).
+  - **⛔ Forbidden forms:** bare cross-repo `ADR NNNN`, bare single-repository filenames (`<NNNN>-<slug>.md` outside a canonical URL), unprefixed hash-slugs lacking `<org>/<repo>`, repository basenames lacking the `<org>/` prefix, or 4-digit number prefixes inside the slug.
+
 ## Empirical Anchor
 
 The MemoryCore arc (`#14342` → `#14344` ~6/10 → `#14348` / `#14351` 9/10) and the KnowledgeBase rubber-stamp reversal (`#14346`), 2026-06-29. Each cycle caught exactly one failure mode above; this skill is those cycles distilled.
