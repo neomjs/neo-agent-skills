@@ -64,7 +64,7 @@ Apply via `manage_issue_labels` action `add`:
 manage_issue_labels(action: 'add', issue_number: N, labels: ['<primary-label>'])
 ```
 
-**The `ai` label is mandatory if the agent picks this up.** Apply alongside the primary label IF the ticket will enter the agent work queue. If the ticket will likely be picked up by a human contributor, defer the `ai` application to actual pickup.
+**Preserve `ai` on agent-created tickets, including trivial or contributor-available work** (ticket-create §4). On a human-created ticket, add it when an agent takes implementation. It records agent involvement, not a maintainer reservation; assignment controls ownership.
 
 ### Step 3 — Apply Secondary Labels
 
@@ -99,7 +99,7 @@ Assignment disposition is **not** part of the labeling decision — it's a post-
 | Applying labels before retrospective six-stage challenge | Bypasses the gate that filters out flawed premises; downstream pickup pressure on bad work |
 | Inventing label names | Silent GitHub API rejection; lost label intent |
 | Skipping `list_labels` verification | Domain-label drift; future agents see inconsistent taxonomy |
-| Applying `ai` label without intent to pick up | False signal that the agent queue owns this work |
+| Treating `ai` as a maintainer reservation | Hides agent-created work from contributors |
 | Self-assigning without `ticket-intake` follow-through | Bypasses the validation/branch-before-code gates |
 | Triaging a ticket the original author should clarify | Premature labeling locks the author into a framing they may not endorse |
 | Re-triaging a ticket already-labeled by another maintainer | Duplicate work; cite prior triage instead |
@@ -130,5 +130,5 @@ Before calling `manage_issue_labels`:
 - [ ] Primary label chosen is exactly one of `bug`/`enhancement`/`epic`
 - [ ] Secondary labels verified to exist in `list_labels` output
 - [ ] No invented label names
-- [ ] `ai` label included only if the ticket enters agent work queue
+- [ ] `ai` preserves authoring/pickup provenance, independently of ownership
 - [ ] Triage decision will be cited in your follow-up comment
