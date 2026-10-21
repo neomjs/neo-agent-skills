@@ -188,9 +188,9 @@ never the builder or the designer. Authors signal with `Micro-review eligible: <
 the concept-bearing surface or never-zone earning it. The reverse never happens.
 **Keys on mechanical-vs-concept-bearing, never size:** a 400-line receipt refresh
 → MICRO; a 3-line ADR row → FULL.
-**Scales rigour, never register (`#97`):** a curated `good first issue` is
-mechanical by construction, so newcomers mostly land here — fill the `Opening`
-slot. Routing them to the light form is right; greeting them less is not.
+**Scales rigour, never register (`#97`):** `good first issue` means newcomer-ready,
+not mechanical. Classify the actual change; greet newcomers in either form,
+including the micro form's `Opening` slot.
 
 **Bounded-repair guard (Grace, #17527):** a repair stays micro-eligible only
 while it touches NO site the prescription did not name — a widened repair is a
