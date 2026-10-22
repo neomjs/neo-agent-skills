@@ -127,7 +127,14 @@ Keep titles under ~70 characters. PR titles derive from ticket titles; length di
 
 ## 4. Label Rules
 
-- **`ai` — MANDATORY on every ticket created by an agent.** Signals provenance for downstream graph/memory systems.
+**Most new non-critical standalone tickets our agents create: `good first issue` + `ai`.**
+First-time does not mean novice: frontier models with public contributor instructions and
+npm-installed skills can implement features, fixes and refactors without private Memory Core.
+Do not restrict them to trivial tests. Prepare public context and verification criteria (§5/§12).
+Exclude urgent/critical, unresolved, private-dependent or already-owned work; say why.
+Honor first-time-only conventions with `help wanted` for returning contributors.
+
+- **`ai` — required on agent-created tickets, including trivial ones.** Provenance, not difficulty or a maintainer claim.
 - **Primary — exactly one:** `epic`, `enhancement`, or `bug`. **Choosing it:** a standalone must be one-PR-resolvable — one `Resolves`, so a second PR closes it early or fails the lint. Bigger → **split**, or `epic` only when leaves coordinate toward one shared outcome (`epic-create` Procedure 1).
 - **Secondary — as applicable:** `architecture`, `performance`, `regression`, `refactoring`, `documentation`, `testing`, plus domain labels (`core`, `grid`, `build`, etc.).
 - Before filing: call `list_labels` to confirm the labels exist. Do not invent label names.
@@ -186,7 +193,7 @@ If the "ticket" is really an architectural question, brainstorming, or pre-PR ex
 
 The `create_issue` tool returns the new issue number. The ownership disposition is decided **at** that call; the rest are typical follow-ups:
 
-- **Ownership disposition — exactly one arm, every ticket:** a non-empty `assignees` (you are taking it), an explicit named addressee (you are handing it over — their handle in `assignees`, or a one-line `handoff: @handle` in the body), or a one-line `unowned-rationale:` in the body (you are parking it, and you say why). Unowned is allowed; *silently* unowned is not — the rationale is what lets the next reader tell parked from dropped. Taking it is **`manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])`**, **MANDATORY before editing any tracked file** (AGENTS.md §0 Invariant 7). No intent-to-start condition: a **finding** never satisfies one, and findings are what orphans (`#34`). (Once `#11308` lands atomic assignee injection, the arms attach to the tool contract and this collapses to a pointer.)
+- **Ownership at creation:** self-assign, name a `handoff: @handle`, or state `unowned-rationale:`. Prefer `unowned-rationale: Ready for a contributor; maintainers provide planning and review.` for eligible work; direct assignments and urgent delivery remain exceptions. **Self-assign via guarded `manage_issue_assignees` before any tracked edit** (AGENTS.md critical gate 7). Never leave ownership unexplained.
 - **`manage_issue_labels(action: 'add', ...)`** — only if the label set needs adjustment post-creation (e.g., label list was incomplete at `create_issue` time). Prefer getting labels right in the initial call.
 - **`update_issue_relationship(parent_id: N, child_id: M, type: 'SUB_ISSUE')`** — required when filing sub-issues under an Epic. Native graph linkage only; do NOT rely on inline `- [ ] #N` markdown checkboxes (see §6). Count the parent's subs first (`gh api repos/<r>/issues/N/sub_issues --paginate --jq length`); past ~25, file or link to a successor epic (`epic-create` Procedure 1).
 - **Ticket body edits:** Update GitHub directly with `gh issue edit N --body-file <path>` (or the equivalent live GitHub write surface). GitHub remains canonical; scheduled mirroring may lag.
@@ -208,7 +215,7 @@ When editing tickets:
 
 ## 12. Substrate Awareness ("Assume No Private Memory")
 
-When writing tickets, **assume the reader has access to nothing private**.
+When writing tickets, **assume the reader has access to nothing private**. Publish the needed reasoning; Memory Core IDs are provenance, not required private lookups.
 
 **Fair-game citations:**
 - Committed repo paths (`learn/...`, `.agents/skills/...`)
