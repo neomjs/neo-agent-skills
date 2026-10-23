@@ -64,6 +64,10 @@ message already redirects it.
    review, branch, or CI state, verify the current live state before acting.
    Summaries are recovery hints; GitHub and current source remain the work gate.
 
+5a. **Direction check:** if the checked-out repository carries a `VISION.md`,
+   read it before asserting lane state; a lane that contradicts it is not
+   resumed, it is re-planned against the roadmap.
+
 Use `detail: 'full'` only when summaries are insufficient to identify the next
 action. Summary detail is the cheap graph-first path; full detail joins Chroma
 for prompt/response content and should be targeted.
@@ -111,6 +115,7 @@ context-recovery:
 - recency: <last ticket/PR/branch/action>
 - semantic: <memory ids or clear miss>
 - live-state: <issue/PR/branch verification>
+- direction: <VISION.md read | none in this repository>
 - confidence: recovered | degraded
 lane-state: next-lane (<specific resumed lane or fresh claimable lane>)
 ```
