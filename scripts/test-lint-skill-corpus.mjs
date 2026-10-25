@@ -89,6 +89,20 @@ function editManifest(work, mutate) {
     writeFileSync(file, JSON.stringify(manifest, null, 4) + '\n')
 }
 
+/** @summary Set both the SKILL.md frontmatter description and its manifest mirror for one skill. */
+function setSkillDescription(work, skillName, description, manifestOverride = {}) {
+    const
+        skillFile = join(work, '.agents/skills', skillName, 'SKILL.md'),
+        source    = readFileSync(skillFile, 'utf8'),
+        updated   = source.replace(/^description:\s*.*$/m, `description: ${JSON.stringify(description)}`);
+
+    writeFileSync(skillFile, updated);
+    editManifest(work, manifest => {
+        manifest.skills[skillName].description = description;
+        Object.assign(manifest.skills[skillName], manifestOverride)
+    })
+}
+
 /** @summary Apply a mutation to the copied canonical-document census. */
 function editDocumentReferences(work, mutate) {
     const file   = join(work, DOCUMENT_REFERENCE_CENSUS),
@@ -304,6 +318,28 @@ const cases = [
     ['a NON-kebab-case skill name fails', 1,
         w => editManifest(w, m => { m.skills[Object.keys(m.skills)[0]].name = Object.keys(m.skills)[0].toUpperCase() }),
         'the name is a directory name on disk, so casing is not cosmetic'],
+
+    // ── descriptionBudget arm (neomjs/neo-agent-skills#206) ──────────────────────────────────────
+    ['a 220-byte frontmatter description passes', 0,
+        w => setSkillDescription(w, 'identity-firewall', 'x'.repeat(220)),
+        '220 bytes is the default descriptionBudget ceiling (skill-authoring-guide.md:83)'],
+
+    ['a 221-byte frontmatter description fails', 1,
+        w => setSkillDescription(w, 'identity-firewall', 'x'.repeat(221)),
+        'one byte over descriptionBudget must fail before multi-sentence bloat returns to session boot'],
+
+    ['a description over default WITH descriptionBudget override + budgetRationale passes', 0,
+        w => setSkillDescription(w, 'identity-firewall', 'x'.repeat(250), {
+            descriptionBudget: 260,
+            budgetRationale  : 'fixture proves per-skill descriptionBudget override path'
+        }),
+        'a skill row may override descriptionBudget when it documents a non-empty budgetRationale'],
+
+    ['a descriptionBudget override above default WITHOUT budgetRationale fails', 1,
+        w => setSkillDescription(w, 'identity-firewall', 'x'.repeat(250), {
+            descriptionBudget: 260
+        }),
+        'an override above defaults.descriptionBudget without budgetRationale silently weakens the cap'],
 
     // ── canonical document-reference arm ────────────────────────────────────────────────────────
     ['a raw consumer-relative document token fails', 1, exposeRawDocumentToken,

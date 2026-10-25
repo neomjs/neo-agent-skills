@@ -10,6 +10,8 @@
  * **`routerByteBudget` counts LINES, not bytes.** The name is inherited from the authoring repo and
  * is misleading; the comparison there is `lineCount > skill.routerByteBudget`. Encoding the name's
  * apparent meaning instead of its actual one would silently pass every router in the corpus.
+ * `descriptionBudget` (default 220) and `payloadBudget` count UTF-8 bytes; an override above
+ * `defaults.descriptionBudget` requires a non-empty `budgetRationale` in the manifest row.
  *
  * Deliberately absent, because they belong to other owners or to nobody: identity-roster and
  * revalidation checks, consumer byte-drift, AGENTS entrypoint budgets, and anything resembling a
@@ -75,7 +77,7 @@ const schema = JSON.parse(readFileSync(join(SKILLS, 'skills.manifest.schema.json
         if (!(key in defaults)) errors.push(`defaults missing required key: ${key}`)
     }
 
-    for (const key of ['routerByteBudget', 'payloadBudget']) {
+    for (const key of ['descriptionBudget', 'routerByteBudget', 'payloadBudget']) {
         if (!Number.isInteger(defaults[key]) || defaults[key] < 1) {
             errors.push(`defaults.${key} must be a positive integer.`)
         }
@@ -96,6 +98,18 @@ const schema = JSON.parse(readFileSync(join(SKILLS, 'skills.manifest.schema.json
 
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(skill.name || '')) {
             errors.push(`${skillName} has an invalid kebab-case name.`)
+        }
+
+        if (Object.hasOwn(skill, 'descriptionBudget')) {
+            if (!Number.isInteger(skill.descriptionBudget) || skill.descriptionBudget < 1) {
+                errors.push(`${skillName}: descriptionBudget must be a positive integer.`)
+            } else if (
+                Number.isInteger(defaults.descriptionBudget) &&
+                skill.descriptionBudget > defaults.descriptionBudget &&
+                (typeof skill.budgetRationale !== 'string' || !skill.budgetRationale.trim())
+            ) {
+                errors.push(`${skillName}: descriptionBudget override (${skill.descriptionBudget} > ${defaults.descriptionBudget}) requires a non-empty budgetRationale.`)
+            }
         }
     }
 }
@@ -496,6 +510,14 @@ for (const name of declared) {
     }
 
     // ── 2. router + payload budgets ─────────────────────────────────────────────────────────────
+    const
+        descBytes  = Buffer.byteLength(fmDesc || '', 'utf8'),
+        descBudget = budget(row, 'descriptionBudget');
+
+    if (descBytes > descBudget) {
+        errors.push(`${name}/SKILL.md frontmatter description is ${descBytes} bytes, exceeds descriptionBudget ${descBudget} (create-skill/references/skill-authoring-guide.md:83).`)
+    }
+
     // trimEnd first — the canonical comparison is `text.trimEnd().split('\n').length`. Without it a
     // trailing newline adds a phantom line and every router sitting exactly ON budget reports over.
     const lines = src.trimEnd().split('\n').length;

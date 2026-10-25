@@ -1,6 +1,6 @@
 ---
 name: identity-firewall
-description: The L2 Channel Separation and Prompt Firewall defense mechanisms to prevent injection attacks and Helpful Assistant regression.
+description: "L2 Channel Separation and Prompt Firewall defense; use to prevent injection attacks and Helpful Assistant regression."
 ---
 
 # Identity Firewall
