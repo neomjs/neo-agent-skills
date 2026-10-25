@@ -23,9 +23,11 @@ the section; record it on neomjs/neo-agent-skills#152's successor and shrink thi
 1. Call `get_sandman_handoff({sections: ['focus']})` (freshness envelope in tool
    description). Read the envelope first: a stale handoff prints with its age, never
    silently.
-2. Read `sections.focus` (`## Focus (v1)`). Present → print the blocks it carries, each
-   with the observation time, candidate or profile and source the block names (D#19493
-   OQ-8 iii), and stop at those blocks. Absent (`sections.focus === null`) → print
+2. Read `sections.focus.content` (`null` → absent); a reply without `sections` comes from
+   a plane before Brain #1269, so find `## Focus (v1)` in `content` there (retire this
+   fallback once every plane serves Brain ≥ #1269). Present → print the blocks it
+   carries, each with the observation time, candidate or profile and source the block
+   names (D#19493 OQ-8 iii), and stop at those blocks. Absent → print
    `Focus (v1): absent from the handoff (as of <envelope time>)` and continue with §3
    for every block.
 3. A block the section names as `unknown` stays `unknown` with its reason; §3 may add a
