@@ -31,7 +31,7 @@
     },
     "blog-post": {
       "name": "blog-post",
-      "description": "Authoring or revising a public-facing blog post (learn/blog/*.md + portal registration). Enforces hero-piece narrative arc, sourcing every external claim, killing the three over-claim flavors, and the mandatory cross-family review bar."
+      "description": "Authoring, revising, or reviewing a public-facing blog post (learn/blog/*.md + portal registration) or outbound social post/reply (X, LinkedIn, Medium sections; see references/outbound-post.md). Enforces hero-piece narrative arc, outbound boundaries and requestPublish gate, sourcing every external claim, killing the over-claim flavors, and the mandatory cross-family review bar."
     },
     "context-recovery": {
       "name": "context-recovery",
