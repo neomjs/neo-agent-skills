@@ -7,7 +7,10 @@ audiences: app
 ## §orientation
 **The workspace.** Each app lives under `apps/<name>/`. `app.mjs` starts it with `Neo.app({mainView})`,
 `view/` holds its classes, and `neo-config.json` is its engine configuration. `npm run server-start`
-serves the workspace and opens it. `npm run build-themes` compiles `resources/scss/`.
+serves the workspace at `http://localhost:8080` (or `$PORT`, else the next free port, which the
+terminal prints) and opens it in a browser; `npm run server-start -- --no-open` serves it without one.
+An app runs at `/apps/<name>/index.html`. `npm run build-themes` compiles `resources/scss/`. The
+engine packages require Node 24 or later.
 
 **The engine runs your app in a worker.** Your classes run in the App worker; the main thread only
 applies DOM deltas. A view is a tree of configs (`items`, `layout`, `cls`), not markup. You never
