@@ -287,6 +287,15 @@ const cases = [
     ['baseline corpus is clean', 0, undefined,
         'the suite is worthless if the unmutated corpus does not pass'],
 
+    ['an app-audience router naming a harness-specific read tool fails', 1, w => {
+        const router = join(w, '.agents/skills/neural-link/SKILL.md'),
+              src    = readFileSync(router, 'utf8'),
+              next   = src.replace('strictly adhere to', 'strictly adhere, as `view_file` reads it, to');
+
+        if (next === src) throw new Error('fixture: the neural-link router text moved');
+        writeFileSync(router, next)
+    }, 'an outside workspace runs the harness its developer chose; a router naming one harness\'s tool sends the rest to a tool they lack'],
+
     ['pair OVER the limit fails', 1, w => padTo(w, LIMIT + 500),
         'the drift that went unnoticed: two individually legal files breaching a loaded surface'],
 
@@ -319,7 +328,7 @@ const cases = [
         w => editManifest(w, m => { m.skills[Object.keys(m.skills)[0]].name = Object.keys(m.skills)[0].toUpperCase() }),
         'the name is a directory name on disk, so casing is not cosmetic'],
 
-    // ── descriptionBudget arm (neomjs/neo-agent-skills#206) ──────────────────────────────────────
+    // ── descriptionBudget arm ────────────────────────────────────────────────────────────────────
     ['a 220-byte frontmatter description passes', 0,
         w => setSkillDescription(w, 'identity-firewall', 'x'.repeat(220)),
         '220 bytes is the default descriptionBudget ceiling (skill-authoring-guide.md:83)'],
