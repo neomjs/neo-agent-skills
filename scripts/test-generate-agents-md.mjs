@@ -193,7 +193,7 @@ function capture(argv) {
 
 // ── Numbered items keep their DECLARED number ───────────────────────────────────────────────────
 // The rule that makes per-repository gate exclusion safe. Cross-references name gates by number
-// ("§critical_gates #4") from files this generator never sees, so dropping one rule from a
+// ("gate 4 of §critical_gates") from files this generator never sees, so dropping one rule from a
 // repository must not slide the rest. Positional numbering would look correct in every single-repo
 // render and silently break every citation in the one repo that excludes a gate.
 {
