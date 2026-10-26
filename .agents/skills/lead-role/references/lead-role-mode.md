@@ -169,7 +169,7 @@ benchings, re-entries) are operator calls — update THIS list only, and only on
 direction.
 
 **Baton authority:** a valid baton is a targeted A2A DM to the computed next
-lead with subject `[handoff] Lead Role Baton`, `wakeSuppressed: true`,
+lead with subject `[handoff] Lead Role Baton` (it wakes),
 `taggedConcepts: ['lead-role-baton']`, and body fields `fromLead`, `toLead`,
 `sourceSessionId`, `reason`, `createdAt`, and expiry / staleness limits.
 `AGENT:*` broadcasts are invalid for lead acquisition.
