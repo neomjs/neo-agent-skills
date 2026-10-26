@@ -509,6 +509,12 @@ for (const name of declared) {
         errors.push(`${name}: frontmatter description disagrees with the manifest row — the router and the index would advertise different triggers.`)
     }
 
+    // An app-audience skill ships into workspaces whose harness the developer chose, so its router says
+    // "read" rather than naming one harness's read tool.
+    if (row.audiences?.includes('app') && /\b(view_file|read_file)\b/.test(src)) {
+        errors.push(`${name}/SKILL.md names a harness-specific read tool but ships to the app audience — say "read" instead.`)
+    }
+
     // ── 2. router + payload budgets ─────────────────────────────────────────────────────────────
     const
         descBytes  = Buffer.byteLength(fmDesc || '', 'utf8'),
@@ -573,7 +579,7 @@ for (const name of declared) {
 
 // ── 3b. combined budgets — a loaded SURFACE, not a single file ──────────────────────────────────
 //
-// Migrated from neomjs/neo's check-substrate-size (#15257) when the corpus moved here. Per-file
+// Migrated from neomjs/neo's check-substrate-size when the corpus moved here. Per-file
 // budgets cannot express it: the rule bounds what a reader loads when several files arrive together,
 // so two files each individually legal can still breach the surface. `limitBytes` is the baseline the
 // surface had to get BELOW, so landing exactly on it is the breach and the largest legal sum is

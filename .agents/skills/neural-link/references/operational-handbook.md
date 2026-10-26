@@ -4,6 +4,14 @@ Your task is to effectively query and mutate a running Neo.mjs application using
 
 **DO NOT GUESS.** Without specific chains of verification, you will inject corrupted instructions or patch incorrect classes. You MUST follow these sequences.
 
+## 0. Getting Connected
+
+- The MCP server talks to a local Bridge on `127.0.0.1:8081` (`NEO_NL_PORT` overrides it) and starts one when none runs. The app's page dials that Bridge in development (`useAiClient` in its `neo-config.json`).
+- `healthcheck` healthy with zero `sessions` means the Bridge runs but no page is connected: open or reload the app's page.
+- "No active App Worker sessions found" means the page loaded before the Bridge started. It stops dialing after five tries (about 15 seconds) and dials again only when its window is focused or shown, never on a timer: focus or reload it.
+- Tool descriptions and schemas are compact. `get_mcp_tool_handbook({toolId})` returns a tool's full usage guide and parameter documentation; read it before an unfamiliar call.
+- If `get_window_topology` lists no window although a session exists (engines up to 13.3.2 can miss a window whose page loaded after the Bridge started), take the `windowId` from `query_component`'s result.
+
 ## 1. The Discovery Chain (UI Inspection)
 
 When asked to locate or verify an element on the screen:
