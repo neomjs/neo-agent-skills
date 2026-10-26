@@ -270,30 +270,38 @@ function capture(argv) {
         assert.ok(engine.includes(`\n${n}. `), `engine keeps gate ${n} at its declared number`));
 }
 
-// ── The REAL variant matrix: five repositories × two audiences ──────────────────────────────────
+// ── The REAL variant matrix: five repositories × two audiences, plus the app workspace ──────────
 // Fixtures prove the rendering rules; this proves the shipped source actually emits every variant
 // within budget. A generator whose fixtures all pass and whose real output breaches is the failure
 // this file exists to make impossible.
 {
-    const {audiences, repos} = readSupported();
+    const {audiences, repos} = readSupported(),
+          REPOSITORIES = ['devindex', 'neo', 'neo-agent-brain', 'neo-agent-institution', 'neo-agent-skills'],
+          // Not a repository of ours: the kind of workspace `neo-app` creates for an outside developer.
+          WORKSPACE    = 'neo-app-workspace',
+          PREAMBLE     = {
+              app        : /^# Building on neo\.mjs/,
+              contributor: /^# Contributing to Neo\.mjs/,
+              maintainer : /^# AI Agent Per-Turn Operational Mandates/
+          },
+          variants = [
+              ...REPOSITORIES.flatMap(repo => ['maintainer', 'contributor'].map(audience => [repo, audience])),
+              [WORKSPACE, 'app']
+          ];
 
-    assert.equal(repos.size, 5, 'the source declares all five consumer repositories');
-    assert.equal(audiences.size, 2, 'and both audiences');
+    assert.deepEqual([...repos].sort(), [...REPOSITORIES, WORKSPACE].sort(), 'the source declares the five consumer repositories and the app workspace kind');
+    assert.deepEqual([...audiences].sort(), Object.keys(PREAMBLE), 'and its three audiences');
 
-    for (const repo of repos) {
-        for (const audience of audiences) {
-            const {bytes, text} = generate({audience, repos: [repo]});
+    for (const [repo, audience] of variants) {
+        const {bytes, text} = generate({audience, repos: [repo]});
 
-            assert.ok(bytes > 0, `${repo}/${audience} emits something`);
-            assert.ok(bytes <= PER_FILE_LIMIT_BYTES,
-                `${repo}/${audience} is ${bytes} B, over the ${PER_FILE_LIMIT_BYTES} B budget`);
-            // Per audience, because the preamble is the block a shared file could not vary and the
-            // one that told a fork contributor about a `settings.json` they do not have.
-            assert.match(text, audience === 'maintainer'
-                ? /^# AI Agent Per-Turn Operational Mandates/
-                : /^# Contributing to Neo\.mjs/, `${repo}/${audience} opens on its own preamble`);
-            assert.ok(!text.includes('TODO'), `${repo}/${audience} ships no undecided declaration`);
-        }
+        assert.ok(bytes > 0, `${repo}/${audience} emits something`);
+        assert.ok(bytes <= PER_FILE_LIMIT_BYTES,
+            `${repo}/${audience} is ${bytes} B, over the ${PER_FILE_LIMIT_BYTES} B budget`);
+        // Per audience, because the preamble is the block a shared file could not vary and the
+        // one that told a fork contributor about a `settings.json` they do not have.
+        assert.match(text, PREAMBLE[audience], `${repo}/${audience} opens on its own preamble`);
+        assert.ok(!text.includes('TODO'), `${repo}/${audience} ships no undecided declaration`);
     }
 
     // Applicability, asserted on the real output rather than on the declarations that produced it.
@@ -481,6 +489,33 @@ function capture(argv) {
     assert.match(set.payload, /No AiConfig work without reading ADR-0019/, 'keeping the Brain-only gate an Engine-only file lacks');
     assert.equal(partial.code, 1, 'one undeclared repository refuses the whole set');
     assert.match(partial.text, /"nobody"/, 'and the refusal names it');
+}
+
+// ── The app variant: what `neo-app` writes into an outside developer's workspace ────────────────
+// Asserted on the real output, like the contributor variants: a workspace that is not ours must not
+// receive a gate, a mailbox or a role that only our repositories have.
+{
+    const cli = capture(['--repo', 'neo-app-workspace', '--audience', 'app']),
+          app = generate({audience: 'app', repos: ['neo-app-workspace']}).text;
+
+    assert.equal(cli.code, 0, 'the CLI emits the app variant');
+    assert.equal(cli.payload, app, 'and it is the composition itself');
+    assert.match(app, /neo-app-authoring/, 'it names the authoring skill the workspace gets');
+    assert.match(app, /node_modules\/neo\.mjs\/src\//, 'and sends the agent to the installed engine instead of guessing');
+
+    for (const [pattern, what] of [
+        [/neo_core_overrides|§critical_gates/, 'a maintainer gate'],
+        [/add_message|add_memory|query_raw_memories/, 'the A2A mailbox or Memory Core'],
+        [/equal-peer maintainer|lane-claim/, 'a maintainer role'],
+        [/CONTRIBUTING\.md/, 'a file only `neomjs/neo` ships']
+    ]) {
+        assert.doesNotMatch(app, pattern, `the app variant must not carry ${what}`);
+    }
+
+    for (const repo of ['neo', 'neo-agent-brain']) {
+        assert.doesNotMatch(generate({audience: 'maintainer', repos: [repo]}).text, /neo-app-authoring/,
+            `no app section leaks into ${repo}/maintainer`);
+    }
 }
 
 fixtures.forEach(root => rmSync(root, {force: true, recursive: true}));
