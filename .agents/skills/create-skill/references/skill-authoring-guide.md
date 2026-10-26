@@ -80,7 +80,7 @@ The `SKILL.md` file MUST begin with a frontmatter YAML block. The system parser 
 ```yaml
 ---
 name: [kebab-case-name]
-description: [Concise 1-2 sentence description of what the skill provides and when to invoke it (the invocation contract)]
+description: [Concise 1-sentence description (<= 220 bytes, descriptionBudget) of what the skill is for and when it fires; keep all trigger clauses, put enforcement/anchors in the body]
 ---
 ```
 

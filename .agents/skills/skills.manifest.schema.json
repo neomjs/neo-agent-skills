@@ -24,6 +24,7 @@
     "defaults": {
       "type": "object",
       "required": [
+        "descriptionBudget",
         "routerByteBudget",
         "payloadBudget",
         "claudeSymlinkRequired"
@@ -41,6 +42,11 @@
           "type": "integer",
           "minimum": 0,
           "description": "Allowed net-positive bytes (for 1-line pointers) on oversized files. Typical pointer is ~150 bytes."
+        },
+        "descriptionBudget": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum UTF-8 byte length of a SKILL.md frontmatter description (create-skill/references/skill-authoring-guide.md:83)."
         },
         "routerByteBudget": {
           "type": "integer",
@@ -91,6 +97,15 @@
         "description": {
           "type": "string",
           "minLength": 1
+        },
+        "descriptionBudget": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "budgetRationale": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required when a skill overrides a budget above defaults (e.g. descriptionBudget > defaults.descriptionBudget)."
         },
         "routerByteBudget": {
           "type": "integer",
