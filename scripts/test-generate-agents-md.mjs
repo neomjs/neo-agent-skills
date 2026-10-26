@@ -503,6 +503,20 @@ function capture(argv) {
     assert.match(app, /neo-app-authoring/, 'it names the authoring skill the workspace gets');
     assert.match(app, /node_modules\/neo\.mjs\/src\//, 'and sends the agent to the installed engine instead of guessing');
 
+    // What an outside agent otherwise reads `node_modules` to learn before it can run and reach the app
+    for (const [pattern, what] of [
+        [/http:\/\/localhost:8080` \(or `\$PORT`/,             'the port'],
+        [/\/apps\/<name>\/index\.html/,                     'the app URL'],
+        [/npm run server-start -- --no-open/,               'serving without a desktop browser'],
+        [/already\s+configured[\s\S]*\.mcp\.json[\s\S]*\.codex\/config\.toml/, 'the Neural Link this workspace already configures'],
+        [/start\s+your harness in this folder and approve the server once/, 'the one approval it needs'],
+        [/"No active App Worker sessions found"[\s\S]*focus or reload the page/, 'the reload rule for a page that outlived the dial'],
+        [/npx playwright install chromium/,                 'the headless browser install'],
+        [/Node 24 or later/,                                'the Node the engine packages require']
+    ]) {
+        assert.match(app, pattern, `the app variant states ${what}`);
+    }
+
     for (const [pattern, what] of [
         [/neo_core_overrides|§critical_gates/, 'a maintainer gate'],
         [/add_message|add_memory|query_raw_memories/, 'the A2A mailbox or Memory Core'],
