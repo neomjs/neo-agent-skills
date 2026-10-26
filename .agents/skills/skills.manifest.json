@@ -95,13 +95,24 @@
       "name": "memory-mining",
       "description": "Protocol for querying Memory Core prior art; use when diagnosing regression/validation symptoms, proposing architectural claims/roadmaps/external comparisons, or starting an implementation or PR review."
     },
+    "neo-app-authoring": {
+      "name": "neo-app-authoring",
+      "description": "Write app code in a neo.mjs workspace the engine's way: classes, reactive configs, stores, state providers, SCSS. Triggers: before writing or changing anything under apps/ in a workspace built on neo.mjs.",
+      "audiences": [
+        "app"
+      ]
+    },
     "neo-identity-update": {
       "name": "neo-identity-update",
       "description": "Protocol for coherent Neo identity updates across all surfaces; use when changing taglines/positioning/descriptions/keywords/pillars/CTAs, asked to update identity/README/branding, framing is outgrown, or facts drift."
     },
     "neural-link": {
       "name": "neural-link",
-      "description": "Tactical guide for Neural Link MCP tools on live Neo.mjs apps; use when asked to interact with the browser, inspect UI natively, patch live code, or use the Neural Link."
+      "description": "Tactical guide for Neural Link MCP tools on live Neo.mjs apps; use when asked to interact with the browser, inspect UI natively, patch live code, or use the Neural Link.",
+      "audiences": [
+        "maintainer",
+        "app"
+      ]
     },
     "overview": {
       "name": "overview",

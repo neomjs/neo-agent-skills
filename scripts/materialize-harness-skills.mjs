@@ -27,9 +27,18 @@
  * links stay stale through the command that bumps them. `--check` is what turns that from silent
  * into loud, which is why it is a CI arm and not a convenience.
  *
+ * **`--audience <name>` projects one declared audience instead of the maintainer corpus.** A
+ * workspace that `neo-app` creates for an outside developer gets the `app` skills and nothing else.
+ * In that mode BOTH surfaces become per-skill links: a directory link exposes the whole tree, so it
+ * cannot leave the maintainer skills out. The audience is passed by the consumer (its `prepare`), never
+ * inferred from it. A row that declares no `audiences` serves maintainers, which is what every row
+ * written before the field existed is — so the projection without the flag is the one it always was.
+ *
  * @example
- * neo-agent-skills-materialize            # postinstall: create/refresh the links
- * neo-agent-skills-materialize --check    # CI: assert they exist, resolve, and nothing shadows them
+ * neo-agent-skills-materialize                         # postinstall: create/refresh the links
+ * neo-agent-skills-materialize --check                 # CI: assert they exist, resolve, and nothing shadows them
+ * neo-agent-skills-materialize --audience app          # an app workspace: only the skills declaring `app`
+ * neo-agent-skills-materialize --audience app --check  # assert that projection
  */
 
 import {existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, lstatSync, realpathSync, rmSync, symlinkSync, statSync} from 'node:fs';
@@ -89,17 +98,42 @@ function consumerRoot() {
 }
 
 /**
- * @summary Skills the manifest projects into the Claude façade.
- * @param {Object} manifest
+ * @summary The audiences a skill row serves; a row that declares none serves maintainers.
+ * @param {Object} row
  * @returns {String[]}
  */
-function projected(manifest) {
-    const fallback = manifest?.defaults?.claudeSymlinkRequired === true;
+function audiencesOf(row) {
+    return row.audiences ?? ['maintainer']
+}
 
+/**
+ * @summary Skills that serve one audience — the `.agents/skills` set under `--audience`.
+ * @param {Object} manifest
+ * @param {String} audience
+ * @returns {String[]}
+ */
+function members(manifest, audience) {
     return Object.entries(manifest?.skills || {})
-        .filter(([, row]) => Object.hasOwn(row, 'claudeSymlinkRequired') ? row.claudeSymlinkRequired : fallback)
+        .filter(([, row]) => audiencesOf(row).includes(audience))
         .map(([name]) => name)
         .sort()
+}
+
+/**
+ * @summary Skills the manifest projects into the Claude façade for one audience.
+ * @param {Object} manifest
+ * @param {String} audience
+ * @returns {String[]}
+ */
+function projected(manifest, audience) {
+    const fallback = manifest?.defaults?.claudeSymlinkRequired === true;
+
+    return members(manifest, audience)
+        .filter(name => {
+            const row = manifest.skills[name];
+
+            return Object.hasOwn(row, 'claudeSymlinkRequired') ? row.claudeSymlinkRequired : fallback
+        })
 }
 
 /**
@@ -129,69 +163,113 @@ if (!existsSync(manifestPath)) {
     process.exit(1)
 }
 
+if (args.audience === true) {
+    console.error('neo-agent-skills: --audience needs a name, e.g. --audience app.');
+    process.exit(1)
+}
+
 const
     manifest   = JSON.parse(readFileSync(manifestPath, 'utf8')),
-    names      = projected(manifest),
+    // No flag is the maintainer projection — the one every consumer had before audiences existed.
+    audience   = args.audience ?? null,
+    names      = projected(manifest, audience ?? 'maintainer'),
+    // Only a DECLARED audience splits the harness-neutral surface into per-skill links.
+    agentNames = audience ? members(manifest, audience) : null,
+    agentsDir  = join(root, AGENTS),
     facadeDir  = join(root, FACADE),
     // Relative so the link survives the tree being moved or mounted at a different absolute path.
-    targetFor  = name => relative(facadeDir, join(skillsIn, name));
+    targetIn   = dir => name => relative(dir, join(skillsIn, name)),
+    targetFor  = targetIn(facadeDir);
 
-// ── check mode: assert materialization actually happened ────────────────────────────────────────
-if (args.check) {
+// A filter that matches nothing is a typo, not an empty projection: refuse before touching a link.
+if (audience && !agentNames.length) {
+    const declared = [...new Set(Object.values(manifest.skills).flatMap(audiencesOf))].sort();
+
+    console.error(`neo-agent-skills: no skill declares the audience "${audience}". Declared: ${declared.join(', ')}.`);
+    process.exit(1)
+}
+
+/**
+ * @summary Failures of one per-skill surface against the names it must hold, exactly.
+ * @param {String} dir
+ * @param {String} label
+ * @param {String[]} expected
+ * @param {Function} targetOf name → the relative link target it must carry
+ * @returns {String[]}
+ */
+function checkLinks(dir, label, expected, targetOf) {
     const
-        present  = existsSync(facadeDir) ? readdirSync(facadeDir).filter(n => !n.startsWith('.')) : [],
+        present  = existsSync(dir) ? readdirSync(dir).filter(n => !n.startsWith('.')) : [],
         failures = [];
-
-    // Harness-neutral surface first — its absence means a non-Claude fork discovers nothing.
-    const
-        agentsDir    = join(root, AGENTS),
-        agentsTarget = relative(dirname(agentsDir), skillsIn);
-
-    if (!existsSync(agentsDir) || !lstatSync(agentsDir).isSymbolicLink()) {
-        failures.push(
-            `${AGENTS} is absent or not a symlink. This is the harness-NEUTRAL discovery surface; ` +
-            `without it a Codex/Antigravity-style fork sees no skills at all, however healthy the ` +
-            `Claude façade looks.`
-        )
-    } else if (readlinkSync(agentsDir) !== agentsTarget) {
-        failures.push(
-            `${AGENTS} points at ${readlinkSync(agentsDir)}, expected ${agentsTarget}. A link that ` +
-            `resolves to the wrong tree resolves — existence is not correctness.`
-        )
-    }
 
     if (!present.length) {
         failures.push(
-            `${FACADE} is empty or absent while neo-agent-skills is installed. The postinstall hook did ` +
+            `${label} is empty or absent while neo-agent-skills is installed. The postinstall hook did ` +
             `not run — \`npm ci --ignore-scripts\` skips both postinstall and prepare, and is already ` +
             `deliberate practice in three neomjs/neo workflows. The dependency resolving is not the same ` +
             `as the skills being reachable.`
         )
     }
 
-    for (const name of names) {
-        const link = join(facadeDir, name);
+    for (const name of expected) {
+        const link = join(dir, name);
 
-        if (!present.includes(name)) { failures.push(`${FACADE}/${name} is missing from the projection.`); continue }
+        if (!present.includes(name)) { failures.push(`${label}/${name} is missing from the projection.`); continue }
         if (!lstatSync(link).isSymbolicLink()) {
-            failures.push(`${FACADE}/${name} is not a symlink — a real directory here is copied bytes, which this transport forbids.`);
+            failures.push(`${label}/${name} is not a symlink — a real directory here is copied bytes, which this transport forbids.`);
             continue
         }
-        if (!existsSync(link)) failures.push(`${FACADE}/${name} is a dangling link; its node_modules target is gone.`);
-        else if (readlinkSync(link) !== targetFor(name)) {
+        if (!existsSync(link)) failures.push(`${label}/${name} is a dangling link; its node_modules target is gone.`);
+        else if (readlinkSync(link) !== targetOf(name)) {
             failures.push(
-                `${FACADE}/${name} points at ${readlinkSync(link)}, expected ${targetFor(name)}. ` +
+                `${label}/${name} points at ${readlinkSync(link)}, expected ${targetOf(name)}. ` +
                 `Checking that a link exists and resolves says nothing about WHERE it resolves.`
             )
         }
-        if (tracked(root, join(FACADE, name))) {
-            failures.push(`${FACADE}/${name} is TRACKED by git. Projection artifacts are untracked by contract — tracked links are shadow bytes.`)
+        if (tracked(root, join(label, name))) {
+            failures.push(`${label}/${name} is TRACKED by git. Projection artifacts are untracked by contract — tracked links are shadow bytes.`)
         }
     }
 
-    for (const extra of present.filter(n => !names.includes(n))) {
-        failures.push(`${FACADE}/${extra} is not projected by the manifest — an invented or stale entry.`)
+    for (const extra of present.filter(n => !expected.includes(n))) {
+        failures.push(`${label}/${extra} is not projected by the manifest — an invented or stale entry.`)
     }
+
+    return failures
+}
+
+// ── check mode: assert materialization actually happened ────────────────────────────────────────
+if (args.check) {
+    const failures = [];
+
+    // Harness-neutral surface first — its absence means a non-Claude fork discovers nothing.
+    if (agentNames) {
+        if (existsSync(agentsDir) && lstatSync(agentsDir).isSymbolicLink()) {
+            failures.push(
+                `${AGENTS} is a directory link, but --audience ${audience} projects per-skill links. A ` +
+                `directory link exposes every skill in the package, the maintainer corpus included.`
+            )
+        } else {
+            failures.push(...checkLinks(agentsDir, AGENTS, agentNames, targetIn(agentsDir)))
+        }
+    } else {
+        const agentsTarget = relative(dirname(agentsDir), skillsIn);
+
+        if (!existsSync(agentsDir) || !lstatSync(agentsDir).isSymbolicLink()) {
+            failures.push(
+                `${AGENTS} is absent or not a symlink. This is the harness-NEUTRAL discovery surface; ` +
+                `without it a Codex/Antigravity-style fork sees no skills at all, however healthy the ` +
+                `Claude façade looks.`
+            )
+        } else if (readlinkSync(agentsDir) !== agentsTarget) {
+            failures.push(
+                `${AGENTS} points at ${readlinkSync(agentsDir)}, expected ${agentsTarget}. A link that ` +
+                `resolves to the wrong tree resolves — existence is not correctness.`
+            )
+        }
+    }
+
+    failures.push(...checkLinks(facadeDir, FACADE, names, targetFor));
 
     if (failures.length) {
         console.error(`neo-agent-skills: materialization check FAILED (${failures.length})\n`);
@@ -200,8 +278,9 @@ if (args.check) {
     }
 
     console.log(
-        `neo-agent-skills: ${names.length} skill link(s) materialized from node_modules, none tracked, ` +
-        `none shadowed (v${JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')).version})`
+        `neo-agent-skills: ${names.length} skill link(s) materialized from node_modules` +
+        `${audience ? ` for the ${audience} audience` : ''}, none tracked, none shadowed ` +
+        `(v${JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')).version})`
     );
     process.exit(0)
 }
@@ -243,13 +322,18 @@ function refuseIfTracked(path, label) {
 }
 
 // ── write mode: (re)create the projection ───────────────────────────────────────────────────────
-// Harness-neutral surface: one directory link at the whole tree.
-const agentsDir = join(root, AGENTS);
-
+// Harness-neutral surface: one directory link at the whole tree, or per-skill links for a declared
+// audience. Removing either shape first lets a consumer switch between them on the next install.
 refuseIfTracked(agentsDir, AGENTS);
 rmSync(agentsDir, {recursive: true, force: true});
-mkdirSync(dirname(agentsDir), {recursive: true});
-symlinkSync(relative(dirname(agentsDir), skillsIn), agentsDir);
+
+if (agentNames) {
+    mkdirSync(agentsDir, {recursive: true});
+    for (const name of agentNames) symlinkSync(targetIn(agentsDir)(name), join(agentsDir, name))
+} else {
+    mkdirSync(dirname(agentsDir), {recursive: true});
+    symlinkSync(relative(dirname(agentsDir), skillsIn), agentsDir)
+}
 
 // Claude façade: per-skill links, manifest-projected.
 refuseIfTracked(facadeDir, FACADE);
@@ -258,10 +342,11 @@ mkdirSync(facadeDir, {recursive: true});
 
 for (const name of names) symlinkSync(targetFor(name), join(facadeDir, name));
 
-const optedOut = Object.keys(manifest.skills).filter(n => !names.includes(n));
+const omitted = Object.keys(manifest.skills).filter(n => !names.includes(n));
 
 console.log(
     `neo-agent-skills: materialized ${names.length} link(s) into ${FACADE} → node_modules` +
-    (optedOut.length ? `; ${optedOut.length} manifest-declared opt-out(s) omitted: ${optedOut.join(', ')}` : '')
+    (audience ? ` for the ${audience} audience (${agentNames.length} in ${AGENTS})` : '') +
+    (omitted.length ? `; ${omitted.length} not projected: ${omitted.join(', ')}` : '')
 );
-console.log(`neo-agent-skills: ${FACADE}/ must be git-ignored — these are projection artifacts, never committed bytes.`);
+console.log(`neo-agent-skills: ${AGENTS}/ and ${FACADE}/ must be git-ignored — these are projection artifacts, never committed bytes.`);

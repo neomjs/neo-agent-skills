@@ -123,6 +123,16 @@
         "claudeSymlinkRequired": {
           "type": "boolean"
         },
+        "audiences": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]+(?:-[a-z]+)*$"
+          },
+          "description": "The audiences this skill serves, declared and never inferred. Omitted means maintainer, the audience every row served before the field existed. `neo-agent-skills-materialize --audience <name>` projects exactly the rows that list <name>."
+        },
         "relationships": {
           "type": "object",
           "description": "Optional future-extension metadata. No v1 lint rules consume this field.",

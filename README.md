@@ -30,6 +30,14 @@ opt a skill out of a directory symlink** — so the neutral surface links the tr
 each skill. Git-ignore both paths; a tracked entry under either is a shadow copy, which is the thing
 this package exists to make unnecessary.
 
+**A workspace that is not ours projects one audience.** `neo-agent-skills-materialize --audience app`
+(and `--check --audience app`) links only the skills whose manifest row lists `app` — today
+`neo-app-authoring` and `neural-link` — and both surfaces become per-skill links, because a directory
+link would expose the maintainer corpus. `neo-app` passes the flag from the workspaces it creates; the
+audience is declared by the caller, never inferred. A row without `audiences` serves maintainers, so the
+projection without the flag is unchanged. The matching instruction file comes from
+`neo-agent-skills-agents-md --repo neo-app-workspace --audience app`.
+
 **Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests
 retain the package version and run validation without publishing or tagging** (see *Authority*).
 Consumers update the dependency like any other.
