@@ -109,11 +109,7 @@ When in doubt, lean toward ADR genesis — under-documenting a cross-system trad
 
 ### 2.6 Map-as-Pointer Self-Eviction Defense
 
-Per Discussion #10447 OQ5 resolution, the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory MUST link to relevant ADRs per subsystem. The skill's "read the map" mandate then propagates via graph traversal — readers who follow the map naturally encounter the ADRs without needing to remember each repository's decisions location separately.
-
-**Implementation:** Sub-Issue 2 of #10449 (a separate doc-only PR) audits the Structural Inventory table and adds explicit ADR links per subsystem. Once that ships, this skill's §2.1 Reading list collapses one level (read the map → ADRs surface naturally).
-
-If you find a subsystem section in the Structural Inventory that lacks an ADR-link AND you know the relevant ADR exists, contributing the link via your current PR (or a follow-up PR) feeds the self-eviction defense.
+Per Discussion #10447 OQ5, the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory links to relevant ADRs per subsystem so readers following the map surface ADRs naturally (#10449 Sub-Issue 2). If a subsystem row lacks an existing ADR link, add it in your current or follow-up PR.
 
 ## 3. Domain-Specific Reading Lists
 
@@ -167,7 +163,7 @@ Each integration is a 1-3 line anchor in the existing skill's reference payload 
 The skill does NOT fire for:
 
 - Modifying an existing `.mjs` file (no new file → no directory choice).
-- Authoring a non-`.mjs` artifact (`.md`, `.json`, `.sh`, `.yaml`, etc.) — Phase 2 enhancement; current scope is `.mjs` per Discussion #10447 OQ1 resolution.
+- Authoring a non-`.mjs` artifact (`.json`, `.sh`, `.yaml`, etc.) — for new or relocated `learn/**/*.md` documentation files, run the pre-write placement gate in [`guide-authoring-bar.md §0`](../../guide-authoring/references/guide-authoring-bar.md#0-pre-write-placement-gate--what-am-i-before-the-file-has-a-path--discipline-only) (`blog-post` owns `learn/blog/*.md`).
 - Renaming a `.mjs` file within the same directory (no directory choice).
 
 **Edge case — relocating a `.mjs` file across directories:** the skill DOES fire because that's a directory-CHOICE decision even though no new file is created. Treat the destination as if it were a new file.
@@ -193,13 +189,11 @@ The skill does NOT fire for:
 
 ### 7.2 Full Pre-Flight Example (Hypothetical Orchestrator-Class File)
 
-> *"Pre-Flight (structural full): considered destinations `ai/scripts/`, `ai/daemons/`, and `ai/daemons/services/` for `Orchestrator.mjs`; consulted the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory (`ai/daemons/` sibling = `DreamService.mjs`, `ai/scripts/` sibling = one-shot scripts, `ai/daemons/services/` sibling = service-class daemons), and the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) §M3 (current architectural posture explicitly mandates `ai/daemons/Orchestrator.mjs` Neo-class + `ai/daemons/services/SummarizationCoordinatorService.mjs` decomposition + thin `ai/scripts/orchestrator-daemon.mjs` boot wrapper); no relevant ADR conflict (`neomjs/neo-agent-brain#adr:cross-process-cache-coherence` about caching, `neomjs/neo-agent-brain#adr:phase3-wake-substrate-standards-alignment` about wake substrate); chose `ai/daemons/Orchestrator.mjs` for the class body + `ai/daemons/services/SummarizationCoordinatorService.mjs` for the per-task service + `ai/scripts/orchestrator-daemon.mjs` for the thin wrapper, because the v13 path §M3 establishes this exact split as the canonical architectural posture and the orchestrator class is a long-running coordination primitive (not a one-shot script). Map-maintenance: not-needed (existing Structural Inventory row for `ai/daemons/` covers Orchestrator without addition). Chief-architect framing: scalability (good — `ai/daemons/services/` accommodates future per-task services); ADR-conflict (none); ADR-genesis (not needed — the v13 path §M3 already documents the trade-off at the M-milestone-plan level); future-self regression-risk (low — split mirrors existing decomposition discipline)."*
-
-The full-pre-flight statement is verbose by design. Brevity hides reasoning; verbosity creates audit substrate.
+> *"Pre-Flight (structural full): considered `ai/scripts/`, `ai/daemons/`, and `ai/daemons/services/` for `Orchestrator.mjs`; consulted the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory (`ai/daemons/` = `DreamService.mjs`, `ai/scripts/` = one-shot scripts, `ai/daemons/services/` = service-class daemons) and [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) §M3; no ADR conflict (`neomjs/neo-agent-brain#adr:cross-process-cache-coherence`, `neomjs/neo-agent-brain#adr:phase3-wake-substrate-standards-alignment`); chose `ai/daemons/Orchestrator.mjs` + `ai/daemons/services/SummarizationCoordinatorService.mjs` + thin `ai/scripts/orchestrator-daemon.mjs` wrapper per v13 path §M3. Map-maintenance: not-needed. Chief-architect framing: scalability (good); ADR-conflict (none); ADR-genesis (not needed — v13 path §M3 documents the split); future-self regression-risk (low)."*
 
 ## 8. Verification Hooks
 
-A mechanical-enforcement candidate (per `AGENTS.md §13` MX-loop): a pre-commit hook OR PR-review check could grep the latest commit for new `.mjs` files and verify a Pre-Flight statement was included in either the commit message body or a PR comment. That's a Phase 2 enhancement; current Phase 1 relies on the skill firing at authoring time as a `DISCIPLINE-ONLY` rule.
+Mechanical-enforcement candidate (`AGENTS.md §13`): a pre-commit hook or PR-review check grepping commits for new `.mjs` files and verifying a Pre-Flight statement in the commit body or PR comment (Phase 1 relies on authoring-time `DISCIPLINE-ONLY` invocation).
 
 ## 9. Compaction Taxonomy
 
