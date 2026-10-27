@@ -15,35 +15,36 @@ A ticket that calls an existing behavior wrong carries its `Design authority:` l
 **Before drafting any title or body**, you MUST execute the applicable sweeps below to ensure swarm synchronicity and architectural discipline:
 
 ### 1a. The Content Sweep (Duplicate Detection)
-Verify no equivalent ticket already exists. Redundant tickets pollute the Knowledge Base.
+Verify no equivalent ticket or closed exclusion already exists. Redundant tickets pollute the Knowledge Base.
 
 Duplicates hide in **two substrates**; sweep **both as the LAST step immediately before `create_issue`** — never at turn-start or before drafting. A pre-draft sweep goes stale while you write the Fat Ticket: in a thundering herd, a peer's ticket can land between your sweep and your `create_issue` call. The turn-start mailbox check (`§mailbox_check_protocol`) is for general coordination, **not** the dup gate.
 
-**(i) GitHub live freshness sweep (mandatory) — catches already-FILED duplicates:** read at least the latest 20 open GitHub issues from the live tracker, including issue number, title, author, labels, and URL.
+**(i) GitHub live freshness + closed-state sweep (mandatory) — catches already-FILED duplicates and closed rulings:** read at least the latest 20 open GitHub issues from the live tracker (issue number, title, author, labels, URL) and query closed state on the problem's nouns:
 
 ```bash
 gh issue list --state open --limit 20 --json number,title,author,labels,url
+gh issue list --state closed --search "<problem nouns>" --limit 15
 ```
 
-An equivalent MCP call is acceptable only when its page is live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is only supplemental — it buries untouched fresh filings below recently-updated older issues. Failure mode `#15603`: a stale filtered-read path lagged the tracker by days across this herd window. This live sweep is required even when KB and local searches return no duplicates: the most likely active-swarm duplicate can exist on GitHub before the Knowledge Base has ingested it.
+Read the `Out of Scope` and `Avoided Traps` sections of any same-surface closed hit — a closed ticket's title rarely reveals that it governs adjacent scope (`neomjs/neo#18308` zero-backwards-compatibility ruling, `neomjs/neo#18399` `Out of Scope` exclusion, `neomjs/neo#16391`/`#16392` already-shipped `hasLandedInPlane`). An equivalent MCP call for the open page is acceptable only when live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is supplemental because it buries untouched fresh filings (`#15603`). Both runs are required even when KB and local searches return no hits.
 
-If the live latest-open sweep fails because of sandbox, network, or auth state, retry through the appropriate approved/escalated path. If live GitHub state still cannot be fetched, stop before `create_issue` and report the blocker; do not file from stale-only evidence.
+If live GitHub state cannot be fetched due to sandbox, network, or auth state, retry through the approved path; if still unreachable, stop before `create_issue` and report the blocker rather than filing from stale evidence.
 
-Record the live-open sweep result in the ticket body or creation notes, e.g. `Live latest-open sweep: checked latest 20 open issues at <timestamp>; no equivalent found` or link the existing ticket you found instead of filing a duplicate.
+Record both on the same attestation line in the ticket body, e.g. `Live latest-open + closed sweep: checked latest 20 open + closed search (<problem nouns>, Out of Scope / Avoided Traps read on hits) at <timestamp>; no equivalent or prior exclusion found` (or link the existing ticket instead of filing).
 
-**(ii) A2A in-flight claim sweep (mandatory) — catches IN-FLIGHT duplicates not yet on GitHub:** for the first minutes of a thundering herd a peer's intent exists only as an A2A `[lane-claim]`/`[lane-intent]`, not yet a GitHub ticket — the `(i)` sweep above cannot see it. Immediately before `create_issue`, scan the mailbox for recent claims on the same scope:
+**(ii) A2A in-flight claim sweep (mandatory) — catches IN-FLIGHT duplicates not yet on GitHub:** in a thundering herd a peer's intent first exists only as an A2A `[lane-claim]`/`[lane-intent]` invisible to `(i)`. Immediately before `create_issue`, scan the mailbox for recent claims on the same scope:
 
 ```js
 list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is the bound, not read-status
 ```
 
-**Filter by recency + scope, NOT read-status.** A `[lane-claim]` you have already *read* (e.g. your turn-start mailbox triage marked it read) is still an active claim — `status: 'unread'` would make it invisible and you would refile the duplicate, the exact late-boot ordering this gate exists to stop (read-status is consumption tracking, not a relevance signal). From the returned slice, keep messages whose `sentAt` falls in the herd window (~last 30–60 min) **and** whose `[lane-claim]`/`[lane-intent]` subject overlaps your scope (`taggedConcepts: ['lane-claim']` is optional narrowing — tag discipline is conventional, not guaranteed, so subject-scan stays primary).
+**Filter by recency + scope, NOT read-status.** A `[lane-claim]` already marked read during turn-start mailbox triage is still an active claim — `status: 'unread'` hides it and causes duplicate filing (read-status tracks consumption, not relevance). Keep messages whose `sentAt` falls in the herd window (~last 30–60 min) **and** whose `[lane-claim]`/`[lane-intent]` subject overlaps your scope (`taggedConcepts: ['lane-claim']` is optional; subject-scan stays primary).
 
-**Tiebreak — first-claim-timestamp-wins:** if a competing claim or a just-filed ticket surfaces, the **earliest claim/file timestamp wins** — and an earlier *unfiled claim* outranks a later *filed ticket* (claims must bind against fast-filers, or the sweep is toothless). The later party stands down; if it already filed, it closes its duplicate and ports any unique substance onto the survivor — i.e. the earlier claimant absorbs the later filer's content, **not** the reverse. Deterministic and self-healing — resolves simultaneous filings without lead mediation. A contested-lane resolution MUST set `wakeSuppressed: false` — claim-class is quiet by default (#15987), so omission leaves the "do-not-re-file" signal mailbox-only and it reaches no one in time.
+**Tiebreak — first-claim-timestamp-wins:** the **earliest claim/file timestamp wins**, and an earlier *unfiled claim* outranks a later *filed ticket*. The later party stands down; if it already filed, it closes its duplicate and ports unique substance onto the survivor (earlier claimant absorbs later filer's content, **not** the reverse). A contested-lane resolution MUST set `wakeSuppressed: false` — claim-class is quiet by default (#15987), so omitting it leaves the signal mailbox-only.
 
-**(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)`, `(ii)` and the greps below are all **artifact** substrates — they answer *"does a ticket exist?"*, never *"was this already decided, and why?"* Run one `query_raw_memories` keyed on the **problem's** nouns (the symptom as observed, never the mechanism you are about to build), and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body like `(i)` does.
+**(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)` and `(ii)` are **artifact** substrates — combine them with one `query_raw_memories` keyed on the **problem's** nouns (observed symptom, never proposed mechanism) and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body beside `(i)`.
 
-**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** both artifact axes are blind to an outcome authority — the payload says why. Read every open `label:epic` issue's `Terminal predicate:` line, then body-read only what an outcome-overlap query ranks, and attest beside `(i)`.
+**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** read every open and closed `label:epic` issue's `Terminal predicate:` line (`--state all`), then body-read only what an outcome-overlap query ranks, and attest beside `(i)`.
 
 <!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
 <!-- trigger: load-bearing population count or absence claim justifying premise, scope, or acceptance -> read ../../pr-review/references/reviewer-instrument-audit.md (role-triggered publish-safe instrument receipt; routine receipts and CI totals exempt) -->
