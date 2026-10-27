@@ -64,7 +64,7 @@
     },
     "guide-authoring": {
       "name": "guide-authoring",
-      "description": "Protocol for learn/ guides; use before authoring or reviewing any guide under learn/benefits/*.md or learn/agentos/*.md."
+      "description": "Protocol for learn/**/*.md guides, tutorials, and docs (except learn/blog/*.md, owned by blog-post, and ADR bodies); use before authoring, relocating, or reviewing any learn/**/*.md document."
     },
     "hostile-content-quarantine": {
       "name": "hostile-content-quarantine",

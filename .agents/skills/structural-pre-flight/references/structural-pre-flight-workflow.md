@@ -109,11 +109,7 @@ When in doubt, lean toward ADR genesis — under-documenting a cross-system trad
 
 ### 2.6 Map-as-Pointer Self-Eviction Defense
 
-Per Discussion #10447 OQ5 resolution, the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory MUST link to relevant ADRs per subsystem. The skill's "read the map" mandate then propagates via graph traversal — readers who follow the map naturally encounter the ADRs without needing to remember each repository's decisions location separately.
-
-**Implementation:** Sub-Issue 2 of #10449 (a separate doc-only PR) audits the Structural Inventory table and adds explicit ADR links per subsystem. Once that ships, this skill's §2.1 Reading list collapses one level (read the map → ADRs surface naturally).
-
-If you find a subsystem section in the Structural Inventory that lacks an ADR-link AND you know the relevant ADR exists, contributing the link via your current PR (or a follow-up PR) feeds the self-eviction defense.
+Per Discussion #10447 OQ5, the Engine [Architecture Overview](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md) Structural Inventory links to relevant ADRs per subsystem so readers following the map surface ADRs naturally (#10449 Sub-Issue 2). If a subsystem row lacks an existing ADR link, add it in your current or follow-up PR.
 
 ## 3. Domain-Specific Reading Lists
 
@@ -167,7 +163,7 @@ Each integration is a 1-3 line anchor in the existing skill's reference payload 
 The skill does NOT fire for:
 
 - Modifying an existing `.mjs` file (no new file → no directory choice).
-- Authoring a non-`.mjs` artifact (`.md`, `.json`, `.sh`, `.yaml`, etc.) — Phase 2 enhancement; current scope is `.mjs` per Discussion #10447 OQ1 resolution.
+- Authoring a non-`.mjs` artifact (`.json`, `.sh`, `.yaml`, etc.) — for new or relocated `learn/**/*.md` documentation files, run the pre-write placement gate in [`guide-authoring-bar.md §0`](../../guide-authoring/references/guide-authoring-bar.md#0-pre-write-placement-gate--what-am-i-before-the-file-has-a-path--discipline-only) (`blog-post` owns `learn/blog/*.md`; ADR bodies follow `guide-authoring-bar.md §7`).
 - Renaming a `.mjs` file within the same directory (no directory choice).
 
 **Edge case — relocating a `.mjs` file across directories:** the skill DOES fire because that's a directory-CHOICE decision even though no new file is created. Treat the destination as if it were a new file.
@@ -199,7 +195,7 @@ The full-pre-flight statement is verbose by design. Brevity hides reasoning; ver
 
 ## 8. Verification Hooks
 
-A mechanical-enforcement candidate (per `AGENTS.md §13` MX-loop): a pre-commit hook OR PR-review check could grep the latest commit for new `.mjs` files and verify a Pre-Flight statement was included in either the commit message body or a PR comment. That's a Phase 2 enhancement; current Phase 1 relies on the skill firing at authoring time as a `DISCIPLINE-ONLY` rule.
+Mechanical-enforcement candidate (`AGENTS.md §13`): a pre-commit hook or PR-review check grepping commits for new `.mjs` files and verifying a Pre-Flight statement in the commit body or PR comment (Phase 1 relies on authoring-time `DISCIPLINE-ONLY` invocation).
 
 ## 9. Compaction Taxonomy
 
