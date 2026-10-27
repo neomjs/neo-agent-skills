@@ -35,10 +35,10 @@ Do not issue one query with many keywords. Issue 2–4 queries with **different 
 
 Choose the first memory surface by freshness, not by habit.
 
-1. **Recent / active-session investigations:** run **`query_raw_memories` first or in parallel with `query_summaries`** when the event is same-day, just happened, active-ticket / active-PR bound, wake/A2A coordination, or otherwise likely to live in unsummarized turns. `add_memory()` can persist raw turns before any session summary exists, so a summary miss is not a memory miss until a freshness-shaped raw query also misses.
-2. **Older / stable history:** run **`query_summaries` first** for broad conceptual exploration, older decisions, and low-freshness historical context. Session-level topics surface cheaply when summarization has had time to digest the work.
-3. **`query_raw_memories` after a summary hit:** use raw memories to recover turn-level reasoning, exact commands, message IDs, or decision texture behind a relevant summary.
-4. **`ask_knowledge_base`** — only when the answer lives in indexed code/guides, not in session memory. If unsure, run memory first; KB is cheaper to skip than memory is. This is the Memory Core analogue of the GitHub/KB freshness gap corrected in #10646.
+1. **Recent / active-session investigations:** run **`query_raw_memories` (`detail: 'summary'`, plus `agentIdentity` when author-scoped) first or in parallel with `query_summaries`** when the event is same-day, active-ticket / active-PR bound, wake/A2A coordination, or likely in unsummarized turns (`add_memory()` persists raw turns before any session summary exists).
+2. **Older / stable history:** run **`query_summaries` first** (with `agentIdentity` when author-scoped) for broad conceptual exploration and older decisions.
+3. **`query_raw_memories` (`detail: 'full'`) after a summary hit:** hydrate matching turns (`projection: 'public'` on cross-seat team reads) to recover turn-level reasoning, commands, message IDs, or decision texture.
+4. **`ask_knowledge_base`** — only when the answer lives in indexed code/guides, not in session memory. If unsure, run memory first (#10646).
 
 ### Good vs bad query shapes
 
