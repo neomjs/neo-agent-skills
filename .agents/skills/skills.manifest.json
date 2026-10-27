@@ -64,7 +64,7 @@
     },
     "guide-authoring": {
       "name": "guide-authoring",
-      "description": "Protocol for learn/**/*.md guides, tutorials, and docs (except learn/blog/*.md, owned by blog-post); use before authoring, relocating, or reviewing any learn/**/*.md document."
+      "description": "Protocol for learn/**/*.md guides, tutorials, and docs (except learn/blog/*.md, owned by blog-post, and ADR bodies); use before authoring, relocating, or reviewing any learn/**/*.md document."
     },
     "hostile-content-quarantine": {
       "name": "hostile-content-quarantine",
