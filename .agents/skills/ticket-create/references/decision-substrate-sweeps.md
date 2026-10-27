@@ -33,17 +33,18 @@ Read the **bodies** of the two or three same-surface hits, including tables and 
 Fires only on **epic-labeled** filings.
 
 ```bash
-gh issue list --repo <r> --label epic --state all --json number,title,state
+gh issue list --repo <r> --label epic --state open --json number,title
+gh issue list --repo <r> --label epic --state closed --search "<outcome nouns>" --limit 15
 ```
 
 Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
 
-**Read every predicate, then selected bodies.** `epic-create` puts `Terminal predicate:` first to keep this exhaustive read affordable:
+**Read every open predicate, then closed hits and ranked bodies.** `epic-create` puts `Terminal predicate:` first to keep the open read affordable:
 
-1. **Every row:** read each open and closed epic's terminal predicate.
+1. **Every open row + closed search hits:** read each open epic's `Terminal predicate:` line, plus the predicate or body opening of same-outcome hits from the closed `--search`.
 2. **Ranked bodies:** for missing or arguably overlapping predicates, run the semantic outcome-overlap query and read its ranked candidates. Retrieval proposes; the reader judges overlap.
 
-**Cost control:** read predicates exhaustively, bodies selectively. On 2026-09-02, 29 Engine epics implied ~290k characters for an all-body read; re-query populations rather than calling them small. Standing outcomes can predate `(i)`'s window and use different nouns, splitting ownership when missed.
+**Cost control:** read open predicates exhaustively, closed epics and bodies selectively. On 2026-09-02, 29 Engine epics implied ~290k characters for an all-body read; re-query populations rather than calling them small. Standing outcomes can predate `(i)`'s window and use different nouns, splitting ownership when missed.
 
 > **Anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** Two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep ran honestly and **passed**; a peer's epic review caught it after filing.
 
@@ -54,7 +55,7 @@ Record what ran, in the body, beside the live-open + closed attestation:
 ```
 MC sweep: <queries>, <n> results, no prior decision found
 Own-assignment sweep: <n> open, none overlapping
-Epic sweep: <n> epics (--state all) read, no shared terminal predicate    # epic-labeled filings only
+Epic sweep: <n> open predicates + closed search (<outcome nouns>) read, no shared terminal predicate    # epic-labeled filings only
 ```
 
 Prose discipline that leaves no artifact cannot be checked; these arms exist because prose discipline failed.
@@ -73,9 +74,8 @@ Reuse adjacency results and predecessor PR links: read affected tickets, open PR
 ## Empirical anchor
 
 - **`neomjs/neo#17997`, 2026-08-31:** Re-filed **row 3** of `#17868` — open, older than `(i)`'s window, and assigned to the filer — four hours after that filer's own `#17961` closing comment recorded row 3's blocker belonged **on `#17868`**.
-- **Closed-disposition anchors (`neomjs/neo-agent-skills#62`, 2026-09-09):** `neomjs/neo#18308` ("Zero backwards compatibility" ruling), `neomjs/neo#18399` (`Out of Scope` exclusion), and `neomjs/neo#16391`/`#16392` (`hasLandedInPlane` already shipped; duplicate filed and two wrong fixes designed). Reading `Out of Scope` and `Avoided Traps` on `--state closed` hits catches dispositions that Memory Core and open-only lists miss.
 - **Why sweeps run LAST (`#12856`, 2026-06-10):** four agents raced one prompt into three duplicates; the one who re-checked immediately before `create_issue` produced none.
 
 ## Sunset
 
-When `ticket-create` gains a mechanical pre-flight runner, arms `(i)`–`(iv)` collapse into it and this payload retires. `(v)` survives as a prompt: a runner can list all Epics, but *"do these two finish the same sentence?"* is a reader's judgment.
+When `ticket-create` gains a mechanical pre-flight runner, arms `(i)`–`(iv)` collapse into it and this payload retires. `(v)` survives as a prompt: a runner can list open Epics and closed `--search` hits, but *"do these two finish the same sentence?"* is a reader's judgment.

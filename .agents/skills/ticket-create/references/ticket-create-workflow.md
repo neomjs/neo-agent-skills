@@ -26,7 +26,7 @@ gh issue list --state open --limit 20 --json number,title,author,labels,url
 gh issue list --state closed --search "<problem nouns>" --limit 15
 ```
 
-Read the `Out of Scope` and `Avoided Traps` sections of any same-surface closed hit — a closed ticket's title rarely reveals that it governs adjacent scope (`neomjs/neo#18308` zero-backwards-compatibility ruling, `neomjs/neo#18399` `Out of Scope` exclusion, `neomjs/neo#16391`/`#16392` already-shipped `hasLandedInPlane`). An equivalent MCP call for the open page is acceptable only when live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is supplemental because it buries untouched fresh filings (`#15603`). Both runs are required even when KB and local searches return no hits.
+Read the `Out of Scope` and `Avoided Traps` sections of any same-surface closed hit — a closed ticket's title rarely reveals that it governs adjacent scope, and a closed hit answers what was already decided, never whether the premise matters (`neomjs/neo#18308` zero-backwards-compatibility ruling while `#18537` still closed `not_planned`, `neomjs/neo#18399` `Out of Scope` exclusion, `neomjs/neo#16391` / PR `#16403` already-shipped `hasLandedInPlace`). An equivalent MCP call for the open page is acceptable only when live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is supplemental because it buries untouched fresh filings (`#15603`). Both runs are required even when KB and local searches return no hits.
 
 If live GitHub state cannot be fetched due to sandbox, network, or auth state, retry through the approved path; if still unreachable, stop before `create_issue` and report the blocker rather than filing from stale evidence.
 
@@ -44,7 +44,7 @@ list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is t
 
 **(iii) Memory Core rationale sweep + (iv) own-assignment sweep (both mandatory):** `(i)` and `(ii)` are **artifact** substrates — combine them with one `query_raw_memories` keyed on the **problem's** nouns (observed symptom, never proposed mechanism) and `gh issue list --state open --assignee @me` reading the **bodies** of same-surface hits. Both attest in the body beside `(i)`.
 
-**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** read every open and closed `label:epic` issue's `Terminal predicate:` line (`--state all`), then body-read only what an outcome-overlap query ranks, and attest beside `(i)`.
+**(v) Epic-layer sweep (epic-labeled filings only, mandatory):** read every open `label:epic` issue's `Terminal predicate:` line, run `gh issue list --label epic --state closed --search "<outcome nouns>"` to read the predicate or body opening of same-outcome closed epics, body-read what an outcome-overlap query ranks, and attest beside `(i)`.
 
 <!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
 <!-- trigger: load-bearing population count or absence claim justifying premise, scope, or acceptance -> read ../../pr-review/references/reviewer-instrument-audit.md (role-triggered publish-safe instrument receipt; routine receipts and CI totals exempt) -->
