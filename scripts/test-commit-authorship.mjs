@@ -3,7 +3,7 @@
  * @summary Contract checks for the commit-authorship guard, run against real commits in a disposable repository.
  *
  * The operator's identity comes from a stand-in global config (`GIT_CONFIG_GLOBAL`), so no arm reads or writes the real
- * one, and `NEO_AGENT_IDENTITY` is cleared so the seat running these arms cannot make the main checkout look agent-owned.
+ * one; inherited `GIT_*` variables are dropped and `NEO_AGENT_IDENTITY` is cleared so the seat running these arms cannot make the main checkout look agent-owned.
  * The team roster is a fixture module with two seats on `team.example`.
  */
 
@@ -23,7 +23,8 @@ const
     worktree = join(root, 'worktree'),
     roster   = join(root, 'roster.mjs'),
     OPERATOR = 'operator@home.example',
-    env      = {...process.env, GIT_CONFIG_GLOBAL: join(root, 'global.gitconfig'), GIT_CONFIG_NOSYSTEM: '1', NEO_AGENT_IDENTITY: ''},
+    env      = {...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))),
+                GIT_CONFIG_GLOBAL: join(root, 'global.gitconfig'), GIT_CONFIG_NOSYSTEM: '1', NEO_AGENT_IDENTITY: ''},
     git      = (cwd, ...args) => execFileSync('git', args, {cwd, encoding: 'utf8', env}).trim();
 
 writeFileSync(env.GIT_CONFIG_GLOBAL, `[user]\n\tname = Operator\n\temail = ${OPERATOR}\n`);
