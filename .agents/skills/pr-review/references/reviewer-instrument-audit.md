@@ -24,7 +24,7 @@ A qualifying claim carries: (1) **Producer** (command, MCP tool, or query class 
 
 ### 3. Worked negative examples (do NOT fire)
 
-- **Routine workflow attestations:** `"Live latest-open sweep: checked latest 20 open issues at 2026-08-22T00:35Z; no equivalent found"` — a fixed gate receipt, not a population premise.
+- **Routine workflow attestations:** `"Live latest-open + closed sweep: checked latest 20 open + closed search (<problem nouns>, Out of Scope / Avoided Traps read on hits) at 2026-08-22T00:35Z; no equivalent or prior exclusion found"` — a fixed gate receipt, not a population premise.
 - **CI-linked test totals:** `"26/26 green"` or `"4,115 passed"` backed by PR CI or a linked test run — producer, tree, and scope already live in the CI receipt.
 - **Non-argument numbers:** dates, timestamps, versions, issue/PR IDs, and enumerations whose producer is already named in the surrounding table or heading.
 
