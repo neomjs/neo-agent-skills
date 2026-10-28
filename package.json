@@ -1,6 +1,6 @@
 {
   "name": "neo-agent-skills",
-  "version": "0.1.69",
+  "version": "0.1.70",
   "description": "Install the workflow substrate a cross-model AI team actually runs on: ticket intake, PR review gates, lane coordination and guards, versioned as a package. The skills Neo.mjs maintainers load every session — materialized into your repo, not copied.",
   "type": "module",
   "license": "MIT",
@@ -28,7 +28,8 @@
     "neo-agent-skills-agents-md": "./scripts/generate-agents-md.mjs",
     "neo-agent-skills-npm-overrides": "./scripts/check-npm-overrides.mjs",
     "neo-agent-skills-secrets": "./scripts/check-secrets.mjs",
-    "neo-agent-skills-commit-authorship": "./scripts/check-commit-authorship.mjs"
+    "neo-agent-skills-commit-authorship": "./scripts/check-commit-authorship.mjs",
+    "neo-agent-skills-discussion-fidelity": "./scripts/check-discussion-fidelity.mjs"
   },
   "exports": {
     "./agents-md": "./scripts/generate-agents-md.mjs",
@@ -40,6 +41,7 @@
     "README.md",
     "agents-md",
     "scripts/check-commit-authorship.mjs",
+    "scripts/check-discussion-fidelity.mjs",
     "scripts/check-npm-overrides.mjs",
     "scripts/check-pr-body.mjs",
     "scripts/check-secrets.mjs",
@@ -52,7 +54,7 @@
   "scripts": {
     "materialize": "node scripts/materialize-harness-skills.mjs",
     "lint": "node scripts/lint-skill-corpus.mjs",
-    "test": "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-reusable-dependabot-automerge.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs && node scripts/test-check-pr-body.mjs && node scripts/test-workflow-concurrency.mjs && node scripts/test-generate-agents-md.mjs && node scripts/test-materialize-harness-skills.mjs && node scripts/test-npm-overrides.mjs && node scripts/test-secrets.mjs && node scripts/test-commit-authorship.mjs && node scripts/test-tag-release.mjs && node scripts/test-check-version-bump.mjs && node scripts/test-release-origin.mjs",
+    "test": "node scripts/test-lint-skill-corpus.mjs && node scripts/test-reusable-pr-baseline.mjs && node scripts/test-reusable-dependabot-automerge.mjs && node scripts/test-ticket-archaeology.mjs && node scripts/test-substrate-size.mjs && node scripts/test-check-pr-body.mjs && node scripts/test-workflow-concurrency.mjs && node scripts/test-generate-agents-md.mjs && node scripts/test-materialize-harness-skills.mjs && node scripts/test-npm-overrides.mjs && node scripts/test-secrets.mjs && node scripts/test-commit-authorship.mjs && node scripts/test-check-discussion-fidelity.mjs && node scripts/test-tag-release.mjs && node scripts/test-check-version-bump.mjs && node scripts/test-release-origin.mjs",
     "generate-agents-md": "node scripts/generate-agents-md.mjs",
     "postpublish": "node scripts/tag-release.mjs"
   },

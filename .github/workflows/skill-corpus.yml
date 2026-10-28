@@ -96,6 +96,9 @@ jobs:
       - name: Commit-authorship guard contract
         run: node scripts/test-commit-authorship.mjs
 
+      - name: Source-Discussion fidelity comparator contract and packed CLI
+        run: node scripts/test-check-discussion-fidelity.mjs
+
       - name: Release-tag script contract
         run: node scripts/test-tag-release.mjs
 
@@ -126,8 +129,10 @@ jobs:
             || { echo "credential guard CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-commit-authorship.mjs' \
             || { echo "commit-authorship guard CLI missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-discussion-fidelity.mjs' \
+            || { echo "discussion-fidelity CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/test-check-discussion-fidelity.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done

@@ -53,35 +53,22 @@ For each parent AC of the epic:
 
 ## 3.5. Source Discussion Closeout Gate
 
-**Trigger:** Epic body cites a source Discussion (e.g., `Resolves Discussion #N`, `Graduates from Discussion #N`, or contains a Signal Ledger), OR the Epic was created via `epic-review` Stage 2.5 mapping (#11349) and has a `## Source Discussion Criteria Mapping` section. **N/A** for standalone Epics with no source Discussion — skip directly to §4.
+<!-- trigger: Epic cites a source Discussion, Signal Ledger, or Discussion Criteria Mapping → read ../audits/source-discussion-reconciliation-audit.md -->
 
-Before §4 verdict computation, reconcile upstream Discussion criteria against delivered Epic substrate. The Closeout Gate sits alongside §3's matrix and uses Discussion criteria as the row key:
+**Trigger:** Epic body cites a source Discussion (`Resolves/Graduates from Discussion #N`, `Signal Ledger`, or `## Discussion Criteria Mapping`). **N/A** for standalone Epics with no source Discussion — skip to §4.
+
+Before §4 verdict computation, run the exit pass of [`../audits/source-discussion-reconciliation-audit.md`](../audits/source-discussion-reconciliation-audit.md) alongside §3's matrix:
 
 ```md
-| Source Discussion criterion | Epic AC(s) | Owning sub(s) | Delivered PR(s) | Achieved evidence | Residual / deferral |
-|---|---|---|---|---|---|
+| Source Discussion criterion | Mode (`enumerable` \| `judged`) | Epic AC / `inventory-id` | Owning sub(s) | Delivered PR(s) | Achieved evidence | Residual / deferral |
+|---|---|---|---|---|---|---|
 ```
 
-For each criterion from the source Discussion's Graduation Criteria section (the post-consensus criterion list, NOT the open-question list):
+1. **`enumerable` rows** (marked `binding-inventory` trees, schemas, API/wire vocabularies): verify exact set equality across source ↔ union(Epic, leaves) via `node scripts/check-discussion-fidelity.mjs` plus delivered PR evidence.
+2. **`judged` rows** (ownership, exclusions, sequencing, ADR boundaries): verify material delivery across §3 rows.
+3. **Residual / deferral:** `none — delivered via AC<N>`, `EXPLICITLY DEFERRED — <rationale>`, `CONVERTED TO FOLLOW-UP [#<followup-ticket>]`, or `LOST` (unmapped, folder-placeholder, or link/ID-only).
 
-1. **Source Discussion criterion** — quote or reference the criterion text from the Discussion body. Each `[RESOLVED_TO_AC]` Cycle 2 resolution + each Graduation Criteria bullet + each Pilot Shape commitment counts as a criterion.
-2. **Epic AC(s)** — which Epic AC row(s) cover this criterion. If multiple criteria collapse to one Epic AC, that's fine — note the AC reference once. If no Epic AC covers the criterion, the row's residual is `LOST` (see below).
-3. **Owning sub(s) / Delivered PR(s) / Achieved evidence** — derived from §3 matrix row(s) for the corresponding Epic AC.
-4. **Residual / deferral** — one of:
-   - `none — delivered via AC<N>` (criterion fully realized in the Epic substrate)
-   - `EXPLICITLY DEFERRED — <rationale>` (criterion intentionally not addressed in this Epic; rationale must be public + part of original graduation acceptance OR documented in epic body)
-   - `CONVERTED TO FOLLOW-UP [#<followup-ticket>]` (criterion split out to a separate ticket post-graduation; ticket must exist + be reachable)
-   - `LOST` (criterion not mapped to any Epic AC; not explicitly deferred; not converted) — this is the silent-promise-loss class
-
-**Verdict integration:** the Closeout Gate output feeds §4 verdict computation. Any `LOST` criterion blocks `RECOMMEND_CLOSE_COMPLETED` even when all §3 Epic AC rows are green. The remediation path:
-
-- **Recoverable in existing subs:** if the LOST criterion can be addressed by extending an existing sub's scope, recommend `KEEP_OPEN` + flag the sub for scope-extension
-- **Requires new sub:** if the LOST criterion needs new substrate work, recommend `CREATE_MISSING_SUBS` per the standard §4 + §5 path
-- **Was-actually-deferrable:** if the LOST criterion was implicitly deferred during graduation and just never explicitly captured, file a `CONVERTED TO FOLLOW-UP` ticket retroactively + update the gate row before re-verdict
-
-`EXPLICITLY DEFERRED` and `CONVERTED TO FOLLOW-UP` are acceptable closeout states with same tracked-elsewhere semantics as §3 `RESIDUAL_<X> [#<followup-ticket>]`.
-
-**Empirical anchor:** Discussion #11341 → ticket #11342 chain. The Discussion's `[RESOLVED_TO_AC]` Cycle 2 resolutions (≥30% demotion threshold + Markdown Form distinction + #11330-bound measurement + Pilot Shape: INV1 cascade detail with measurement contract) became #11342 ACs via `epic-review` Stage 2.5 mapping (#11349). At closeout this gate verifies each `[RESOLVED_TO_AC]` line and the Pilot Shape AC are delivered, explicitly deferred, or converted. Without this gate, the Pilot's "≥30% byte reduction" criterion could silently drift to "some byte reduction" if Epic ACs were diluted at creation time and never re-checked at closure.
+**Verdict integration:** Any `LOST` row blocks `RECOMMEND_CLOSE_COMPLETED` even when all §3 Epic AC rows are green (`RECOMMEND_KEEP_OPEN` if recoverable in existing subs; `RECOMMEND_CREATE_MISSING_SUBS` if new sub needed; or file a retroactive `CONVERTED TO FOLLOW-UP [#N]` ticket if deferrable).
 
 ## 4. Compute the verdict
 
@@ -165,26 +152,10 @@ Per `feedback_a2a_commentid_pre_flight`: post the verdict comment FIRST, capture
 ## 7. Cross-references
 
 - Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) — L1-L4 definitions + matrix schema authority
-- `.agents/skills/epic-review/` — entry-pass sibling (seeds matrix at sub-creation time + Source Discussion Criteria Mapping per Stage 2.5 #11349)
-- `.agents/skills/pr-review/` — sub-execution gate (audits Evidence declaration on each merging PR)
-- `.agents/skills/pull-request/` — author-side Evidence declaration template
-- `.agents/skills/ticket-create/` — invoked by the operator on `RECOMMEND_CREATE_MISSING_SUBS`
-- AGENTS.md §0 Invariant 1 — PR-merge gate (NOT a verdict-authority parallel; §4 above documents why epic-close is downstream of the review verdict, not in §0 scope). Cross-referenced here because both invariants share the empirical pattern of agent-derived-recommendation + operator-authorized-action, but the substrate-effect / reversibility / blast-radius profiles differ materially.
-- Discussion #10697 — origin ideation
-- Issue #10698 — graduation artifact
+- [`../audits/source-discussion-reconciliation-audit.md`](../audits/source-discussion-reconciliation-audit.md) — shared entry/exit source-Discussion reconciliation contract
+- `.agents/skills/epic-review/`, `.agents/skills/pr-review/`, `.agents/skills/pull-request/`, `.agents/skills/ticket-create/`
+- Discussion #10697 + Issue #10698 — origin and graduation artifact
 
 ## 8. Empirical anchor — Epic #10671 (motivating example)
 
-> ⚠️ **Frozen teaching example — not a live verdict.** The matrix below is Epic #10671's state *as of 2026-05-04* (when this section was authored), kept to illustrate the `RECOMMEND_KEEP_OPEN` *reasoning*. It is deliberately **decoupled from live ticket state** — never copy its verdict. For any epic (including #10671 today), **re-derive the verdict from current sub/PR state** (`gh` / GraphQL), as §1–§7 require. A snapshot pinned to a live ticket inevitably inverts as the organism evolves; the freeze-date is its sunset marker.
->
-> **Lifecycle update:** #10671 has since closed `CLOSE_COMPLETED` (2026-06-05) — 19/19 subs closed; the blockers below (#10676 / #10679 / #10696) all resolved. The `KEEP_OPEN → CLOSE` arc is the lesson: the *reasoning* held; the *verdict* moved because the live state moved.
-
-Snapshot as authored (2026-05-04) — the epic whose closeout-friction motivated #10697 + #10698:
-
-- 9 subs across substrate-restart components (forensic, detector, in-flight lock, idle-out, sunset-mode, harness adapters, Codex Desktop primitive, mock-test discipline)
-- Most subs delivered at L2 (mock dispatch) or L3 (live binary verification by reviewer)
-- AC5 verify-effect (sessionId distinctness via MCP from spawned session) = RESIDUAL_L4 across #10676, #10695, #10696
-- #10679 (Codex Desktop primitive) = BLOCKER (sub blocked on MC startup diagnosis)
-- Verdict *at that snapshot*: `RECOMMEND_KEEP_OPEN` until either #10696 merges + AC5 L4 logged + #10679 unblocks, OR #10679 explicitly retired with rationale
-
-When you run this skill against any epic, populate the matrix from current public sub/PR state and let it produce the live verdict. If your result differs from a frozen snapshot, the snapshot is stale — not your run.
+> ⚠️ **Frozen teaching example (2026-05-04) — not a live verdict.** Kept to illustrate `RECOMMEND_KEEP_OPEN` reasoning (#10671 later closed `CLOSE_COMPLETED` on 2026-06-05 once 19/19 subs and blockers #10676 / #10679 / #10696 resolved). Always re-derive live verdicts from current public sub/PR state.
