@@ -18,14 +18,13 @@ import {parseArgs}                  from 'node:util';
 import {fileURLToPath}              from 'node:url';
 
 const
-    HTML_OPEN_RE   = /^ {0,3}<!--\s*binding-inventory:\s*([A-Za-z0-9._-]+)\s*-->\s*$/i,
-    HTML_CLOSE_RE  = /^ {0,3}<!--\s*\/binding-inventory(?:\s*:\s*([A-Za-z0-9._-]+))?\s*-->\s*$/i,
-    FENCE_OPEN_RE  = /^ {0,3}(`{3,}|~{3,})binding-inventory(?::|\s+)([A-Za-z0-9._-]+)\s*$/i,
-    FENCE_LINE_RE  = /^ {0,3}(`{3,}|~{3,})/,
-    TREE_BRANCH_RE = /^([│\s]*?)(?:├──|└──)\s+(.+?)\s*$/,
-    TABLE_SEP_RE   = /^\|[\s:|-]+\|$/,
-    BACKTICK_RE    = /`([^`\n]+)`/g,
-    __filename     = fileURLToPath(import.meta.url);
+    HTML_OPEN_RE  = /^ {0,3}<!--\s*binding-inventory:\s*([A-Za-z0-9._-]+)\s*-->\s*$/i,
+    HTML_CLOSE_RE = /^ {0,3}<!--\s*\/binding-inventory(?:\s*:\s*([A-Za-z0-9._-]+))?\s*-->\s*$/i,
+    FENCE_OPEN_RE = /^ {0,3}(`{3,}|~{3,})binding-inventory(?::|\s+)([A-Za-z0-9._-]+)\s*$/i,
+    FENCE_LINE_RE = /^ {0,3}(`{3,}|~{3,})/,
+    TABLE_SEP_RE  = /^\|[\s:|-]+\|$/,
+    BACKTICK_RE   = /`([^`\n]+)`/g,
+    __filename    = fileURLToPath(import.meta.url);
 
 /**
  * @summary Strips trailing explanatory prose after an unquoted dash separator on a list line.
@@ -33,9 +32,64 @@ const
  * @returns {String}
  */
 function stripTrailingCommentary(text) {
-    const match = /\s+(?:—|--|->)\s+/.exec(text);
+    let cutIndex = -1;
 
-    return match ? text.slice(0, match.index).trim() : text.trim()
+    for (const token of ['—', '--', '->']) {
+        let searchFrom = 0;
+
+        while (searchFrom < text.length) {
+            const idx = text.indexOf(token, searchFrom);
+            if (idx === -1) break;
+
+            const
+                afterIdx  = idx + token.length,
+                hasBefore = idx > 0 && (text[idx - 1] === ' ' || text[idx - 1] === '\t'),
+                hasAfter  = afterIdx < text.length && (text[afterIdx] === ' ' || text[afterIdx] === '\t');
+
+            if (hasBefore && hasAfter && (cutIndex === -1 || idx < cutIndex)) {
+                cutIndex = idx;
+                break
+            }
+
+            searchFrom = idx + 1
+        }
+    }
+
+    return (cutIndex === -1 ? text : text.slice(0, cutIndex)).trim()
+}
+
+/**
+ * @summary Parses an ASCII directory tree branch line without backtracking regular expressions.
+ * @param {String} line
+ * @returns {{prefix: String, entry: String}|null}
+ */
+function parseTreeBranch(line) {
+    const
+        teeIdx = line.indexOf('├──'),
+        ellIdx = line.indexOf('└──');
+
+    let idx = -1;
+
+    if (teeIdx !== -1 && ellIdx !== -1) {
+        idx = Math.min(teeIdx, ellIdx)
+    } else {
+        idx = teeIdx !== -1 ? teeIdx : ellIdx
+    }
+
+    if (idx === -1) return null;
+
+    const prefix = line.slice(0, idx);
+
+    for (let i = 0; i < prefix.length; i++) {
+        const ch = prefix[i];
+        if (ch !== '│' && ch !== ' ' && ch !== '\t') return null
+    }
+
+    const rest = line.slice(idx + 3);
+    if (!rest || (rest[0] !== ' ' && rest[0] !== '\t')) return null;
+
+    const entry = rest.trim();
+    return entry ? {prefix, entry} : null
 }
 
 /**
@@ -47,7 +101,7 @@ function stripTrailingCommentary(text) {
 function parseBlockItems(lines) {
     const
         items     = [],
-        hasTree   = lines.some(line => TREE_BRANCH_RE.test(line)),
+        hasTree   = lines.some(line => parseTreeBranch(line) !== null),
         treeStack = [];
 
     for (const rawLine of lines) {
@@ -56,18 +110,18 @@ function parseBlockItems(lines) {
             trimmed = line.trim();
 
         if (!trimmed) continue;
-        if (/^<!--.*-->$/.test(trimmed)) continue;
-        if ( /^ {0,3}(?:`{3,}|~{3,})/.test(line)) continue;
+        if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) continue;
+        if (FENCE_LINE_RE.test(line)) continue;
         if (TABLE_SEP_RE.test(trimmed)) continue;
 
         if (hasTree) {
-            const branch = TREE_BRANCH_RE.exec(line);
+            const branch = parseTreeBranch(line);
 
             if (branch) {
                 const
-                    prefix = branch[1].replaceAll('│', ' '),
+                    prefix = branch.prefix.replaceAll('│', ' '),
                     depth  = Math.floor(prefix.length / 4) + 1,
-                    entry  = stripTrailingCommentary(branch[2]).replace(/^`|`$/g, '').trim(),
+                    entry  = stripTrailingCommentary(branch.entry).replace(/^`|`$/g, '').trim(),
                     parent = treeStack[depth - 1] ?? '';
 
                 if (entry.endsWith('/')) {
