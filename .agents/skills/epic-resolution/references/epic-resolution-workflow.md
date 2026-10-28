@@ -84,26 +84,12 @@ Apply the verdict logic in this order (highest precedence first):
 
 If an epic closeout hinges on ADR chronology, apply the ADR successor-risk audit before computing the verdict. The closeout comment must name the related ADR, whether it supersedes the epic or requires a challenge/amendment path, and the public evidence that supports the route.
 
-**Verdict authority:** the skill produces a structured review + recommendation. **Terminal-action shape depends on the verdict**:
+**Verdict authority:** the review is the gate, and the reviewer takes the terminal action its verdict names. Only `gh pr merge` is human-only (§0 Invariant 1). An issue close reopens with one click and is a maintainer act (operator, 2026-05-10 and 2026-10-28). Empirical anchors: neomjs/neo#10691 sat seven days past a clean verdict, and neomjs/neo-stage#26 waited on a retire close.
 
-- **`RECOMMEND_CLOSE_COMPLETED` (with zero unresolved residuals)**: the reviewer-agent SHOULD close the epic as completed via `gh issue close --reason completed` as the natural downstream of the review. The review IS the gate; the close-act is not a separate operator-gate. **This is NOT a §0 Invariant 1 parallel** — §0 strictly forbids `gh pr merge` (PR merge action only); epic-close is downstream of the review verdict, not in §0 scope. Failing to close after a clean CLOSE_COMPLETED verdict produces stale-pending-action board pollution (empirical anchor: #10691 verdict 2026-05-04 → epic closed 2026-05-11 after operator surfaced the misframing).
-
-- **`RECOMMEND_KEEP_OPEN`**: no terminal action. Review surfaces blockers/residuals; operator or sub-owner decides path forward.
-
-- **`RECOMMEND_CREATE_MISSING_SUBS`**: no terminal action. Recommendation surfaces; operator authorizes new-sub creation; assigned owner files via `/ticket-create`.
-
-- **`RECOMMEND_RETIRE_OR_SUPERSEDE`**: no terminal action. Reviewer-agent does NOT auto-close-as-not-planned; operator authority for substrate-cohesion reasons (potential separate substrate concern — could be sub-issue if a §0-parallel claim is correct for retire-action specifically).
-
-For `RECOMMEND_CREATE_MISSING_SUBS`:
-1. List the gaps explicitly (which AC, what evidence is missing).
-2. Identify proposed owners (agents) for each new sub. If unclear, A2A the team to volunteer.
-3. Coordinate via A2A — DO NOT autonomously create the new subs without operator approval.
-4. The skill output recommends; the operator authorizes; the assigned owner files via `ticket-create`.
-
-For `RECOMMEND_RETIRE_OR_SUPERSEDE`:
-1. Articulate the rationale clearly (what changed since the epic was filed; what supersedes it).
-2. Cross-reference the superseding epic / discussion if any.
-3. Operator acts on the recommendation.
+- **`RECOMMEND_CLOSE_COMPLETED`** (zero unresolved residuals): close the epic with `gh issue close --reason completed`.
+- **`RECOMMEND_RETIRE_OR_SUPERSEDE`**: name what changed and what supersedes the epic, and run the [intent check](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation). Then close it as not planned with those links. Its open subs move to a live parent or close the same way.
+- **`RECOMMEND_CREATE_MISSING_SUBS`**: list each gap (which AC, what evidence is missing) with a proposed owner, or A2A the team to volunteer. An owner who accepts files via `/ticket-create`.
+- **`RECOMMEND_KEEP_OPEN`**: no terminal action. The review names the blockers and residuals for their owners.
 
 ## 5. Post the verdict comment
 
@@ -127,13 +113,13 @@ Update your `## Epic Resolution Review (in progress)` comment to the final shape
 
 <2-4 paragraphs explaining the verdict. For KEEP_OPEN: which residuals/blockers + path to close. For CREATE_MISSING_SUBS: enumerate gaps + proposed owners. For RETIRE: superseding artifact. For CLOSE_COMPLETED: confirmation that all residuals are tracked elsewhere.>
 
-### Required operator action
+### Terminal action
 
-<For RECOMMEND_CLOSE_COMPLETED: "Close epic as completed when convenient." For RECOMMEND_CREATE_MISSING_SUBS: "Authorize creation of N new subs (proposed owners listed above)." Etc.>
+<What the review did: closed as completed; closed as not planned, with the superseding links; gaps offered to named owners; or none (keep open).>
 
 ### A2A coordination
 
-<List peers A2A'd, with subject + commentId for the operator's audit trail.>
+<List peers A2A'd, with subject + commentId for the audit trail.>
 
 Origin Session ID: <your session UUID>
 ```
@@ -142,7 +128,7 @@ Origin Session ID: <your session UUID>
 
 After posting the verdict comment, A2A the relevant peers:
 
-- For `RECOMMEND_CLOSE_COMPLETED`: A2A all agents who had subs in the epic, FYI of closure recommendation.
+- For `RECOMMEND_CLOSE_COMPLETED`: A2A all agents who had subs in the epic, FYI of the closure.
 - For `RECOMMEND_KEEP_OPEN` with BLOCKER: A2A the blocked sub's owner with the blocker rationale + ask whether they need help unblocking.
 - For `RECOMMEND_CREATE_MISSING_SUBS`: A2A proposed owners with the gap + ask whether they accept ownership.
 - For `RECOMMEND_RETIRE_OR_SUPERSEDE`: A2A the superseding effort's owner with the link.
