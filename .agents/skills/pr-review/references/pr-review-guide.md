@@ -257,7 +257,6 @@ Before claiming/requesting visual-render, headed-harness, or native-matrix evide
 
 ### 7.5.5 Deliberate-Duplication Audit
 <!-- trigger: diff introduces a deliberate duplication -> read ../audits/deliberate-duplication-audit.md -->
-Boundary- or cycle-forced duplicate logic/constants (`parity-twin` / `keep in sync` comments): load [`../audits/deliberate-duplication-audit.md`](../audits/deliberate-duplication-audit.md).
 
 ### 7.6 CI / Security Checks Audit
 
