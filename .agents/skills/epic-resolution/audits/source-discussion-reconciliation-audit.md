@@ -37,12 +37,17 @@ Every reconciliation row is typed `enumerable` or `judged`:
 |---|---|---|---|---|---|---|
 ```
 
-- **Residuals:** `none — ticket-resident` (entry) / `none — delivered via AC<N>` (exit), `EXPLICITLY DEFERRED — <rationale>`, `CONVERTED TO FOLLOW-UP [#<ticket>]`, or `LOST`.
-- **Entry (`ideation-sandbox`, `epic-create`, `epic-review` Stage 2.5, `ticket-create`, `ticket-intake`):** Run `check-discussion-fidelity.mjs` before judged reconciliation. Any entry-time `LOST` row blocks `[GRADUATED_TO_TICKET]` and `epic-review` Greenlight (`REVISIONS_REQUESTED`), and routes `ticket-intake` gaps to body correction. Passing `epic-review` records `discussion-needed-to-implement: false` (`discussion-needed-to-implement:false`).
+- **Row universe:** Every `[RESOLVED_TO_AC]` Cycle 2 resolution, every Graduation Criteria bullet, and every Pilot Shape commitment from the source Discussion is a row; open questions are not.
+- **Residuals & validity:**
+  - `none — ticket-resident` (entry) / `none — delivered via AC<N>` (exit) — criterion fully captured in the Epic/leaf substrate at entry or realized in delivered Epic substrate at exit.
+  - `EXPLICITLY DEFERRED — <rationale>` — intentionally not addressed in this Epic; requires a public rationale that was part of original graduation acceptance or is documented in the Epic body.
+  - `CONVERTED TO FOLLOW-UP [#<followup-ticket>]` — split out to a separate ticket; requires an existing, reachable follow-up ticket. Both `EXPLICITLY DEFERRED` and `CONVERTED TO FOLLOW-UP` carry the same tracked-elsewhere semantics as `epic-resolution` §3 `RESIDUAL_<X> [#<followup-ticket>]`.
+  - `LOST` — criterion not mapped to any Epic AC or owning leaf, reduced to a folder placeholder or link/criterion-ID-only reference, or neither explicitly deferred nor converted to a reachable follow-up.
+- **Entry (`ideation-sandbox`, `epic-create`, `epic-review` Stage 2.5, `ticket-intake`):** Run `check-discussion-fidelity.mjs` across the source Discussion and the Epic plus every live leaf before judged reconciliation. Any entry-time `LOST` row or enumerable mismatch blocks `[GRADUATED_TO_TICKET]` and `epic-review` Greenlight (`REVISIONS_REQUESTED`), and routes `ticket-intake` gaps to ticket-body correction. Passing `epic-review` Stage 2.5 records `discussion-needed-to-implement: false`. At `ticket-create`, each new Discussion-origin leaf carries its exact binding slice (`inventory-id` entries, Contract Ledger rows, and ACs) in its own body, while the full union check across the Epic plus all live leaves waits for graduation, `epic-review` Stage 2.5, and `ticket-intake`.
 - **Exit (`epic-resolution` §3.5):** Any `LOST` row blocks `RECOMMEND_CLOSE_COMPLETED` (`RECOMMEND_KEEP_OPEN`, `RECOMMEND_CREATE_MISSING_SUBS`, or retroactive `CONVERTED TO FOLLOW-UP [#N]`).
 
 ## 5. Empirical Anchors
 
 - **D#17818 → Engine `#17836` / `#17837`:** 30 binding `src/dashboard/dock/**` modules (amid 43 `.mjs` mentions) were compressed to folder prose at graduation and missed at review via reviewer-memory completion.
-- **Engine `#18303` & `#18304`:** 100% leaf closure still hit `KEEP_OPEN` at §3.5 (`#18304` missed all 12 enumerable founding concerns) after full implementation cost.
+- **Engine `#18303` & `#18304`:** 100% leaf closure still hit `KEEP_OPEN` at §3.5 (`#18304` left 12 of 12 founding concerns still duplicated after 100% closure) after full implementation cost.
 - **D#11341 → `#11342` (`#11349`):** Origin of §3.5 closeout reconciliation.

@@ -155,7 +155,3 @@ Per `feedback_a2a_commentid_pre_flight`: post the verdict comment FIRST, capture
 - [`../audits/source-discussion-reconciliation-audit.md`](../audits/source-discussion-reconciliation-audit.md) — shared entry/exit source-Discussion reconciliation contract
 - `.agents/skills/epic-review/`, `.agents/skills/pr-review/`, `.agents/skills/pull-request/`, `.agents/skills/ticket-create/`
 - Discussion #10697 + Issue #10698 — origin and graduation artifact
-
-## 8. Empirical anchor — Epic #10671 (motivating example)
-
-> ⚠️ **Frozen teaching example (2026-05-04) — not a live verdict.** Kept to illustrate `RECOMMEND_KEEP_OPEN` reasoning (#10671 later closed `CLOSE_COMPLETED` on 2026-06-05 once 19/19 subs and blockers #10676 / #10679 / #10696 resolved). Always re-derive live verdicts from current public sub/PR state.

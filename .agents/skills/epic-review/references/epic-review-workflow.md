@@ -78,7 +78,7 @@ Run the entry pass of [`../../epic-resolution/audits/source-discussion-reconcili
 - **Trigger:** If the Epic cites no Discussion origin, mark N/A and proceed to Stage 3.
 - **Enumerable rows first:** Run `node scripts/check-discussion-fidelity.mjs` against the source Discussion and the Epic + live leaf bodies. Every marked `binding-inventory` (exact paths/modules, schemas, API/wire vocabulary) must pass exact set equality; *"materially present"* or folder placeholders fail.
 - **Judged rows & Decision Record:** Verify every judged row (ownership, exclusions, sequencing, Decision Record `REQUIRED`/`OPTIONAL`/`NOT_NEEDED` authority) is materially present in the Epic intended solution or exact owning leaf. Link-only, criterion-ID-only, compressed-away, or orphan rows are `LOST`.
-- **Receipt:** When Stage 2.5 passes, record `discussion-needed-to-implement: false` (or `discussion-needed-to-implement:false`).
+- **Receipt:** When Stage 2.5 passes, record `discussion-needed-to-implement: false`.
 
 **Stop condition:** Any entry-time `LOST` row or enumerable mismatch requires **REVISIONS_REQUESTED** (blocks Greenlight and first sub pickup; stages 3-5 skip) until the Epic/leaf bodies are corrected. Do not compensate from reviewer memory of the Discussion.
 
@@ -203,6 +203,8 @@ These citations belong in the `ticket-intake` reflection step for the sub, not a
 | Picking up an Epic body directly | Epics coordinate; sub-issues are the execution units |
 | Re-running per sub or exceeding the 2-review cap | One-shot per identity; cap is 2 per epic (use remaining slot for family diversity) |
 | Editing the Epic body instead of commenting, or omitting Session ID | Provenance and Memory Core lookup live in comments |
+| Heavyweight "approval" language | Epic-review is a discipline gate, not a formal sign-off — author and agent negotiate on comment thread |
+| Style-calibrating to another model | You are the reviewer you are; the cross-model asymmetry is the point |
 
 ## 8. Cross-Model Asymmetry
 
