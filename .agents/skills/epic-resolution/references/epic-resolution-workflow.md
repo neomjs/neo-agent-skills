@@ -87,7 +87,7 @@ If an epic closeout hinges on ADR chronology, apply the ADR successor-risk audit
 **Verdict authority:** the review is the gate, and the reviewer takes the terminal action its verdict names. Only `gh pr merge` is human-only (§0 Invariant 1). An issue close reopens with one click and is a maintainer act (operator, 2026-05-10 and 2026-10-28). Empirical anchors: neomjs/neo#10691 sat seven days past a clean verdict, and neomjs/neo-stage#26 waited on a retire close.
 
 - **`RECOMMEND_CLOSE_COMPLETED`** (zero unresolved residuals): close the epic with `gh issue close --reason completed`.
-- **`RECOMMEND_RETIRE_OR_SUPERSEDE`**: name what changed and what supersedes the epic, and confirm every live clause has an owner. Then close it as not planned with those links. Its open subs move to a live parent or close the same way.
+- **`RECOMMEND_RETIRE_OR_SUPERSEDE`**: name what changed and what supersedes the epic, and run the [intent check](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation). Then close it as not planned with those links. Its open subs move to a live parent or close the same way.
 - **`RECOMMEND_CREATE_MISSING_SUBS`**: list each gap (which AC, what evidence is missing) with a proposed owner, or A2A the team to volunteer. An owner who accepts files via `/ticket-create`.
 - **`RECOMMEND_KEEP_OPEN`**: no terminal action. The review names the blockers and residuals for their owners.
 
