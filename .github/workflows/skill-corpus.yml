@@ -87,6 +87,12 @@ jobs:
       - name: PR-body anchor contract
         run: node scripts/test-check-pr-body.mjs
 
+      - name: PR-review policy contract and packed CLI
+        run: node scripts/test-check-pr-review-body.mjs
+
+      - name: Reusable PR review contract
+        run: node scripts/test-reusable-pr-review.mjs
+
       - name: Ticket-body design-authority contract and packed CLI
         run: node scripts/test-check-ticket-body.mjs
 
