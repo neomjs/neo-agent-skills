@@ -9,6 +9,7 @@ Before the final `git commit` and `gh pr create`—an irreversible handoff—ste
 **Scope Creep vs. Iteration:**
 - **Minor gaps:** repair JSDoc/Anchor & Echo, edge cases, tests, and test placement on the branch first.
 - **Major refactors:** keep the bounded solution; file a linked follow-up ticket for the superior architecture.
+- **Deliberate duplication (boundary- or cycle-forced):** duplicate only when importing is structurally impossible, and pin the copies with one shared-fixture spec rather than a comment ([`deliberate-duplication-audit.md`](../../pr-review/audits/deliberate-duplication-audit.md)).
 - **Tier 2.5 foreign-authority trigger:** If a repair would change a reviewer's contract or another named peer's consumer surface, send that owner the fork, recommendation, and evidence, then continue fork-independent author work. Named authority—not uncertainty—triggers this; the reply is never a wait gate.
 
 *If and only if* you pass this reflection phase, proceed to the Git execution sequence.

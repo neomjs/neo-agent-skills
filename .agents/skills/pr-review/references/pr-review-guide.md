@@ -255,6 +255,10 @@ Demo/product-surface diffs touching rendered motion: load `audits/demo-surface-m
 
 Before claiming/requesting visual-render, headed-harness, or native-matrix evidence: consult the Engine's [Seat Evidence Capabilities guide](https://github.com/neomjs/neo/blob/dev/learn/agentos/process/SeatEvidenceCapabilities.md) (check `observedAt`; stale = `unknown`).
 
+### 7.5.5 Deliberate-Duplication Audit
+<!-- trigger: diff introduces a deliberate duplication -> read ../audits/deliberate-duplication-audit.md -->
+Boundary- or cycle-forced duplicate logic/constants (`parity-twin` / `keep in sync` comments): load [`../audits/deliberate-duplication-audit.md`](../audits/deliberate-duplication-audit.md).
+
 ### 7.6 CI / Security Checks Audit
 
 10% AC/scope sanity layer unless CI/security reveals a defect. Green CI is eligibility evidence, not an architecture verdict.
