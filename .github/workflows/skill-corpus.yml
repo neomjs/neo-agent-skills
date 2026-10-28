@@ -18,9 +18,12 @@ on:
     types: [opened, edited, synchronize, reopened, ready_for_review]
   push:
     branches: [dev, main]
+  issues:
+    types: [opened, edited, reopened]
 
 jobs:
   corpus:
+    if: ${{ github.event_name != 'issues' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -84,6 +87,9 @@ jobs:
       - name: PR-body anchor contract
         run: node scripts/test-check-pr-body.mjs
 
+      - name: Ticket-body design-authority contract and packed CLI
+        run: node scripts/test-check-ticket-body.mjs
+
       - name: Workflow concurrency contract
         run: node scripts/test-workflow-concurrency.mjs
 
@@ -121,6 +127,8 @@ jobs:
             || { echo "substrate-size CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-pr-body.mjs' \
             || { echo "PR-body CLI missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/check-ticket-body.mjs' \
+            || { echo "ticket-body CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-workflow-concurrency.mjs' \
             || { echo "workflow-concurrency CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-npm-overrides.mjs' \
@@ -132,7 +140,7 @@ jobs:
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-discussion-fidelity.mjs' \
             || { echo "discussion-fidelity CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/test-check-discussion-fidelity.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-check-ticket-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/test-check-discussion-fidelity.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
@@ -305,3 +313,44 @@ jobs:
         run: >-
           node .head/scripts/check-pr-body.mjs
           --body-file "${BODY_FILE}"
+
+  ticket-body:
+    name: Ticket body
+    if: ${{ github.event_name == 'issues' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/check-ticket-body.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Read the live issue body
+        uses: actions/github-script@v9
+        env:
+          BODY_FILE: ${{ runner.temp }}/ticket-body.md
+        with:
+          script: |
+            const {data} = await github.rest.issues.get({
+                owner       : context.repo.owner,
+                repo        : context.repo.repo,
+                issue_number: context.payload.issue.number
+            });
+
+            require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
+
+      - name: Validate design-authority or defect-excuse contract
+        if: ${{ github.event.issue.user.type != 'Bot' && !contains(github.event.issue.labels.*.name, 'epic') && (startsWith(github.event.issue.user.login, 'neo-') || contains(github.event.issue.labels.*.name, 'ai')) }}
+        env:
+          BODY_FILE: ${{ runner.temp }}/ticket-body.md
+        run: >-
+          node scripts/check-ticket-body.mjs
+          --body-file "${BODY_FILE}"
+
