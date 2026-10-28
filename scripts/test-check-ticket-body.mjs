@@ -108,6 +108,10 @@ try {
         assert.equal(report.ok, false, 'base behavior-change ticket without line or excuse must fail');
         assert.equal(report.satisfiedBy, null);
         assert.deepEqual(report.excuses, {crash: false, red: false, jsdoc: false, excused: false});
+        assert.equal(
+            report.violations[0],
+            `Ticket body carries neither a valid \`Design authority:\` line nor a defect excuse. See ${DESIGN_AUTHORITY_REF}.`
+        );
         assert.equal(cliRes.code, 1);
         assert.match(cliRes.text, new RegExp(DESIGN_AUTHORITY_REF.replaceAll('.', '\\.')));
     }
@@ -221,6 +225,17 @@ try {
         assert.equal(reportB.satisfiedBy, 'defect-excuse');
         assert.equal(reportB.excuses.red, true);
         assert.equal(runCli(withFailingTestTitle).code, 0);
+
+        // Accepted syntax-level scope boundary: a spec path in Problem/Context satisfies `red`
+        // without semantic green-vs-red disambiguation, pinned here so any future tightening has its red.
+        const withGreenSpecCitation = baseBehaviorChangeTicket({
+            problemExtra: 'The spec at `test/playwright/unit/container/Panel.spec.mjs` pins today\'s placement.'
+        });
+        const reportC = findTicketBodyViolations({body: withGreenSpecCitation});
+
+        assert.equal(reportC.ok, true, 'accepted syntax boundary: spec path in Problem satisfies red excuse');
+        assert.equal(reportC.satisfiedBy, 'defect-excuse');
+        assert.equal(reportC.excuses.red, true);
     }
 
     // ── Same body (no line) WITH Excuse 3: a quoted @-JSDoc line PASSES ──────────────────────────
@@ -262,11 +277,13 @@ try {
         assert.ok(errors.some(msg => msg.includes('cannot read')));
     }
 
-    // ── Reference sunset retirement contract ──────────────────────────────────────────────────────
+    // ── Reference contract and sunset retirement ──────────────────────────────────────────────────
     {
         const refContent = readFileSync(join(repoRoot, DESIGN_AUTHORITY_REF), 'utf8');
+        assert.ok(refContent.includes('Every non-epic agent ticket without a defect excuse'));
         assert.ok(refContent.includes('Design authority: <the record sentence, quoted>'));
         assert.ok(refContent.includes('Design authority: none found (searched:'));
+        assert.ok(refContent.includes('Design authority: n/a — <reason>'));
         assert.ok(
             !refContent.includes('Retire this reference once a body lint enforces the line'),
             'the sunset sentence in design-authority.md must be retired'
@@ -276,11 +293,16 @@ try {
     // ── Workflow wiring contract in skill-corpus.yml ──────────────────────────────────────────────
     {
         const workflow = readFileSync(join(repoRoot, '.github/workflows/skill-corpus.yml'), 'utf8');
+        assert.match(workflow, /^permissions:\n  contents: read\n/m);
         assert.match(workflow, /issues:\n    types: \[opened, edited, reopened\]/);
         assert.match(workflow, /  ticket-body:\n    name: Ticket body\n    if: \$\{\{ github\.event_name == 'issues' \}\}/);
-        assert.match(workflow, /issues: read/);
+        assert.match(workflow, /  ticket-body:[\s\S]*?permissions:\n      contents: read\n      issues: write/);
         assert.match(workflow, /github\.rest\.issues\.get/);
         assert.match(workflow, /node scripts\/check-ticket-body\.mjs\n\s*--body-file "\$\{BODY_FILE\}"/);
+        assert.match(workflow, /if: \$\{\{ failure\(\) && steps\.validate\.conclusion == 'failure' \}\}/);
+        assert.match(workflow, /github\.rest\.issues\.addLabels[\s\S]*?labels\s*:\s*\['needs-design-authority'\]/);
+        assert.match(workflow, /if: \$\{\{ success\(\) && steps\.validate\.conclusion == 'success' \}\}/);
+        assert.match(workflow, /github\.rest\.issues\.removeLabel[\s\S]*?name\s*:\s*'needs-design-authority'/);
         assert.doesNotMatch(workflow, /context\.payload\.issue\.body/);
     }
 

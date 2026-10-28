@@ -320,7 +320,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: read
+      issues: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -347,10 +347,39 @@ jobs:
             require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
 
       - name: Validate design-authority or defect-excuse contract
+        id: validate
         if: ${{ github.event.issue.user.type != 'Bot' && !contains(github.event.issue.labels.*.name, 'epic') && (startsWith(github.event.issue.user.login, 'neo-') || contains(github.event.issue.labels.*.name, 'ai')) }}
         env:
           BODY_FILE: ${{ runner.temp }}/ticket-body.md
         run: >-
           node scripts/check-ticket-body.mjs
           --body-file "${BODY_FILE}"
+
+      - name: Mark issue on design-authority failure
+        if: ${{ failure() && steps.validate.conclusion == 'failure' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+                owner       : context.repo.owner,
+                repo        : context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels      : ['needs-design-authority']
+            });
+
+      - name: Clear design-authority failure mark on pass
+        if: ${{ success() && steps.validate.conclusion == 'success' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            try {
+                await github.rest.issues.removeLabel({
+                    owner       : context.repo.owner,
+                    repo        : context.repo.repo,
+                    issue_number: context.payload.issue.number,
+                    name        : 'needs-design-authority'
+                });
+            } catch (error) {
+                if (error.status !== 404) throw error;
+            }
 

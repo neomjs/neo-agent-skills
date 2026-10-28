@@ -4,11 +4,12 @@
  *
  * Pure and transport-free: receives a ticket body and returns findings without reading the network.
  *
- * Two arms:
- * 1. The `Design authority:` line is present in content using either canonical grammar from
- *    `.agents/skills/ticket-create/references/design-authority.md` (`Design authority: "<quoted sentence>"`
- *    or `Design authority: none found (searched: …)`, plus `Design authority: n/a — <reason>` for
- *    net-new checks that call no existing behavior wrong).
+ * Two arms (enforced on every non-epic agent ticket):
+ * 1. The `Design authority:` line is present in content using one of the three grammars from
+ *    `.agents/skills/ticket-create/references/design-authority.md`:
+ *    - `Design authority: "<the record sentence, quoted>"`
+ *    - `Design authority: none found (searched: …)`
+ *    - `Design authority: n/a — <reason>`
  * 2. The line is absent, and the body carries at least one of the three defect excuses:
  *    - `crash`: a fenced code block containing a crash, error, or stack trace;
  *    - `red`: a spec/test path or failing test title in the Problem/Context sections;
@@ -522,7 +523,7 @@ export function findTicketBodyViolations({body = ''} = {}) {
         satisfiedBy: null,
         excuses,
         violations : [
-            `Ticket body carries neither a valid \`Design authority:\` line (\`Design authority: "<the record sentence, quoted>"\` or \`Design authority: none found (searched: \u2026)\`) nor one of the three defect excuses (a fenced error block, a spec path or failing test title in Problem/Context, or a quoted \`@\`-JSDoc line). See ${DESIGN_AUTHORITY_REF}.`
+            `Ticket body carries neither a valid \`Design authority:\` line nor a defect excuse. See ${DESIGN_AUTHORITY_REF}.`
         ]
     }
 }
