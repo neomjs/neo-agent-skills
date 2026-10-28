@@ -1,0 +1,220 @@
+# Post-submit check for agent pull-request reviews, for repositories consuming neo-agent-skills.
+#
+# Brain's `manage_pr_review` refuses a malformed review before it posts. A review submitted through
+# `gh pr review` or the UI skips that gate; this workflow judges it afterwards with the same package-owned
+# policy (`neo-agent-skills/pr-review-policy`) and leaves one corrective comment per failing review. It
+# cannot unpost a review, so the check is informative rather than required: it runs once per review, a new
+# head carries no result until the next review, and requiring it would hold the merge on that gap.
+#
+# A separate workflow from `reusable-pr-baseline.yml` because the event is different: the baseline's jobs
+# judge a pull request's tree and body, these judge one review.
+#
+# REQUIRED CALLER. The trigger, the grant and the release tag are the caller's:
+#
+#   on:
+#     pull_request_review:
+#       types: [submitted, edited]
+#   permissions:
+#     contents: read
+#     issues: read
+#     pull-requests: write
+#   jobs:
+#     review:
+#       uses: neomjs/neo-agent-skills/.github/workflows/reusable-pr-review.yml@vX.Y.Z
+#
+# `pull-requests: write` reaches only `Review correction`; `Review body` declares read access for itself, and
+# reads the activation issue's closing history through `issues: read`.
+
+name: Reusable PR Review
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      budget_activation_issue:
+        description: >-
+          Issue whose first merged closing pull request activated the review budget in the caller repository.
+          0 means the repository's whole history postdates the budget, so every agent Request Changes owes
+          managed-path provenance or a disclosed bypass.
+        required: false
+        type: number
+        default: 0
+      budget_activation_base:
+        description: Branch into which that closing pull request merged.
+        required: false
+        type: string
+        default: dev
+      node_version:
+        description: Node.js version that runs the guard.
+        required: false
+        type: string
+        default: '24'
+
+jobs:
+  review-body:
+    name: Review body
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      outcome: ${{ steps.judge.outputs.outcome }}
+      comment: ${{ steps.judge.outputs.comment }}
+    steps:
+      - name: Reject a non-review caller
+        if: ${{ github.event_name != 'pull_request_review' }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "This workflow judges a pull_request_review event, not '${EVENT_NAME}'."
+          exit 1
+
+      # `job.workflow_*` name this reusable file's repository and commit; `github.*` would name the caller's.
+      - name: Checkout this workflow's package.json
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .neo-agent-skills
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      # The release installed below is package.json's version at the commit that defines this job, and a caller
+      # must name it by its tag: a SHA or a branch names no release, and Dependabot can move only a tag.
+      - name: Read the release and refuse a caller off its tag
+        id: version
+        env:
+          WORKFLOW_REF: ${{ job.workflow_ref }}
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: |
+          version="$(jq -r .version .neo-agent-skills/package.json)"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json at ${WORKFLOW_SHA::7} names no release version ('${version}')."
+            exit 1
+          fi
+          if [[ "${WORKFLOW_REF}" != *"@refs/tags/v${version}" ]]; then
+            echo "Call neomjs/neo-agent-skills at @v${version}, the release this workflow installs, not '${WORKFLOW_REF##*@}'."
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      # From runner.temp and with no checkout of the caller: the review is the whole input, so nothing in the
+      # pull request under review can reach the guard that judges its reviews.
+      - name: Install immutable review guard
+        env:
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-review
+          SKILLS_VERSION: ${{ steps.version.outputs.version }}
+        run: >-
+          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
+          "neo-agent-skills@${SKILLS_VERSION}"
+
+      # The review is read LIVE, never from the event payload: a re-run judges the body as it stands, and an
+      # `edited` event's snapshot can predate a later edit. The envelope is written to a file from JavaScript, so
+      # no review text is ever interpolated into a shell.
+      - name: Read the review and its budget cohort
+        uses: actions/github-script@v9
+        env:
+          ACTIVATION_BASE: ${{ inputs.budget_activation_base }}
+          ACTIVATION_ISSUE: ${{ inputs.budget_activation_issue }}
+          ENVELOPE_FILE: ${{ runner.temp }}/pr-review-envelope.json
+        with:
+          script: |
+            const {owner, repo}  = context.repo,
+                  pullRequest    = context.payload.pull_request,
+                  issue          = Number(process.env.ACTIVATION_ISSUE),
+                  {data: review} = await github.rest.pulls.getReview({owner, repo, pull_number: pullRequest.number, review_id: context.payload.review.id});
+
+            let budgetActivation = null;
+
+            // One bounded page. The policy refuses a history that reports more, rather than guessing its earliest merge.
+            if (issue > 0) {
+                const history = (await github.graphql(`
+                    query ($owner: String!, $repo: String!, $issue: Int!) {
+                      repository(owner: $owner, name: $repo) {
+                        issue(number: $issue) {
+                          closedByPullRequestsReferences(first: 100, includeClosedPrs: true) {
+                            totalCount
+                            nodes { number state mergedAt baseRefName }
+                            pageInfo { hasNextPage }
+                          }
+                        }
+                      }
+                    }`, {owner, repo, issue}))?.repository?.issue?.closedByPullRequestsReferences;
+
+                budgetActivation = {
+                    base               : process.env.ACTIVATION_BASE,
+                    closingPullRequests: {hasNextPage: history?.pageInfo?.hasNextPage, nodes: history?.nodes, totalCount: history?.totalCount},
+                    issue
+                }
+            }
+
+            require('node:fs').writeFileSync(process.env.ENVELOPE_FILE, JSON.stringify({
+                budgetActivation,
+                pullRequest: {createdAt: pullRequest.created_at, number: pullRequest.number},
+                repository : `${owner}/${repo}`,
+                review     : {body: review.body ?? '', id: review.id, reviewer: review.user?.login ?? '', state: review.state}
+            }));
+
+      # Two steps, so the verdict survives as a job output whatever it is: this one records it, the next turns it red.
+      - name: Judge the review
+        id: judge
+        env:
+          COMMENT_FILE: ${{ runner.temp }}/pr-review-comment.md
+          ENVELOPE_FILE: ${{ runner.temp }}/pr-review-envelope.json
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-review
+        run: |
+          set +e
+          verdict="$("${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-review-body" --envelope "${ENVELOPE_FILE}" --json --comment-file "${COMMENT_FILE}")"
+          status=$?
+          set -e
+          echo "${verdict}"
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+          echo "outcome=$(jq -r '.outcome // empty' <<< "${verdict}")" >> "$GITHUB_OUTPUT"
+          if [ -f "${COMMENT_FILE}" ]; then
+            { echo 'comment<<NEO_PR_REVIEW_COMMENT'; cat "${COMMENT_FILE}"; echo; echo 'NEO_PR_REVIEW_COMMENT'; } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report the verdict
+        env:
+          STATUS: ${{ steps.judge.outputs.status }}
+        run: exit "${STATUS:-1}"
+
+  review-correction:
+    name: Review correction
+    needs: review-body
+    if: ${{ always() && needs.review-body.outputs.outcome == 'fail' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      # One comment per review, found by its marker and edited in place: an edited review that still fails updates
+      # its correction instead of stacking another. The comment arrives through env, never through the script source.
+      - name: Post or update the corrective comment
+        uses: actions/github-script@v9
+        env:
+          COMMENT: ${{ needs.review-body.outputs.comment }}
+        with:
+          script: |
+            const {owner, repo}  = context.repo,
+                  issue_number   = context.payload.pull_request.number,
+                  body           = process.env.COMMENT ?? '',
+                  marker         = body.split('\n')[0];
+
+            if (!marker.startsWith('<!-- neo-agent-skills:pr-review-lint review=')) {
+                throw new Error('The corrective comment carries no review marker.')
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {owner, repo, issue_number, per_page: 100}),
+                  existing = comments.find(comment => comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker));
+
+            existing
+                ? await github.rest.issues.updateComment({owner, repo, comment_id: existing.id, body})
+                : await github.rest.issues.createComment({owner, repo, issue_number, body})

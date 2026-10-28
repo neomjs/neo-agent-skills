@@ -166,6 +166,27 @@ Consumer repositories call the stable `Secrets` job in `.github/workflows/reusab
 scans **every tracked file** at the pull request's head, not only the diff: a credential already on
 the base branch still fails, because it is one to revoke whichever pull request finds it.
 
+## Shared PR-review check
+
+```bash
+npx --no-install neo-agent-skills-pr-review-body --envelope review.json --json --comment-file comment.md
+```
+
+```js
+import {judgeReview} from 'neo-agent-skills/pr-review-policy';
+```
+
+Brain's `manage_pr_review` refuses a malformed agent review before it posts. A review submitted with
+`gh pr review` or in the UI skips that gate, so consumer repositories call
+`.github/workflows/reusable-pr-review.yml` on `pull_request_review` and get the same policy afterwards: a
+red `Review body` check and one corrective comment per failing review, edited in place when the review
+is. The check is informative, not required: it runs once per review, so a new head has no result until
+the next one.
+
+The policy ships beside the templates it enforces, so one release carries both. A diagnostic names at
+most one missing anchor and never a structural one. The bin exits 0 on a pass or on a review that is
+not an agent's, 1 on a policy failure, and 2 on a malformed envelope.
+
 ## Generated `AGENTS.md`
 
 ```bash
@@ -197,6 +218,7 @@ import writes nothing: Fleet puts the text into each seat's harness home with it
 | `scripts/check-ticket-archaeology.mjs` | the portable comment/JSDoc archaeology guard |
 | `scripts/check-npm-overrides.mjs` | the portable stale-`overrides` guard |
 | `scripts/check-substrate-size.mjs` | the portable per-turn substrate byte-budget guard |
+| `scripts/check-pr-review-body.mjs` | the agent PR-review policy (`./pr-review-policy`) and its bin |
 
 The manifest governs **projection**: a skill declaring `claudeSymlinkRequired: false` is a declared
 opt-out and is correctly absent from the façade. Per-skill links rather than one directory link,
