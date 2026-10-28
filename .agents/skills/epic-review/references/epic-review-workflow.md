@@ -70,16 +70,17 @@ Stage 2 is the most empirically valuable gate. A non-elegant approach that passe
 
 *(Runs only if stages 1-2 pass and the Epic cites a Discussion origin.)*
 
-**Question:** Has the Epic dropped any graduation criteria established in its source Discussion?
+<!-- trigger: Epic cites a Discussion origin, Signal Ledger, or [GRADUATED_TO_TICKET] → read ../../epic-resolution/audits/source-discussion-reconciliation-audit.md -->
 
-Checks:
-- **Trigger:** Does the Epic body cite a Discussion origin, Signal Ledger, `[GRADUATED_TO_TICKET]`, or `[RESOLVED_TO_AC]`? If not, mark N/A and proceed to Stage 3.
-- **Extraction:** Fetch the source Discussion body and extract the Graduation Criteria.
-- **Mapping Presence:** Does the Epic body contain a `## Discussion Criteria Mapping` section (e.g., `Source Criterion` | `Epic AC/sub` | `Status`)?
-- **Decision Record Preservation:** If the source Discussion declared `Decision Record: REQUIRED / OPTIONAL / NOT_NEEDED`, does the Epic preserve the classification and linked ADR / PR / ticket authority?
-- **Mapping Completeness:** Does the mapping cover *all* criteria from the source Discussion? Unexplained deferrals or dropped criteria are failures.
+**Question:** Do the Epic and its live leaf bodies carry every binding enumeration and judged contract from the source Discussion without needing the Discussion to implement or review?
 
-**Stop condition:** If Stage 2.5 fails (missing mapping, missing Decision Record preservation when the source Discussion declared one, incomplete mapping, or unexplained deferrals), the comment requires **REVISIONS_REQUESTED**. Stages 3-5 skip. The agent does not pick up subs until the mapping is added/corrected in the Epic body. This prevents the "Map vs. World Atlas" failure mode where a local Epic silently drops terrain from its source Discussion.
+Run the entry pass of [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md):
+- **Trigger:** If the Epic cites no Discussion origin, mark N/A and proceed to Stage 3.
+- **Enumerable rows first:** Run `node scripts/check-discussion-fidelity.mjs` against the source Discussion and the Epic + live leaf bodies. Every marked `binding-inventory` (exact paths/modules, schemas, API/wire vocabulary) must pass exact set equality; *"materially present"* or folder placeholders fail.
+- **Judged rows & Decision Record:** Verify every judged row (ownership, exclusions, sequencing, Decision Record `REQUIRED`/`OPTIONAL`/`NOT_NEEDED` authority) is materially present in the Epic intended solution or exact owning leaf. Link-only, criterion-ID-only, compressed-away, or orphan rows are `LOST`.
+- **Receipt:** When Stage 2.5 passes, record `discussion-needed-to-implement: false`.
+
+**Stop condition:** Any entry-time `LOST` row or enumerable mismatch requires **REVISIONS_REQUESTED** (blocks Greenlight and first sub pickup; stages 3-5 skip) until the Epic/leaf bodies are corrected. Do not compensate from reviewer memory of the Discussion.
 
 ### Stage 3 — Sub-Structure Coherence
 
@@ -188,36 +189,26 @@ These citations belong in the `ticket-intake` reflection step for the sub, not a
 
 | Skill | When | Scope | Relationship to epic-review |
 |---|---|---|---|
-| `ticket-create` | Epic birth | Creation-time | Produces the Fat Ticket body epic-review evaluates. Author-side vs reader-side — no overlap. |
-| `ticket-intake` | Sub pickup | Sub-scope | Epic-review runs *before* ticket-intake the first time your identity picks up any sub from this epic. After epic-review, ticket-intake proceeds per its own protocol. |
-| `pull-request` | PR creation | PR-scope | Orthogonal — epic-review does not interact with the PR layer. |
-| `pr-review` | PR validation | Post-work | Complementary — epic-review catches scope/approach drift *before* work; pr-review catches execution drift *after*. Different blast radius, different timing. |
-| `epic-resolution` | Epic closeout | At sub-closure time | Sibling exit-pass to this entry-pass. Epic-review Stage 3.1 SEEDS the AC → required-evidence → owning-sub matrix; epic-resolution RECONCILES columns 4–6 (delivered PRs / achieved evidence / residual state) at closeout time. The two skills share the same matrix schema defined in the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md). Different agents may run the two passes; the matrix-as-artifact is the contract between them. |
+| `ticket-create` | Epic/sub birth | Creation-time | Produces the Fat Ticket body evaluated here. |
+| `ticket-intake` | Sub pickup | Sub-scope | Runs *after* epic-review on first sub pickup per identity. |
+| `pull-request` / `pr-review` | PR open / review | PR-scope | Catches execution drift *after* work; epic-review catches scope/approach drift *before*. |
+| `epic-resolution` | Epic closeout | Sub-closure | Exit-pass sibling; reconciles the Stage 3.1 matrix defined in the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) and [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md). |
 
 ## 7. Anti-Patterns
 
 | Anti-pattern | Why it harms |
 |---|---|
-| Running all 6 stages unconditionally | Wastes effort on an epic that fails stage 1 or 2; defeats the gating structure |
-| Skipping epic-review because "I already read the epic body" | Epic-review is an **artifact**, not just comprehension — cross-model readback depends on the comment existing |
-| Sub agent picks up Epic body directly (Epic-vs-Sub-Issue discipline failure) | Agents MUST NOT pick up the Epic directly without checking for prior epic-review comments. Epics are coordination structures; sub-issues are the units of execution. Working on an epic directly bypasses the entire validation chain. |
-| Per-sub-pickup epic-review | Per-agent-per-epic; cite the prior review, don't re-run |
-| Posting a third structured epic-review on an epic | The review cap is two per epic; cite existing reviews or route a targeted blocker/correction instead |
-| Spending the second slot on same-family redundancy when another active family is available | The cap preserves cross-model value only if the remaining slot prioritizes family-diverse readback |
-| Posting review as an issue body edit | Comments, not body edits — provenance and attribution live in comments |
-| Missing session ID footer | Breaks A2A provenance; the reviewer's Memory Core session is not queryable from the epic |
+| Running all 6 stages unconditionally | Wastes effort when stage 1 or 2 fails |
+| Skipping epic-review because "I read the body" | Cross-model readback requires the comment artifact |
+| Picking up an Epic body directly | Epics coordinate; sub-issues are the execution units |
+| Re-running per sub or exceeding the 2-review cap | One-shot per identity; cap is 2 per epic (use remaining slot for family diversity) |
+| Editing the Epic body instead of commenting, or omitting Session ID | Provenance and Memory Core lookup live in comments |
 | Heavyweight "approval" language | Epic-review is a discipline gate, not a formal sign-off — author and agent negotiate on comment thread |
 | Style-calibrating to another model | You are the reviewer you are; the cross-model asymmetry is the point |
 
 ## 8. Cross-Model Asymmetry
 
-Different reviewers — especially across model families — fail differently, so cross-model epic-review (the same epic reviewed by up to two distinct model-identities) surfaces different dimensions of architectural risk. This is the value of bounded independent readback.
-
-Do **not** pre-disclose a family-stereotype ("per §8 my family over-flags X") — the disclosure becomes the failure it names. The specific per-family failure modes are **not empirically measured** (no N, no methodology; the GPT family is absent from any such enumeration despite ~2 months as an active reviewer — see #10756), so they carry no review authority. The Depth Floor + the stage rubric are the shared minimum that catches misses; a family label is not.
-
-When one review exists, prefer the second structured review from a different active model-family. After two structured epic-review comments exist, preserve diversity through targeted blocker/correction comments or A2A handoffs, not by adding another full epic-review artifact.
-
-Do not calibrate your review to the "other model's style" — be the reviewer you are, and trust the diversity to compensate. If reviews consistently miss a failure mode, the right fix is a skill enhancement (a new check in stages 1-5), not style mimicry.
+Cross-model review (up to two distinct model-identities per epic) surfaces different dimensions of architectural risk. Do **not** pre-disclose a family-stereotype ("per §8 my family over-flags X") — per-family failure modes are unmeasured (#10756) and carry no authority. Prefer a second reviewer from a different active model-family while a slot is open; once capped, route unique blockers via targeted comments or A2A.
 
 ## 9. Verification Before Posting
 

@@ -1,31 +1,25 @@
 # Ideation Sandbox Workflow
 
 ## 1. Context
-When engaging in deep architectural design, brainstorming, or encountering "Unknown Unknowns", route speculative work to GitHub Discussions. Case studies: **`#10119`** (Agent harness as Neo app) and **`#10137`** (MX Model Experience).
-
-**Crucial Mindset Shift:** The Ideation Sandbox is NOT meant to serve as a holding pen or a "second shot" before blindly creating an Epic. It is a dedicated space to discuss, brainstorm back-and-forth, and rigorously apply **PR Depth Challenges**. As a reviewer, you are expected to actively challenge assumptions and push back on architectural proposals (just as you would in a PR), rather than merely rubber-stamping the idea for graduation.
-*For skill-authoring discipline including Progressive Disclosure (why SKILL.md is a lightweight router pointing here), see `.agents/skills/create-skill/`.*
+Route speculative architecture and "Unknown Unknowns" to GitHub Discussions (e.g., **`#10119`** Agent harness as Neo app, **`#10137`** MX Model Experience). The Ideation Sandbox is NOT a holding pen before blindly creating an Epic: actively challenge assumptions and apply **PR Depth Challenges** rather than rubber-stamping graduation. *For Progressive Disclosure skill-authoring discipline, see `.agents/skills/create-skill/`.*
 
 ## 2. Initial Proposal (Authoring)
 
 ### 2.0 Pre-Authoring Adjacency Sweep (Gate 0)
 Before drafting a Discussion/proposal, run [`../audits/pre-authoring-adjacency-sweep.md`](../audits/pre-authoring-adjacency-sweep.md).
 
-1. **Never create an Issue for ideation.** If your intent is speculative or exploratory, abort Issue creation immediately.
-2. **Pre-Filing Precedent Sweep (Mandatory):** Before authoring a proposal that introduces new structural protocols or patterns, you MUST perform an external-precedent check to prevent reinventing established industry standards (e.g., as happened during the A2A Task Schema discovery).
-   - **Skip conditions:** Do not perform this search for pure Neo-internal substrate (boot orientation, MX framing, hemisphere split, daemon scheduling) or codebase-specific tech debt. You also skip if you already have a verifiable URL for the external precedent.
-   - **Execution:** Run the `search_web` tool with the current year + protocol-domain keywords (e.g., "agent-to-agent protocol standard 2026").
-   - **Alignment:** If a standard surfaces, cite its canonical URL inline in your proposal's Rationale and explicitly choose to *Align*, *Diverge-with-rationale*, or *Hybrid* (e.g., Option C from the A2A discovery).
-   - **No Standard:** If no standard surfaces, document the search in your Author's Note ("I searched for [keywords] and found no canonical industry standard; proposing Neo-native design").
-   - **Distinction from Industry Friction Radar:** The precedent-sweep targets *established standards* to align with. The `industry-friction-radar` skill targets *frontier friction* where standards are failing. They are complementary, opposite directions.
-3. **Use Discussions.** Call the `create_discussion` tool to post your proposal.
-4. **Agent Notification (Swarm Specific):** In a multi-agent swarm, ping peers via `add_message` after creating or materially updating the Discussion. The A2A body MUST name the skill to engage (`/peer-role` for design review, `/ideation-sandbox` for co-authoring divergence); vague "review my discussion" relies on semantic-match and reopens the rubber-stamp anti-pattern (PR `#11127`, `#11136`). Skip if no peers are operating in the workspace.
-5. **Set the Category.** Map the discussion to the `Ideas` category.
-6. **Format the Proposal.** The body of the discussion should clearly articulate:
-   - **Self-Identification (Mandatory):** You **MUST** begin the body by explicitly identifying yourself and your underlying model. (e.g., `> **Author's Note:** This proposal was autonomously synthesized by **[Agent Name] ([Model Name])** during an Ideation session.`)
-   - **The Concept:** What is being proposed?
-   - **The Rationale:** Why is this valuable?
-   - **Open Questions (OQs):** What unknowns still need to be addressed?
+1. **Never create an Issue for ideation.** Abort Issue creation for speculative or exploratory work.
+2. **Pre-Filing Precedent Sweep (Mandatory):** Before proposing new structural protocols or patterns, run an external-precedent check to avoid reinventing established standards (e.g., A2A Task Schema discovery).
+   - **Skip conditions:** Pure Neo-internal substrate (boot orientation, MX framing, hemisphere split, daemon scheduling), codebase tech debt, or when you already have a verifiable URL for the external precedent.
+   - **Execution:** Run `search_web` with current year + protocol-domain keywords (e.g., "agent-to-agent protocol standard 2026").
+   - **Alignment:** If a standard surfaces, cite its canonical URL in Rationale and choose *Align*, *Diverge-with-rationale*, or *Hybrid*.
+   - **No Standard:** Document in Author's Note ("I searched for [keywords] and found no canonical industry standard; proposing Neo-native design").
+   - **Distinction from Industry Friction Radar:** Precedent-sweep targets *established standards*; `industry-friction-radar` targets *frontier friction*.
+3. **Use Discussions.** Call `create_discussion` in the `Ideas` category.
+4. **Agent Notification (Swarm Specific):** Ping peers via `add_message` after creating or materially updating the Discussion, naming the skill to engage (`/peer-role` for design review, `/ideation-sandbox` for co-authoring divergence); vague "review my discussion" reopens rubber-stamping (PR `#11127`, `#11136`). Skip if solo.
+5. **Format the Proposal:**
+   - **Self-Identification (Mandatory):** Begin with model/agent identity (`> **Author's Note:** This proposal was autonomously synthesized by **[Agent Name] ([Model Name])** during an Ideation session.`).
+   - **The Concept / The Rationale / Open Questions (OQs).**
 
 ### 2.1 Reference Hygiene
 
@@ -173,15 +167,13 @@ Inactive families (`participationStatus ∈ {operator_benched, temporarily_unrea
 
 ### 6.6 Graduated-Artifact Required Sections (AC11)
 
-The graduated Issue / Epic / PR body MUST include any source `Decision Record:` line and four explicit sections, even if empty: `## Signal Ledger` (family-keyed per §6.2), `## Unresolved Dissent`, `## Unresolved Liveness`, and `## Discussion Criteria Mapping`. Empty sections are positive signals (no dissent, no liveness gaps). Non-empty sections preserve the divergence trail per §15.6 transparent A2A introspection, and enable future Discussions to re-open if residual risks materialize.
-
-For the canonical markdown template (post-Epic `#11796` family-keyed shape, same-family aggregation nesting, AUTHOR_SIGNAL distinction, Tier-2 revalidationTrigger placement), see [`audits/consensus-mandate.md §template-block`](../audits/consensus-mandate.md).
+The graduated Issue / Epic / PR body MUST include any source `Decision Record:` line and four explicit sections, even if empty: `## Signal Ledger` (family-keyed per §6.2), `## Unresolved Dissent`, `## Unresolved Liveness`, and `## Discussion Criteria Mapping` (typed `enumerable` | `judged` rows per [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md)). Mark each selected binding enumeration (paths/modules, schemas, API/wire vocabulary) in the Discussion with a stable `inventory-id` (`<!-- binding-inventory: <id> -->`); leave current-state censuses, rejected options, examples, and superseded names unmarked. For the canonical template, see [`audits/consensus-mandate.md §template-block`](../audits/consensus-mandate.md).
 
 ### 6.7 Author Actions Post-Consensus
 
 **Author-family precondition:** the family's sole active identity posts `[AUTHOR_SIGNAL]` at the current body anchor before the final non-author poll; otherwise floor-2 fails.
 
-At §6.2 quorum: file the target artifact for its real `#N` → record `[GRADUATED_TO_TICKET: #N]` plus §6.6 / `Decision Record:` sections → close RESOLVED. Pre-quorum reservations follow `ticket-create-workflow.md §1d`: keep `[PROVISIONAL_UNGRADUATED: D#N]` (and any PR draft with `Refs`) until quorum; then promote, record, remove the marker, and only then become ready/merge-eligible. `Decision Record: REQUIRED` => file/update ADR; name merge gate. Full sequence: [`audits/consensus-mandate.md §author-actions`](../audits/consensus-mandate.md).
+At §6.2 quorum: file the target artifact(s) for real `#N` → run [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md) (`node scripts/check-discussion-fidelity.mjs` exact set equality on `enumerable` inventories + material transfer of `judged` rows into the Epic intended solution or owning leaves) → record `[GRADUATED_TO_TICKET: #N]` plus §6.6 / `Decision Record:` sections → close RESOLVED. Pre-quorum reservations follow `ticket-create-workflow.md §1d`: keep `[PROVISIONAL_UNGRADUATED: D#N]` (and any PR draft with `Refs`) until quorum; then promote, reconcile, remove the marker, and only then become ready/merge-eligible. `Decision Record: REQUIRED` => file/update ADR; name merge gate. Full sequence: [`audits/consensus-mandate.md §author-actions`](../audits/consensus-mandate.md).
 
 Before reporting graduation complete, apply [same-turn reconciliation](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation) to superseded trails, including direct ADR/PR graduations. Closure: [`audits/discussion-lifecycle-closure.md`](../audits/discussion-lifecycle-closure.md); guard: `npm run ai:audit-discussion-lifecycle`.
 

@@ -48,8 +48,9 @@ Origin Session ID: [reviewer's session UUID]
 ### Stage 2.5 — Source Discussion Criteria Mapping Gate
 
 [✅ / ❌ / N/A]
+`discussion-needed-to-implement: false`
 
-[1-2 sentences verifying that all Graduation Criteria from the source Discussion have been correctly mapped to the Epic ACs/subs.]
+[1-2 sentences verifying that enumerable inventories pass `check-discussion-fidelity.mjs` and judged rows are materially resident in the Epic/leaves.]
 
 <!-- If Stage 2.5 = ❌, stop here with revisions requested: -->
 <!--
