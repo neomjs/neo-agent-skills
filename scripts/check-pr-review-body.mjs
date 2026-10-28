@@ -128,8 +128,10 @@ export const REMEDIES = Object.freeze({
 const
     ORIGIN_SESSION         = /^\s*[*-]\s+\*\*Origin Session ID:\*\*\s+[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\s*$/im,
     ROUND_2_H1             = /^#[ \t]+PR Review — Round 2\b/m,
-    ROUND_2_STATUS         = /^\*\*Status:\*\*[ \t]*(.+?)[ \t]*$/m,
+    ROUND_2_STATUS         = '**Status:**',
     ROUND_2_LEGAL_STATUSES = ['approved', 'approve+follow-up', 'comment'],
+    // Every line end that `^` and `$` honour under the `m` flag, so a line scan reads the lines a regex would
+    LINE_BREAK             = /\r\n|[\n\r\u2028\u2029]/,
     ROUND_2_VERBS          = ['ADDRESSED', 'DEFENDED', 'STILL_OPEN'],
     ROUND_2_ROW            = /\|[^|\n]*\b(ADDRESSED|DEFENDED|STILL_OPEN)\b[^|\n]*\|/,
     ROUND_1_REFERENCE      = /\*\*Round-1 Review ID:\*\*[ \t]*(?!\[[^\]\n]*\](?!\())[^\s·]/,
@@ -290,11 +292,12 @@ export function templateMisses(body, shape) {
  * @returns {String|null}
  */
 export function round2Incoherence(body) {
-    const status = body.match(ROUND_2_STATUS);
+    // A line scan, not a `[ \t]*(.+?)[ \t]*$` capture, which backtracks quadratically on a run of tabs
+    const status = body.split(LINE_BREAK).find(line => line.startsWith(ROUND_2_STATUS) && line.length > ROUND_2_STATUS.length);
 
     if (!status) return 'no `**Status:**` line';
 
-    const declared = status[1].replace(/[*_`]/g, '').trim().toLowerCase();
+    const declared = status.slice(ROUND_2_STATUS.length).replace(/[*_`]/g, '').trim().toLowerCase();
 
     if (!ROUND_2_LEGAL_STATUSES.includes(declared)) return 'a `**Status:**` outside the legal Round-2 set';
 

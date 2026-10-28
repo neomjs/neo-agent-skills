@@ -195,6 +195,16 @@ mutate('Round 2 dispositions nothing', round2, body => swap(body, '| ADDRESSED |
 mutate('Round 2 mints a checklist', round2, body => `${body}\n- [ ] one more thing`, {}, 'TEMPLATE_INCOMPLETE', 'no new action checklist: prior actions live in the disposition table');
 mutate('Round 2 drops its origin UUID', round2, body => body.replace(UUID, ''), {}, 'TEMPLATE_INCOMPLETE', 'Origin Session ID: a Memory Core UUID on its own line');
 mutate('Round 2 shortens its H1', round2, body => swap(body, '# PR Review — Round 2 (disposition only)', '# PR Review — Round 2'), {}, 'TEMPLATE_INCOMPLETE', null);
+expect('Round 2 with a CRLF Status line', round2.replaceAll('\n', '\r\n'), {}, 'REVIEW_SHAPE_VALID');
+
+// A review body is reviewer-controlled text of up to 65,536 characters. The Status capture this replaced spent
+// 353 ms on 20,000 tabs and grew with their square; a linear scan answers the full body in well under the deadline.
+{
+    const started = process.hrtime.bigint();
+
+    expect('Round 2 with a 60,000-tab Status line', `# PR Review — Round 2\n**Status:**a${'\t'.repeat(60000)}\u0001`, {}, 'ROUND_2_STATE_INCOHERENT');
+    assert.ok(Number(process.hrtime.bigint() - started) / 1e6 < 250, 'the Status line is read in linear time')
+}
 
 // ── A plain COMMENT owes no template, and opens no demand packet in any budget state ──────────────────
 const note = 'One naming note, nothing blocking.';
