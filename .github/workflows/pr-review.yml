@@ -1,0 +1,21 @@
+# This repository's own agent reviews, judged by the reusable workflow it publishes. A review posted through
+# `gh pr review` or the UI skips Brain's managed gate; this is where it is read afterwards. Informative, not
+# required: a new head has no result until the next review.
+#
+# No `budget_activation_issue`: the repository postdates the review budget, so every agent Request Changes
+# owes managed-path provenance or a disclosed bypass, the workflow's default.
+
+name: PR review
+
+on:
+  pull_request_review:
+    types: [submitted, edited]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+jobs:
+  review:
+    uses: neomjs/neo-agent-skills/.github/workflows/reusable-pr-review.yml@v0.1.73
