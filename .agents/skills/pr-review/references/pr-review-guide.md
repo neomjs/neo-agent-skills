@@ -1,8 +1,5 @@
 # Pull Request Review Guide
 
-This document outlines the authoritative protocol for structuring Pull Request Reviews within the Neo.mjs project.
-Whether you are a human reviewer or an autonomous Agent evaluating code, you must adhere to this structure.
-
 > **Measurement Trigger:** For review-density or skill-baggage work, use [Loaded-Surface Measurement Methodology](./measurement-methodology.md) and record `wc -c`; ordinary PR reviews do not load it.
 
 ## §0 — Patch-blind premise snapshot (BEFORE the diff)
@@ -14,12 +11,14 @@ Build — and write down — your premise of the change **before** reading the p
 3. **Patch-verdict** — does the diff **match / improve / contradict** the expected shape? Name the specific evidence that changed (or confirmed) your mind. "Matches" with no evidence is not a verdict.
 4. **Premise-coherence** — the value-coherence verdict, or a scoped "N/A — no value-surface".
 
+**Then run the premise catalog** ([`../audits/cycle-1-premise-preflight.md`](../audits/cycle-1-premise-preflight.md)), before any defect audit. A firing row ends the review at one premise Required Action (§9.0); otherwise §3–§8 follow.
+
 **Night-shift provisional marker:** when the approval is single-family / human-asleep (no cross-family reviewer awake), label it `single-family — calibration-deferred-to-merge-gate`; §12 reads the marker at the merge-gate.
 
 ## 1. Core Philosophy
-- **For Internal Agents (Peer-Review):** Be objective, clinical, and strict. Enforce the "Fat Ticket" protocol and strict JSDoc completeness.
-- **For External/First-Time Contributors:** Start with positive reinforcement. Acknowledge their effort. Provide explicit, helpful examples when asking for changes. **Discharge it in the template's opening slot** — full form `Peer-Review Opening`, micro form `Opening` (`#97`).
-- **For Self-Review (same session):** first person, a structured reflection rather than praise: "I chose X because…", with the *rationale*, *trade-offs* and *known gaps*. Score yourself harder and hunt your blind spots. Self-review is a **fallback** for intent capture and never substitutes for cross-family review (`pull-request §6.1`).
+- **Internal peers:** enforce the "Fat Ticket" protocol and strict JSDoc completeness.
+- **External/first-time contributors:** same rigor, warmer register — discharge it in the template's opening slot: full form `Peer-Review Opening`, micro form `Opening` (`#97`).
+- **Self-review (same session):** first person — rationale, trade-offs, known gaps. It is a **fallback** for intent capture and never substitutes for cross-family review (`pull-request §6.1`).
 
 ## 2. Agent Operational Mandates: The Reflection Phase
 If you write a GitHub PR review, step out of Driver mode and follow this reviewer checklist:
@@ -30,9 +29,8 @@ If you write a GitHub PR review, step out of Driver mode and follow this reviewe
 3. **Self-review detection:** extract `Resolves #N`; query current-session Memory Core for `#N`. If you authored it this session, use first-person clinical self-review; otherwise standard peer-review.
 4. **Tech Debt Radar:** trigger `tech-debt-radar` for fundamental architecture shifts or `refactor(ai)` PRs.
 5. **Scope discipline:** polish minor misses inside the PR. A wrong shape the patch introduces or deepens is this PR's Required Action. Verified inherited debt beyond a safe repair gets a real issue in this review, whatever the verdict: link the existing one or file it, with evidence and an owner. It never blocks the safe fix, and out of scope routes the debt rather than waiving it. An unverified suspicion stays tagged `hypothesis — needs V-B-A before implementation` and mints no ticket.
-6. **V-B-A:** falsify every factual/review claim before asserting it. Token presence is not meaning; use source reads for semantic claims.
-7. **Execution:** `manage_pr_review` is the sole fail-closed pre-submit budget gate. Direct `gh pr review` / UI is bypass-with-telemetry: run the meter and add `[review-budget-bypass] reason: ...`; post-submit lint cannot undo it.
-8. **Structure map:** before verdict, run `npm run ai:structure-map -- --files --loc` for PRs touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement; otherwise record N/A. Brain-hosted, so absent elsewhere — never add `--silent`, which hides npm's `Missing script` and leaves an empty exit-1 that reads as a pass.
+6. **Execution:** `manage_pr_review` is the sole fail-closed pre-submit budget gate. Direct `gh pr review` / UI is bypass-with-telemetry: run the meter and add `[review-budget-bypass] reason: ...`; post-submit lint cannot undo it.
+7. **Structure map:** before verdict, run `npm run ai:structure-map -- --files --loc` for PRs touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement; otherwise record N/A. Brain-hosted, so absent elsewhere — never add `--silent`, which hides npm's `Missing script` and leaves an empty exit-1 that reads as a pass.
 
 ## 3. Structural Evaluation Metrics
 Every PR review MUST score the work across the following categories on a scale of `0` to `100`:
@@ -59,8 +57,6 @@ Every score needs a concrete, non-tautological reason.
 - **Evaluative metrics** (`[ARCH_ALIGNMENT]`, `[CONTENT_COMPLETENESS]`, `[EXECUTION_QUALITY]`, `[PRODUCTIVITY]`, `[IMPACT]`): sub-100 scores name the deduction; 100 names what failure modes were actively checked and cleared.
 - **Descriptive metrics** (`[COMPLEXITY]`, `[EFFORT_PROFILE]`): explain why the score/profile characterizes the work; do not frame it as praise or deduction.
 
-Bad: "`[CONTENT_COMPLETENESS]`: 80 — documentation is thorough." Good: "`80 — 20 deducted because the template omitted §7.1/§8 coverage.`" Bad: "`[COMPLEXITY]`: 85 — deftly handles staging." Good: "`85 — five ordered stages create high reader load.`"
-
 ### 3.3 Metrics Are Scored Once
 
 Round 1 scores every metric explicitly in the full template. **Round 2 does not restate them** — its disposition table carries no metrics section, because re-scoring a delta invites a reviewer to justify a new number, and a number that wants justifying wants a new finding to justify it.
@@ -83,10 +79,7 @@ Before review prose/tags, read the [reference-hygiene guide](https://github.com/
 ## 5. Required Actions & Cross-Linking
 *   **Related Graph Nodes:** Every PR review MUST list related graph nodes (e.g., `Target Epic ID`, `Issue ID`) to ensure the Native Edge Graph links the evaluation to the overarching goal.
 *   **Required Actions:** Clearly list a bulleted checklist of mandatory changes required before the PR can be accepted.
-*   **Zero-Issue PR Semantics:** If a PR has no required actions, replace the checkbox list with a single explicit sentence: *"No required actions — eligible for human merge."* (Note: this means eligibility, not an authorization for the reviewing agent to execute it). Do NOT pre-tick placeholder items (e.g., `- [x] All checks pass and no required changes identified.`) — that reads as box-checking rather than genuine review. Null state is its own form; don't dress it as action.
-
-### 5.1 Suggesting Empirical Isolation Tests
-When you suspect a pattern (an unneeded retry loop, an over-complex state sync), ask for an **Empirical Isolation Test** instead of debating it: the author strips or disables the pattern and runs a binary test that proves or disproves its necessity.
+*   **Zero-Issue PR Semantics:** If a PR has no required actions, replace the checkbox list with a single explicit sentence: *"No required actions — eligible for human merge."* (Note: this means eligibility, not an authorization for the reviewing agent to execute it). Never pre-tick placeholder items.
 
 ### 5.2 Close-Target Audit
 
@@ -109,7 +102,7 @@ Out of scope: valid leaf targets, non-closing `Related:` / `Refs:` / `Part of`. 
 
 ### 5.3 MCP-Tool-Description Budget Audit
 
-When a PR touches `ai/mcp/server/*/openapi.yaml`, you MUST audit each modified or added tool description for budget compliance. Tool descriptions are loaded into every consuming agent's context window when the tool surface is enumerated; bloat compounds across the tool surface and competes with reasoning budget at runtime.
+When a PR touches `ai/mcp/server/*/openapi.yaml`, you MUST audit each modified or added tool description for budget compliance.
 
 **Audit Protocol:** See [`audits/mcp-tool-description-budget.md`](./audits/mcp-tool-description-budget.md) for the trigger conditions, verbosity budgets, and required action templates.
 
@@ -121,10 +114,8 @@ For PRs that introduce or modify public/consumed surfaces (e.g., configs, MCP to
 
 **Audit Protocol:**
 1. **Locate the Ledger:** Fetch the originating ticket (the close-target). Look for the "Contract Ledger" markdown table in the ticket body. If it is a sub-issue relying on a parent epic's ledger, fetch the parent epic to locate it.
-2. **Missing Ledger:** If the PR modifies public surfaces but both the originating ticket and its parent epic lack a Contract Ledger, flag as a **Required Action**:
-   > *"PR modifies public/consumed surfaces but the originating ticket (and parent epic) lacks a Contract Ledger matrix. Required: backfill the Contract Ledger on the ticket to establish the formal API contract."*
-3. **Drift Detection:** Compare the PR diff against the ticket's Contract Ledger. If the implemented contract drifts from the ledger (e.g., added fields, changed types, missing deprecation steps), or if a ledger row fails the Surface-Anchor V-B-A in the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md), flag as a **Required Action**:
-   > *"Contract drift detected: the implementation differs from the Contract Ledger defined in the ticket. Required: update the ticket's Contract Ledger to reflect the exact shipped reality."*
+2. **Missing Ledger:** If the PR modifies public surfaces but both the originating ticket and its parent epic lack a Contract Ledger, the Required Action is to backfill it on the ticket.
+3. **Drift Detection:** Compare the PR diff against the ticket's Contract Ledger. If the implemented contract drifts from the ledger (e.g., added fields, changed types, missing deprecation steps), or if a ledger row fails the Surface-Anchor V-B-A in the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md), the Required Action is to update the ledger to the shipped reality.
 
 The PR cannot be approved if the implemented contract and the ticket's Contract Ledger are out of sync.
 
@@ -207,7 +198,7 @@ Structural compliance ≠ rigor. This floor is for **concept-bearing** changes; 
 
 ### 7.1 Minimum-One-Challenge for Peer Reviews
 
-Name at least one: a **weakness** (even non-blocking), an **unverified assumption**, an uncovered **edge case**, or a **follow-up concern**. If none exists, document the search — *"I actively looked for [thing 1], [thing 2], [thing 3] and found no concerns."* The documentation is the reviewer proving they looked; a peer-review with neither fails the Depth Floor regardless of structural compliance. Architectural disputes route through **§5.1 Empirical Isolation Tests** rather than theoretical debate. Self-reviews already carry the analogous "hunt for blind spots" (§1); Discussion reviews inherit this floor (`ideation-sandbox-workflow.md §4`).
+Name at least one: a **weakness** (even non-blocking), an **unverified assumption**, an uncovered **edge case**, or a **follow-up concern**. If none exists, document the search — *"I actively looked for [thing 1], [thing 2], [thing 3] and found no concerns."* The documentation is the reviewer proving they looked; a peer-review with neither fails the Depth Floor regardless of structural compliance. Settle architectural disputes with an isolation test — the author strips the pattern and reruns — not debate. Self-reviews meet the floor through §1's known gaps; Discussion reviews inherit it (`ideation-sandbox-workflow.md §4`).
 
 ### 7.2 Cross-Model Asymmetry Context
 
@@ -219,13 +210,7 @@ Triggers only for structural shifts, novel algorithms, or core subsystems (stand
 
 ### 7.4 Rhetorical-Drift Audit
 
-Rhetorical drift is stated framing diverging from substrate truth. It applies to PR descriptions, Anchor & Echo summaries, docstrings, `[RETROSPECTIVE]` tags, linked-anchor claims, and new rules/thresholds/workflow claims. Verify the prose against the diff and cited authority; metaphor is fine only when it preserves mechanical truth. This protects `ask_knowledge_base` from ingesting inflated or false premises.
-
-#### Required Action template
-
-> *"Rhetorical drift detected: the [PR description / anchor summary / `[RETROSPECTIVE]` tag / linked-anchor citation] claims [specific framing], but the code [specific mechanical reality]. Tighten the framing to match the implementation, or scope the implementation to match the framing."*
-
-Author options: tighten prose, expand implementation, or defend why the metaphor accurately bridges the implementation.
+Rhetorical drift is stated framing diverging from substrate truth — in PR descriptions, Anchor & Echo summaries, docstrings, `[RETROSPECTIVE]` tags, linked-anchor claims, and new rules/thresholds/workflow claims. Verify the prose against the diff and cited authority; metaphor passes only when it preserves mechanical truth. The Required Action: tighten the framing to the implementation, or scope the implementation to the framing.
 
 ### 7.5 Test-Evidence & Location Audit
 
@@ -268,8 +253,6 @@ Formal reviews assume green current-head CI and active `review-admission/mergeab
 
 <!-- trigger: a review smells wrong and you want the named failure -> read ../audits/review-anti-patterns.md -->
 
-The catalogue moved to the Atlas; every row still points back at the § in this Map that owns the rule.
-
 ## 7.8 Audit Spec: Loading-Runtime-Effect Substitution
 <!-- trigger: PR modifies turn-memory-pre-flight IN-SCOPE substrate -> read ../audits/loading-runtime-effect.md -->
 
@@ -300,7 +283,7 @@ If any check surfaces a miss, flag it in Required Actions. A PR that ships a new
 
 ## 9. Strategic-Fit Step-Back
 
-After §3-§8, choose exactly one row:
+After §3–§8 — or straight from §0 when a catalog row fires — choose exactly one row:
 
 | Verdict | Contract |
 |---|---|
@@ -309,7 +292,7 @@ After §3-§8, choose exactly one row:
 | **Approve+Follow-Up** | Scope transfer only; worst normal outcome. Requires a merge-safe head, no unresolved correctness, explicit close-target AC ownership, and an independently valuable day-after-merge counterfactual. |
 | **Drop+Supersede** | Dead/stale premise at any round, or no merge-safe slice once the family's round is spent; terminal `CHANGES_REQUESTED`, not repair. |
 
-The former RC2 `COMMENTED` closure packet is retired: it existed so a second ordinary round could be spent closing rather than re-opening, and there is no second ordinary round to close. The semantic-surface freeze it enforced now lives in the disposition rule above, and the managed path refuses the packet it was guarding against.
+The RC2 `COMMENTED` closure packet is retired; the managed path refuses it.
 
 **D+S completeness:** source-coordinate falsifiers; salvage map; disposition-shaped successor landing pad; successor citation to the map. `Disposition`: `implementation-off` (refile implementation) | `ticket-prescription-off` (amend ticket) | `ticket-premise-dead` (close ticket). One validated terminal D+S may exceed the ordinary budget.
 
@@ -317,7 +300,7 @@ This is architectural judgment after defects are identified; it is not another d
 
 ### 9.0 Cycle-1 Premise Pre-Flight (Decisiveness-Before-Iteration)
 
-When §0 surfaces Cycle-1 structural invalidity — false premise, ungraduated substrate, authority bypass, roadmap conflict, better existing substrate, or stale/superseded ticket input — default to **Drop+Supersede**: one close/restart RA, not iterative fix lists. ADR conflict → run `ticket-intake/references/adr-successor-risk-audit.md`. Triggers + bias rationale: [`../audits/cycle-1-premise-preflight.md`](../audits/cycle-1-premise-preflight.md).
+§0's premise catalog ([`../audits/cycle-1-premise-preflight.md`](../audits/cycle-1-premise-preflight.md)) runs this pre-flight before the defect audit: a firing row defaults to **Drop+Supersede** — one close/restart RA, never an iterative fix list. ADR conflict → run `ticket-intake/references/adr-successor-risk-audit.md`.
 
 **The premise's handle**, when the close-target ticket calls an existing behavior wrong, is its `Design authority:` line (`ticket-create` §0). No line leaves the premise unverified; a line the diff contradicts is a false premise. Either → ONE RA (cite the record, or file the fork on it), never an approval on matching tests and green CI; file:line citations and receipts are not authority.
 
@@ -332,9 +315,8 @@ justified, else a hold token ([`merge-hold-tokens.md`](./merge-hold-tokens.md)).
 
 ## 10. A2A Comment-ID Hand-off (warm-cache review cycles)
 
-For multi-cycle reviews, after posting a review comment **capture its `commentId` and A2A it to the next actor** (peer or author) with a one-line substance summary — so they fetch just that comment instead of re-reading the whole thread (full-thread re-fetch cost grows with thread length).
+For multi-cycle reviews, after posting a review comment **capture its `commentId` and A2A it to the next actor** (peer or author) with a one-line substance summary — so they fetch just that comment (scoped per the `get_conversation` tool description) instead of re-reading the whole thread.
 
-- **Discipline, not mechanics:** *how* to scope a single-comment fetch is the `get_conversation` tool description's job (it documents the selectors) — don't restate its parameters here.
 - **The dominant miss is forgetting the ping.** Pre-Flight after every `manage_issue_comment` create, before yielding: *"captured commentId `<ID>`; will A2A it to `<recipient>`."*
 - **Cold cache** (fresh session / cycle-1 / cross-agent hand-off): full-thread fetch + memory query instead — a scoped fetch lands one isolated comment without the prior context it depends on.
 

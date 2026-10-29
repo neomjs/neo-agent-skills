@@ -6,7 +6,7 @@ Tickets are **A2A (Agent-to-Agent) memory bridges**, not just human tracking art
 
 ## §0 — Understand the intent before you write the ticket
 
-Before the duplicate sweep or the Fat-Ticket body: is this the right work — does it fit the current architecture and goals? Understand what it's *for* (from the affected files and their neighbors / imports — intent belongs in their JSDoc, `src/core/Base.mjs` is the bar — plus `memory-mining` / `ask_knowledge_base`) before you structure it. A perfectly-formed ticket for the wrong work is still the wrong work. If the intent it relies on is documented nowhere, that gap is itself worth a ticket.
+Before the duplicate sweep or the Fat-Ticket body: is this the right work — does it fit the current architecture and current delivery outcome (the active rows of this repository's roadmap; for Brain and Skills, the line table in `neomjs/neo`'s `ROADMAP.md`)? Understand what it's *for* (from the affected files and their neighbors / imports — intent belongs in their JSDoc, `src/core/Base.mjs` is the bar — plus `memory-mining` / `ask_knowledge_base`) before you structure it. A perfectly-formed ticket for the wrong work is still the wrong work. If the intent it relies on is documented nowhere, that gap is itself worth a ticket.
 
 A ticket that calls an existing behavior wrong carries its `Design authority:` line before The Fix exists — the rule: [`design-authority.md`](design-authority.md).
 
