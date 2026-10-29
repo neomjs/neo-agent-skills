@@ -90,7 +90,7 @@ npx --no-install neo-agent-skills-substrate-size
 ```
 
 Measures what a seat actually **loads** per turn — `AGENTS.md`, `.agents/ANTIGRAVITY_RULES.md`,
-`.claude/CLAUDE.md` — against a **24,576-byte** per-file limit, and fails the check on a breach.
+`.claude/CLAUDE.md` — against a **23,800-byte** per-file limit, and fails the check on a breach.
 
 Loaded bytes, not file bytes: symlinks resolve through `realpathSync` (an `lstat` on a symlinked
 `CLAUDE.md` reports **12** — the length of `../AGENTS.md`), and whole-line `@path` imports are summed
@@ -206,7 +206,7 @@ in the set declares it. A peer working in several repositories loads that one fi
 repository's own rules.
 
 Both callers get the same refusals: an undeclared repository or audience, two sections claiming one
-numbered rule, and output over the **24,576-byte** budget. The bin writes `--out`, or stdout. The
+numbered rule, and output over the **23,800-byte** budget. The bin writes `--out`, or stdout. The
 import writes nothing: Fleet puts the text into each seat's harness home with its own safe write.
 
 ## What is in the package

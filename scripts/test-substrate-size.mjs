@@ -252,7 +252,7 @@ function capture(argv, cwd) {
     const breach = spawnSync(process.execPath, [CLI_GUARD, '--root', root], {encoding: 'utf8'});
 
     assert.equal(breach.status, 1, 'a breach exits 1 as a process, not only as a return value');
-    assert.match(breach.stderr, /over the 24576 byte limit/);
+    assert.match(breach.stderr, /over the 23800 byte limit/);
 
     const clean = spawnSync(process.execPath, [CLI_GUARD, '--root', fixture()], {encoding: 'utf8'});
 

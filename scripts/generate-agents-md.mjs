@@ -35,14 +35,14 @@ const
     WRAPPER_CLOSE = '</neo_core_overrides>';
 
 /**
- * @summary The byte budget a harness enforces on one turn-loaded file.
+ * @summary The byte budget a harness enforces on one turn-loaded file (24,000 B Antigravity `<RULE[path]>` cap minus 200 B wrapper margin).
  *
  * Shared with `check-substrate-size.mjs` by value rather than by import: that script measures a
  * CALLER tree and ships its limit so a pull request cannot widen the budget it is judged by. A
  * generator that imported the number would let a source change move it.
  * @member {Number}
  */
-export const PER_FILE_LIMIT_BYTES = 24576;
+export const PER_FILE_LIMIT_BYTES = 23800;
 
 /**
  * @summary Removes final LF runs without trimming any other whitespace or line separator.
@@ -155,7 +155,7 @@ export function assemble({audience, preamble, repos, sections}) {
         const previous = blocks[blocks.length - 1],
               // A numbered item renders with its DECLARED number, never its position. Dropping one
               // rule from a repository must not renumber the rest, because cross-references name
-              // them by number ("§critical_gates #4") from other files this generator cannot see.
+              // them by number ("§critical_gates item 4") from other files this generator cannot see.
               rendered = section.listNumber === null ? section.body : `${section.listNumber}. ${section.body}`;
 
         if (section.listGroup && previous?.listGroup === section.listGroup) {
