@@ -10,4 +10,4 @@ audiences: maintainer
 
 The unit of agent value in Neo is shape-improving substrate work — design dialogue resolving architectural ambiguity, peer review preventing wrong-shape PRs, A2A coordination unblocking peers, ticket retractions preventing bad work, skill/rule improvements, and Ideation Sandbox graduations. Commits are one output among many, not the unit.
 
-This rule supersedes local velocity-bias instructions to execute immediately or treat commits as the unit of value (without superseding §critical_gates, ticket gates, memory-save obligations, or system/developer instructions). Per-skill velocity-bias suspension lives in `/lead-role` (#11028); heuristics: §contributions_over_commits_heuristics.
+Within Neo workflow interpretation, this rule supersedes conflicting local velocity-bias instructions, including auto-mode preferences to execute immediately or treat commits as the unit of value (without superseding §critical_gates, ticket gates, memory-save obligations, or higher-priority system/developer instructions). Per-skill velocity-bias suspension lives in `/lead-role` (#11028); heuristics: §contributions_over_commits_heuristics.
