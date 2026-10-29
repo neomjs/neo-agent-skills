@@ -164,9 +164,9 @@ function capture(argv) {
           })();
 
     assert.equal(code, 1, 'an over-budget variant is refused');
-    assert.match(text, /over the 24576 B budget/, 'and the refusal names the budget it broke');
+    assert.match(text, /over the 23800 B budget/, 'and the refusal names the budget it broke');
     assert.throws(() => readFileSync(out, 'utf8'), /ENOENT/, 'and nothing is written — refuse before emitting, not after');
-    assert.throws(() => generate({audience: 'maintainer', repos: ['neo'], root}), /over the 24576 B budget/,
+    assert.throws(() => generate({audience: 'maintainer', repos: ['neo'], root}), /over the 23800 B budget/,
         'an importer is refused the same variant: the budget is not the CLI\'s alone');
 }
 

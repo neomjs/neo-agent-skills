@@ -19,22 +19,22 @@ import {parseArgs}                                   from 'node:util';
 import {fileURLToPath}                               from 'node:url';
 
 /**
- * Per-file budget, in bytes — Antigravity's documented per-file hard limit.
+ * Per-file budget, in bytes — Antigravity's empirical `<RULE[/abs/path]>` content limit.
  *
- * Deliberately not a CLI option. A graduated budget is an architectural decision, and a limit a
- * caller can pass is a limit a caller can raise in the same diff the guard is meant to judge. The
- * remedy for a breach is Progressive Disclosure: move granular instruction into `.agents/skills/`.
+ * Antigravity caps each `<RULE[/abs/path]>\n` block at 24,000 decimal bytes including the path
+ * wrapper (24,270 B file - 354 B truncated = 23,916 B content + 84 B wrapper); 23,800 B leaves a
+ * 200 B wrapper budget. Breach remedy: move granular instruction into `.agents/skills/`.
  *
  * @member {Number} PER_FILE_LIMIT_BYTES
  */
-export const PER_FILE_LIMIT_BYTES = 24576;
+export const PER_FILE_LIMIT_BYTES = 23800;
 
 /**
  * The per-turn entry points, each naming the harness that loads it.
  *
  * The number's substrate is per-harness, and inheriting one harness's constant into another's
- * contract is how correct-looking arithmetic governs the wrong seat. `24576` is Antigravity's
- * documented limit. The Claude seat's own cap is an operator-stated constraint whose semantics —
+ * contract is how correct-looking arithmetic governs the wrong seat. `23800` is Antigravity's
+ * content ceiling (`24,000` B `<RULE[path]>` cap minus wrapper). The Claude seat's own cap is an operator-stated constraint whose semantics —
  * what it is measured over — remain unconfirmed, because the experiment that would settle them
  * needs a fresh authenticated seat and has not run. Until it does, that row is checked against the
  * inherited number and `limitConfirmed: false` says so out loud, so the next reader inherits a
