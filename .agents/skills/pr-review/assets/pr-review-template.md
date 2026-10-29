@@ -2,13 +2,13 @@
 
 **Status:** [Approved / Approve+Follow-Up / Request Changes / Drop+Supersede / Comment]
 
-*Cycle-1 reviewers: run §9.0 Premise Pre-Flight BEFORE composing Required Actions. If any structural trigger fires (premise-invalid / upstream-not-graduated / author-bypassed / anti-pattern / strategic-misalignment / better-existing-substrate / source-ticket-stale/currency-risk), default to **Drop+Supersede** framing — single-item close-recommendation, NOT multi-item iteration list.*
+*Cycle-1 reviewers: run the §0 premise catalog BEFORE any defect audit. A firing row ends the review at one premise Required Action — **Drop+Supersede** by default — never an iteration list.*
 
 ### 🪜 Strategic-Fit Decision
 
 Per §9 Strategic-Fit Step-Back:
 - **Decision**: [Approve / Approve+Follow-Up / Request Changes / Drop+Supersede]
-- **Rationale**: [Why this decision shape vs the others. Remember: Approve+Follow-Up is the worst normal outcome; debt-creating quick wins are Request Changes or Drop+Supersede, not follow-up-ticket fuel.]
+- **Rationale**: [The §0 catalog row that fired, or "no row fires"; then why this decision shape vs the others. Remember: Approve+Follow-Up is the worst normal outcome; debt-creating quick wins are Request Changes or Drop+Supersede, not follow-up-ticket fuel.]
 
 **Required only when Decision is Drop+Supersede:**
 
