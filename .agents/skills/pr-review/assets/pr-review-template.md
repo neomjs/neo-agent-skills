@@ -166,6 +166,7 @@ Expand these audits only when their trigger fires; otherwise omit them rather th
 - **📜 Source-of-Authority Audit:** review cites operator or peer authority for a demand.
 - **🔌 Wire-Format Compatibility Audit:** PR alters JSON-RPC notification schemas, payload envelopes, native API wire formats, event payloads, tool signatures, or database schemas.
 - **🧠 Turn-Memory / Substrate-Load Audit:** PR modifies files in `/turn-memory-pre-flight` IN-SCOPE list. Verify the author documented the decision-tree application and load-effect audit in the PR body; if missing, load `audits/loading-runtime-effect.md` and use its Required Action template.
+- **📸 Before/After Audit:** PR targets `neomjs/neo-stage`. The body embeds at least one before (base) and one after (head) screenshot of what it changes; a missing pair is Request Changes, since the operator merges no Stage PR without one.
 
 ---
 
