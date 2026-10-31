@@ -1,6 +1,6 @@
 ---
 name: session-sunset
-description: "Protocol for ending an agent session without Zero-State Amnesia; use at >75% context window, ~2x post-recovery session size at a quiet point, a macro-semantic pivot, or human directive (never task completion/wait)."
+description: "End a session without Zero-State Amnesia; use at ≤200k context tokens (the wake plane's gate; >75% window only without a gauge), a macro-semantic pivot, or human directive (never task completion/wait)."
 ---
 
 # Session Sunset Skill

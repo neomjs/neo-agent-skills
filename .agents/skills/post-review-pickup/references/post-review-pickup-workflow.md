@@ -112,6 +112,14 @@ decision.**
 - Legitimate defer: name the artifact to re-read, the check to run, the peer
   signal awaited, or the external unblock condition. "Do it fresh next turn" or
   "await steer" name nothing.
+- A turn never ends into an unbounded wait. When the next step waits on an
+  external condition, run every owned bounded lane first, then end with a
+  self-scheduled wake inside the provider's cache TTL (≤ 50 min on Anthropic,
+  named with the condition it checks) or a wake subscription that condition's
+  message will trigger: `AGENT:*` broadcasts do not wake, and the wake plane
+  defers wakes into sessions above its context gate (neo-agent-brain
+  `ai/daemons/wake/contextGatePolicy.mjs`), so "waits on X" alone at turn end
+  is the hold state §L3 forbids.
 - Deferring the same positive-ROI lane twice while busy elsewhere is drift.
   Resolve it: execute, hand off to a named peer with the collision state, or
   downgrade it with evidence that it is no longer positive-ROI.
