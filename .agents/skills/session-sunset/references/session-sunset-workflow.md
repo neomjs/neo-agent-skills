@@ -72,40 +72,23 @@ Detect your checkout class **mechanically** — never guess from harness names. 
 
   The pull refreshes code; in `neo-agent-brain` (where `ai/` lives post-split), `--migrate-config` reconciles the gitignored `config.mjs` operator-overlay with pulled `config.template.mjs` leaves — a pull alone is NOT enough, because daemons and MCP servers read the overlay, not the template. Because the AI harness initializes MCP servers *before* an agent's first turn, sunset is the only window where this refresh lands in time for the next session's boot. **Any failure (dirty tree, switch/pull/script error) is surfaced in the Step 3 handover comment and the final sunset payload — the refresh is best-effort and must NEVER block sunset completion.**
 
-  > **Division of labor + retirement (Substrate Accretion Defense):** the orchestrator's `primary-dev-sync` task syncs the operator's primary checkout only; per-agent clones are never daemon-pulled (an FF-pull racing an active session is the hazard), so this step owns agent-clone freshness and sunset is its safe window. The pull retires only if clone topology changes or a session-liveness-aware sync lane ships; the `neo-agent-brain`-scoped reconcile only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire.
+  > **Division of labor + retirement (Substrate Accretion Defense):** the orchestrator's dev-sync lane keeps the checkouts the daemons run from current on its cadence — its own root, or those listed in `devSyncRoots` — never a seat's clones; a seat's clones are the seat's own (the Fleet Manager gives every seat its full set), and an FF-pull racing an active session is the hazard, so this step owns their freshness and sunset is its safe window. The pull retires only if a session-liveness-aware sync lane covers seat clones; the `neo-agent-brain`-scoped reconcile only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire.
 
-- **Linked worktree — push only:** do NOT switch to `dev` (the primary holds it; git refuses to share a branch across worktrees). Ensure your current PR branch is fully committed and pushed (`git push origin HEAD`). The next agent session will either resume this worktree or bootstrap a new one from the primary's refreshed `dev`.
+- **Linked worktree — push, then refresh your own clone from here:** do NOT switch to `dev` in the worktree (the clone holds it; git refuses to share a branch across worktrees). Commit and push the PR branch (`git push origin HEAD`), then refresh the clone's `dev` from the worktree, best-effort — the pull and, in `neo-agent-brain`, the overlay reconcile, as above:
 
-#### Primary-Checkout Staleness Probe (Linked worktree only) — per #11013
+  ```bash
+  CLONE="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"   # the seat's own clone, which this worktree belongs to
+  if [ -z "$(git -C "$CLONE" status --porcelain)" ] && [ "$(git -C "$CLONE" branch --show-current)" = dev ]; then
+      git -C "$CLONE" pull --ff-only origin dev
+      if [ -f "$CLONE/ai/scripts/setup/initServerConfigs.mjs" ]; then
+          (cd "$CLONE" && node ai/scripts/setup/initServerConfigs.mjs --migrate-config)
+      fi
+  else
+      echo 'clone dirty or not on dev — skip refresh, surface in handover'
+  fi
+  ```
 
-The "main checkout's updated `dev`" assumption above only holds if the operator has pulled `origin/dev` into the primary checkout. Primary's `dev` can fall behind because:
-
-- Worktree agents (per the Linked-worktree rule above) do NOT pull `dev` into primary.
-- Operators don't always run `git pull origin dev` between sunset events.
-- In `neo-agent-brain`, the daemons running from primary (`orchestrator-daemon`, `wake-daemon`, `DreamService`, KB sync) read pre-merge code when primary is stale.
-
-**Mandatory sunset probe (Isolated Worktree branch only):**
-
-```bash
-# Resolve primary-checkout path from the shared .git/ common dir.
-# git rev-parse --git-common-dir returns "<primary>/.git" from any worktree.
-PRIMARY_DOT_GIT=$(git rev-parse --git-common-dir)
-PRIMARY_ROOT=$(cd "$PRIMARY_DOT_GIT/.." && pwd)
-
-# Refresh remote refs so the count is accurate.
-git -C "$PRIMARY_ROOT" fetch origin dev --quiet 2>/dev/null
-
-# Count commits primary's local dev is behind origin/dev.
-BEHIND=$(git -C "$PRIMARY_ROOT" rev-list --count dev..origin/dev 2>/dev/null || echo 0)
-```
-
-**Conditional handover-comment block (fire only when `BEHIND > 0`):**
-
-> ⚠️ **Primary-checkout reminder:** the operator's primary checkout (`<PRIMARY_ROOT>`) `dev` branch is **`<BEHIND>` commits behind `origin/dev`**. Run `git -C <PRIMARY_ROOT> pull origin dev` in your main checkout (in `neo-agent-brain` also `node <PRIMARY_ROOT>/ai/scripts/setup/initServerConfigs.mjs --migrate-config`, so the gitignored `config.mjs` overlay reconciles to the pulled `config.template.mjs` leaves).
-
-When `BEHIND == 0`, suppress the block — no handover-comment noise on a fresh primary.
-
-**Why at sunset:** the operator is the next actor between sessions and the agent is already writing the handover; mid-session staleness of the primary belongs to `primary-dev-sync` (the division of labor above).
+  The same surfacing rule as the primary-clone branch: a skip or a failed pull goes into the handover, never blocks the sunset. The next session resumes this worktree or bootstraps a new one from the refreshed `dev`. Every seat owns its clones; no one else refreshes them.
 
 ### Step 2: Active PR Cycle State is daemon-owned — agents must NOT trigger sandman
 
