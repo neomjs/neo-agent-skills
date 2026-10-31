@@ -265,7 +265,6 @@
             "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md",
             "referencingSkills": [
                 "epic-review",
-                "session-sunset",
                 "structural-pre-flight"
             ],
             "kinds": [

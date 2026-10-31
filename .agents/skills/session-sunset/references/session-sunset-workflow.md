@@ -72,7 +72,7 @@ Detect your checkout class **mechanically** — never guess from harness names. 
 
   The pull refreshes code; in `neo-agent-brain` (where `ai/` lives post-split), `--migrate-config` reconciles the gitignored `config.mjs` operator-overlay with pulled `config.template.mjs` leaves — a pull alone is NOT enough, because daemons and MCP servers read the overlay, not the template. Because the AI harness initializes MCP servers *before* an agent's first turn, sunset is the only window where this refresh lands in time for the next session's boot. **Any failure (dirty tree, switch/pull/script error) is surfaced in the Step 3 handover comment and the final sunset payload — the refresh is best-effort and must NEVER block sunset completion.**
 
-  > **Division of labor + retirement condition (Substrate Accretion Defense):** the orchestrator's `primary-dev-sync` task (shipped via the daemon substrate; config-migrate cascade added 2026-06) automates freshness for the **operator's primary checkout only** — the deployment deliberately syncs ONE repo. Per-agent clones are never daemon-pulled: an FF-pull racing an *active* agent session is the hazard, and sunset is the safe window precisely because the session is terminating. This agent-side step is therefore the **durable owner** of agent-clone freshness across all org clones, while its `--migrate-config` reconcile is `neo-agent-brain`-scoped (the `[ -f ... ]` guard scopes repo topology after the `ai/` split, not retirement: the reconcile retires only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire; the pull retires only if clone topology changes or a session-liveness-aware sync lane ships).
+  > **Division of labor + retirement (Substrate Accretion Defense):** the orchestrator's `primary-dev-sync` task syncs the operator's primary checkout only; per-agent clones are never daemon-pulled (an FF-pull racing an active session is the hazard), so this step owns agent-clone freshness and sunset is its safe window. The pull retires only if clone topology changes or a session-liveness-aware sync lane ships; the `neo-agent-brain`-scoped reconcile only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire.
 
 - **Linked worktree — push only:** do NOT switch to `dev` (the primary holds it; git refuses to share a branch across worktrees). Ensure your current PR branch is fully committed and pushed (`git push origin HEAD`). The next agent session will either resume this worktree or bootstrap a new one from the primary's refreshed `dev`.
 
@@ -82,7 +82,7 @@ The "main checkout's updated `dev`" assumption above only holds if the operator 
 
 - Worktree agents (per the Linked-worktree rule above) do NOT pull `dev` into primary.
 - Operators don't always run `git pull origin dev` between sunset events.
-- In `neo-agent-brain`, daemons running from primary — `orchestrator-daemon` (per the [Agent OS v13 path](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/v13-path.md) M3) and its siblings (`wake-daemon`, `DreamService`, KB sync pipeline) — read pre-merge code when primary is stale.
+- In `neo-agent-brain`, the daemons running from primary (`orchestrator-daemon`, `wake-daemon`, `DreamService`, KB sync) read pre-merge code when primary is stale.
 
 **Mandatory sunset probe (Isolated Worktree branch only):**
 
@@ -101,11 +101,11 @@ BEHIND=$(git -C "$PRIMARY_ROOT" rev-list --count dev..origin/dev 2>/dev/null || 
 
 **Conditional handover-comment block (fire only when `BEHIND > 0`):**
 
-> ⚠️ **Primary-checkout reminder:** the operator's primary checkout (`<PRIMARY_ROOT>`) `dev` branch is **`<BEHIND>` commits behind `origin/dev`**. Run `git -C <PRIMARY_ROOT> pull origin dev` in your main checkout (and when `<PRIMARY_ROOT>` is `neo-agent-brain`, where `ai/` and the Agent OS daemons `orchestrator-daemon`, `wake-daemon`, `DreamService`, and KB sync live, also run `node <PRIMARY_ROOT>/ai/scripts/setup/initServerConfigs.mjs --migrate-config` so the gitignored `config.mjs` operator-overlay reconciles to pulled `config.template.mjs` leaves).
+> ⚠️ **Primary-checkout reminder:** the operator's primary checkout (`<PRIMARY_ROOT>`) `dev` branch is **`<BEHIND>` commits behind `origin/dev`**. Run `git -C <PRIMARY_ROOT> pull origin dev` in your main checkout (in `neo-agent-brain` also `node <PRIMARY_ROOT>/ai/scripts/setup/initServerConfigs.mjs --migrate-config`, so the gitignored `config.mjs` overlay reconciles to the pulled `config.template.mjs` leaves).
 
 When `BEHIND == 0`, suppress the block — no handover-comment noise on a fresh primary.
 
-**Why this lives at sunset rather than mid-session:** sunset is the natural Operator Synchronization Point — the agent is already drafting handover prose, and the operator is the next active actor between sessions. Mid-session staleness of the PRIMARY is closed by the shipped `primary-dev-sync` orchestrator task (FF-pull + KB cascade + config-migrate on a periodic cycle). That task deliberately syncs ONLY the primary — per-agent clones are never daemon-pulled (a pull racing an active session is the hazard), so their freshness owner remains the Step-1 primary-clone self-refresh above, executed at the sunset boundary.
+**Why at sunset:** the operator is the next actor between sessions and the agent is already writing the handover; mid-session staleness of the primary belongs to `primary-dev-sync` (the division of labor above).
 
 ### Step 2: Active PR Cycle State is daemon-owned — agents must NOT trigger sandman
 
@@ -121,6 +121,15 @@ For any tickets or tasks that you actively worked on but did not fully complete,
 - Provide empirical anchors (e.g. recent test results).
 - Signal ownership (who was working on it).
 - Define the pickup protocol for the next agent.
+
+### Step 3.5: The Operator's Focus Items
+The test is not "is it written somewhere" but "does the fresh session's first read show it with an owner and a date".
+1. List every item the operator called important, a priority or a cornerstone this session, from the session's own turns (`query_recent_turns`, `agentIdentity: '@me'`) — one line each, the operator's words paraphrased. No operator present: the list reads *none named* and the step is that line.
+2. Each item sits in the handover's pickup list **with an owner and a date**, or is handed to a named owner on the record (a ticket, a dashboard row, a peer's claim). A rule paragraph, a memory note or a mention in prose places nothing.
+3. An item that cannot be placed is said to the operator **before** the sunset, as *not placed: X — because*; a "yes, everything is in artifacts" without this list is refused by this step.
+4. Step 8's subject carries the count: `focus items: N, N placed`.
+
+Fixture (2026-10-30): the CEO dashboard — the operator's prio-1, named four times — left the handover as a rule paragraph, present and weightless; the fresh session needed it said twice.
 
 ### Step 4: Handovers Considered (Deferred Work)
 Explicitly document what the next agent should **NOT** pick up. If there are tickets or discussions that are blocked, already handled internally, or assigned to a different domain, list them. This prevents the next agent from wasting cycles triaging noise.
@@ -139,7 +148,7 @@ Summarize the scope of your session. How many PRs were merged? How many skills w
 To preserve "hot" thread visibility across sessions (Option B), agents do NOT `mark_read` messages immediately during active processing. Now that handovers are drafted (and have read your inbox state), you MUST explicitly use the `mark_read` MCP tool on all processed messages in your inbox. This ensures the inbox is clean for the next agent session.
 
 ### Step 8: The A2A Continuity Ping & Reward Signal (Future-Self Routing)
-You MUST use the `add_message` MCP tool to send an A2A message to your own agent identity (e.g., `to: '@me'` or your explicit handle). The body of this message MUST contain the **full Sunset Protocol markdown payload** (the output from Steps 1-6), alongside the `Origin Session ID`.
+You MUST use the `add_message` MCP tool to send an A2A message to your own agent identity (e.g., `to: '@me'` or your explicit handle). The body of this message MUST contain the **full Sunset Protocol markdown payload** (the output from Steps 1-6), alongside the `Origin Session ID`; the subject carries Step 3.5's count, `focus items: N, N placed` — the fresh session's first read.
 
 Set `wakeSuppressed: true` and `taggedConcepts: ['sunset-protocol-handover']` on this self-DM: self-addressed, it is the one quiet agent-to-agent direct message the rule allows (a peer address always wakes, neo-agent-brain#1250) — mailbox-only, no `SENT_TO_ME` wake into the closing session. Do not mark this continuity ping read in the same sunset flow. Peer broadcasts may stay quiet for `scope: solo-refresh` unless a cross-peer handoff needs them. This self-DM is the sunset receipt neomjs/neo-agent-brain#1383 reads at the context gate before asking neomjs/neo-agent-institution#842 for the fresh session: at night the seat writes it and ends; by day the sunset stays its call.
 
