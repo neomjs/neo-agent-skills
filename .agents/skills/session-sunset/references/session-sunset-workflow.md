@@ -72,14 +72,17 @@ Detect your checkout class **mechanically** — never guess from harness names. 
 
   The pull refreshes code; in `neo-agent-brain` (where `ai/` lives post-split), `--migrate-config` reconciles the gitignored `config.mjs` operator-overlay with pulled `config.template.mjs` leaves — a pull alone is NOT enough, because daemons and MCP servers read the overlay, not the template. Because the AI harness initializes MCP servers *before* an agent's first turn, sunset is the only window where this refresh lands in time for the next session's boot. **Any failure (dirty tree, switch/pull/script error) is surfaced in the Step 3 handover comment and the final sunset payload — the refresh is best-effort and must NEVER block sunset completion.**
 
-  > **Division of labor + retirement (Substrate Accretion Defense):** the orchestrator's dev-sync lane keeps the host-edge roots listed in `devSyncRoots` current on its cadence — the checkouts the daemons run from, never a seat's clones; a seat's clones are the seat's own (the Fleet Manager gives every seat its full set), and an FF-pull racing an active session is the hazard, so this step owns their freshness and sunset is its safe window. The pull retires only if a session-liveness-aware sync lane covers seat clones; the `neo-agent-brain`-scoped reconcile only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire.
+  > **Division of labor + retirement (Substrate Accretion Defense):** the orchestrator's dev-sync lane keeps the checkouts the daemons run from current on its cadence — its own root, or those listed in `devSyncRoots` — never a seat's clones; a seat's clones are the seat's own (the Fleet Manager gives every seat its full set), and an FF-pull racing an active session is the hazard, so this step owns their freshness and sunset is its safe window. The pull retires only if a session-liveness-aware sync lane covers seat clones; the `neo-agent-brain`-scoped reconcile only if MCP server boot auto-reconciles overlays or local `ai/config.mjs` overlays retire.
 
-- **Linked worktree — push, then refresh your own clone from here:** do NOT switch to `dev` in the worktree (the clone holds it; git refuses to share a branch across worktrees). Commit and push the PR branch (`git push origin HEAD`), then refresh the clone's `dev` from the worktree, best-effort:
+- **Linked worktree — push, then refresh your own clone from here:** do NOT switch to `dev` in the worktree (the clone holds it; git refuses to share a branch across worktrees). Commit and push the PR branch (`git push origin HEAD`), then refresh the clone's `dev` from the worktree, best-effort — the pull and, in `neo-agent-brain`, the overlay reconcile, as above:
 
   ```bash
   CLONE="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"   # the seat's own clone, which this worktree belongs to
   if [ -z "$(git -C "$CLONE" status --porcelain)" ] && [ "$(git -C "$CLONE" branch --show-current)" = dev ]; then
       git -C "$CLONE" pull --ff-only origin dev
+      if [ -f "$CLONE/ai/scripts/setup/initServerConfigs.mjs" ]; then
+          (cd "$CLONE" && node ai/scripts/setup/initServerConfigs.mjs --migrate-config)
+      fi
   else
       echo 'clone dirty or not on dev — skip refresh, surface in handover'
   fi
