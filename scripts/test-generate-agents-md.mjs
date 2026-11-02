@@ -314,6 +314,15 @@ function capture(argv) {
         assert.doesNotMatch(generate({audience: 'maintainer', repos: [repo]}).text, GATE,
             `${repo} does not carry a gate governing a surface it does not have`);
     }
+
+    for (const repo of REPOSITORIES) {
+        const maintainer = generate({audience: 'maintainer', repos: [repo]}).text;
+
+        assert.match(maintainer, /Scope by claim class \(neo-agent-skills#262\)\./,
+            `${repo}/maintainer carries the 3-class verify-before-assert scope (#262 AC-1)`);
+        assert.match(maintainer, /\(neo #15780\)/,
+            `${repo}/maintainer cites neo #15780 for class (1) runtime re-runs (#262 AC-1)`);
+    }
 }
 
 // ── Contributor output carries no internal-only mandate ─────────────────────────────────────────

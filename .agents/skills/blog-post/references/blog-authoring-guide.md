@@ -1,43 +1,43 @@
-# Blog Post Authoring Guide
+# Blog Post & Pitch Authoring Guide
 
-Fires when you author or revise a public-facing blog post: `learn/blog/<slug>.md` plus its manual portal registration in `apps/portal/resources/data/blog.json` (year node + leaf). The SEO surfaces are **generated, not hand-edited** — see §5. Sibling of the release-notes + `update-roadmap` skills.
+Fires when you author, revise, or review a public blog post (`learn/blog/<slug>.md` + manual registration in `apps/portal/resources/data/blog.json`; SEO surfaces are **generated, not hand-edited** — §5) or funding/pitch copy (`funding/**`). Sibling of `release-notes` and `update-roadmap`.
 
-**The recursive principle.** A blog post is a *public artifact*, held to its own thesis. If the post argues for rigor, it must *be* rigorous. The empirical anchor for this entire guide is #13486 (the cross-family-verification post): it took multiple cross-family review cycles to converge, and each cycle caught exactly one of the failure modes below. This guide is that cycle distilled — so the *next* post starts where #13486 ended, not at the beginning.
+**The recursive principle.** Public and investor-facing copy is held to its own thesis. If a piece argues for rigor, it must *be* rigorous. Empirical anchors: #13486 (the cross-family-verification post, whose review cycles surfaced the five over-claim flavors below) and #262 (claim-class verification and the acceptance lens).
 
-## 1. Narrative Arc — a hero piece, not a changelog
+## 1. Pre-Flight & Narrative Arc — a hero piece, not a changelog
 
-Lead with the **thesis**, never the volume hook ("we shipped N things" is what a tired engineer downvotes on sight). The release-notes-level shape:
-
-- **TL;DR thesis** — one bold paragraph; the single idea, stated so a skimmer gets the whole bet.
-- **The hook** — the tension the reader already feels, framed in *their* terms, not yours. "Their terms" = a *real problem they have*, never a swipe at their tools ("Your AI can't…"). The tension comes from the problem, not from a taunt at the reader (see §3 flavors #4–#5).
+- **Reader / acceptance pre-flight (before drafting):**
+  - **Blog & outbound posts:** Name the target reader and answer the hardest read first — *"why would the audience NOT click or read past the first paragraph?"*
+  - **Funding & accelerator pitches (`funding/**`):** Apply the acceptance lens first — *"why would they NOT accept us, and why would they?"* Mine the verified record (`strategy/areas/**`, `decisions-in-force.md`, Memory Core) before inventing a hook; nothing to re-invent.
+- **TL;DR thesis** — one bold paragraph stating the single bet so a skimmer gets the whole argument.
+- **The hook** — the tension the reader already feels, framed in *their* terms (a real problem they have, never a *"Your AI can't…"* swipe at their tools; see §3 flavors #4–#5).
 - **The arc** — problem → why the obvious fix falls short → your move → why it holds *by construction*. One claim per section; each section earns the next.
-- **Receipts, not prophecy** — concrete, linked, public evidence (PRs, issues, war stories). Pair the dramatic case with a mundane everyday one — the mundane one convinces harder.
-- **CTA** — the one question the piece leaves the reader holding, plus a single concrete next step. Not a link-dump.
+- **Receipts, not prophecy** — concrete, linked evidence (PRs, issues, war stories). Pair the dramatic case with a mundane everyday one — the mundane one convinces harder.
+- **CTA** — the one question the piece leaves the reader holding, plus a single concrete next step.
 
-Diagrams (Mermaid) earn their place only when they carry information the prose can't — each **render-verified before merge** (`guide-authoring-bar` §3; a post renders at `#/news/blog/<blog.json id>`, e.g. `#/news/blog/blog/the-salute`). Self-identify in a byline (named maintainer + model + the cross-family team).
+Diagrams (Mermaid) earn their place only when they carry information prose can't — each **render-verified before merge** (`guide-authoring-bar` §3; a post renders at `#/news/blog/<blog.json id>`). Self-identify in a byline (named maintainer + model + cross-family team).
 
-## 2. Source Every External Claim (verify-before-assert)
+## 2. Claim-Class Verification & The Single Final-Version Fact Check (#262)
 
-Every claim about the *outside world* — a competitor, a quote, a statistic, a "first / most / fastest" — needs a real, linked source you have **verified**, before publish.
+Apply `§verify_before_assert` by claim class (`neo-agent-skills#262`):
 
-- **An authority's verbal statement is NOT a citable source.** "The operator told me X" / "a lead said Y" is a pointer to *go verify*, not a citation. (On #13486 the OpenClaw "got the most stars fastest" claim went in as fact → GPT RC'd it; the fix was to WebSearch it, confirm it across outlets, and cite *those*.)
-- **Verify, then cite the verification.** WebSearch / WebFetch the claim; link the source whose own words support the *exact* claim you make. Never cite a source for a claim it does not make — read the title/body, not just the search snippet.
-- **If you can't source it, cut it.** A cut claim costs nothing; an unsourced claim in a verification-themed post is fatal.
-- **Internal claims** (your own PRs, counts, war stories) link to the public record — issue/PR numbers, the release notes — with the metric stated (e.g. "GitHub's count, since the prior release").
+- **External claims (outside world)** — a competitor, quote, statistic, or *"first / most / fastest"* requires a linked primary source you verified via `WebSearch` / `WebFetch` (read the body, not just the snippet). An authority's verbal statement (*"the operator told me X"*) is a pointer to verify, never a citation (#13486 OpenClaw star-count catch). If you can't source it, cut it.
+- **Record claims with a receipt** — an internal number beside its query, a decision beside its anchor, or a date beside its commit (`strategy/areas/**`, release notes, public issues/PRs) is **cited from the anchor** during drafting. Re-measure only when changing the claim or when the anchor is missing.
+- **One consolidated fact check at the final version (the gate for blog & funding/pitch text):** Write from the verified anchors and run **one consolidated fact check at the final version** before publish/submission — never a per-point V-B-A sweep on every draft revision. Re-measuring existing receipts per revision burns context windows, triggers compaction, and steers the text toward what is measurable (counts, rosters) instead of what is true.
 
 ## 3. Kill the Five Over-Claim Flavors
 
-A claim can be literally true yet imply something false — and a *title* can be accurate yet strike the wrong voice. Audit every claim (and every title) for *implication*, not just literal accuracy. Flavors 1–3 are **factual** over-claims (surfaced by #13486's cross-family review, recounted from the actual cycle — see the Empirical Anchor); flavors 4–5 are **tonal / identity** over-claims (from @tobiu's title feedback, #14877 — the "Your AI…" batch he would not publish):
+A claim can be literally true yet imply something false — and a *title* can be accurate yet strike the wrong voice. Audit every claim and title for *implication*, not just literal accuracy. Flavors 1–3 are **factual** over-claims (#13486); flavors 4–5 are **tonal / identity** over-claims (@tobiu's title feedback, #14877):
 
-1. **Unsourced superlative** — "the most / first / fastest X." Source the exact ranking, or soften / cut. (OpenClaw "most stars, fastest ever" — GPT RC'd it as unsourced → cut, then re-added *attributed* to the star-count outlets.)
-2. **Universal quantifier** — "*all* N are X." One counterexample disproves it, and a skeptic will find it. Soften to defensible process framing unless the universal is *genuinely* true. ("all 1,307 PRs cross-reviewed" → "cross-family review the standard for substrate, a human on every merge" — and "a human on every merge" stays universal because it is the actual rule.)
-3. **Misleading fraction / framing** — a correct number that implies a false conclusion. ("129 of 151 tracked items shipped" is accurate but reads *almost done*, while the full system is a major-version horizon away.) Reframe so the *impression* matches reality.
-4. **False-human-author voice (provenance-inversion)** — a second-person "Your AI… / your stack…" title poses as a *human* addressing their tool, hiding that an AI maintainer wrote the post. The byline discloses the author, but the *title* has already set a false frame. Title from *inside* the organism — describe what we built; don't grade the reader's stack. ("Your AI can write the app. It still can't operate the running one." → "Possession, not code-generation: operating a running app from inside it.")
-5. **Competitive put-down** — "X does Y, but *mine* does it better" / gotcha-taunt hooks. Reads like "you have a nice watch, but I have the bigger one" — junior-dev flexing that *undercuts* a serious project. Lead with the strongest substance, stated plainly; let the work carry the confidence. ("Your AI Agent Grades Its Own Homework. Mine Gets Checked by a Rival Lab." → "Cross-family verification: an agent from a rival lab checks our work, in public.")
+1. **Unsourced superlative** — "the most / first / fastest X." Source the exact ranking, or soften / cut.
+2. **Universal quantifier** — "*all* N are X." One counterexample disproves it. Soften to process framing unless genuinely universal ("cross-family review by rule, a human on every merge").
+3. **Misleading fraction / framing** — a correct number that implies a false conclusion ("129 of 151 tracked items shipped" reads *almost done* when a major horizon remains). Reframe so the impression matches reality.
+4. **False-human-author voice (provenance-inversion)** — a second-person "Your AI… / your stack…" title poses as a human grading tools, hiding that an AI maintainer wrote the post. Title from *inside* the organism — describe what we built ("Possession, not code-generation: operating a running app from inside it").
+5. **Competitive put-down** — "X does Y, but *mine* does it better" / gotcha-taunt hooks. Lead with substance stated plainly ("Cross-family verification: an agent from a rival lab checks our work, in public").
 
-**The test (claims):** for each claim ask *both* "is it accurate?" and "does the framing imply something I can't defend?" Both must pass.
+**The test (claims):** ask *both* "is it accurate?" and "does the framing imply something I can't defend?" Both must pass.
 
-**The test (titles) — mechanical:** a title fails if it (a) opens with "Your AI… / Your stack…" (the vendor second-person frame), (b) is shaped "X does Y — but mine does it better" (comparative one-upmanship), or (c) would read as bragging to a senior engineer at a rival lab. Tension stays legal when it comes from a *real problem* in the story ("An AI predicted its own project's future. Ten weeks later, another AI graded it." has drama and zero put-down) — the ban is the swipe at the reader, not the tension.
+**The test (titles) — mechanical:** a title fails if it (a) opens with "Your AI… / Your stack…", (b) is shaped "X does Y — but mine does it better", or (c) would read as bragging to a senior engineer at a rival lab. Tension from a *real problem* stays legal ("An AI predicted its own project's future. Ten weeks later, another AI graded it.").
 
 ## 4. The Cross-Family Review Bar (mandatory)
 
