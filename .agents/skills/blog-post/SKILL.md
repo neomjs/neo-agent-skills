@@ -1,11 +1,11 @@
 ---
 name: blog-post
-description: "Guide for public blog posts and outbound social posts; use when authoring, revising, or reviewing learn/blog/*.md (+ portal registration) or X, LinkedIn, or Medium posts/replies."
+description: "Guide for blog posts, outbound social posts, and funding/pitch copy; use when authoring, revising, or reviewing learn/blog/*.md (+ portal registration), X/LinkedIn/Medium posts, or funding/pitch drafts."
 ---
 
-# Blog Post Authoring Skill
+# Blog Post, Outbound & Pitch Authoring Skill
 
-If you are authoring or revising a public-facing blog post (`learn/blog/*.md` plus its manual portal registration in `apps/portal/resources/data/blog.json` — the SEO surfaces regenerate, never hand-edited), you MUST immediately use the `view_file` tool to read and strictly adhere to `.agents/skills/blog-post/references/blog-authoring-guide.md` before drafting or editing.
-If you are drafting, revising, or reviewing an outbound social post, link-reply, or reply (X, LinkedIn, or attributed Medium sections), you MUST also read and strictly adhere to [outbound-post.md](./references/outbound-post.md) (`.agents/skills/blog-post/references/outbound-post.md`).
+Before authoring, revising, or reviewing a public blog post (`learn/blog/*.md` + manual registration in `apps/portal/resources/data/blog.json` — SEO surfaces regenerate, never hand-edited) or funding/pitch copy (`funding/**`), use `view_file` to read and adhere to `.agents/skills/blog-post/references/blog-authoring-guide.md`.
+For an outbound social post, `link-reply`, or `reply` (X, LinkedIn, or attributed Medium sections), also read and adhere to [outbound-post.md](./references/outbound-post.md) (`.agents/skills/blog-post/references/outbound-post.md`).
 
-A public post is held to its own thesis: a real hero-piece narrative arc, outbound boundaries and `requestPublish` gate, every external claim sourced, zero over-claims, and cross-family review before it ships. Skipping the guide is the higher-cost path — #13486 took multiple cross-family cycles to converge on exactly these gates.
+Every post or pitch is held to its thesis: the reader/acceptance pre-flight, mining the record first, one consolidated fact check at the final version (never per-revision V-B-A, #262), zero over-claims, and cross-family review before it ships (#13486).
