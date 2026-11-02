@@ -361,9 +361,10 @@ Code (fenced/indented) is not content; `Resolves #N` must be standalone. A `##` 
 
 ## 10. Authorship Respect
 
-Update your own authored artifacts in place. For another author's PR body,
-self-review, ticket body, or AC list, respond by comment unless co-authorship is
-explicitly invited or the PR is abandoned and salvage is documented first.
+Update your own authored artifacts in place; bodies via `update_issue_body` (or
+`gh issue edit` / `gh pr edit`). For another author's PR/ticket body, self-review, or
+ACs, respond by comment unless co-authorship is explicitly invited or salvage of an
+abandoned PR is documented first.
 
 **Maintainer Polish Fast Path:** reviewers may patch under the PR ticket only
 when the review-loop circuit breaker is active (>= 3 formal reviews OR > 24KB
