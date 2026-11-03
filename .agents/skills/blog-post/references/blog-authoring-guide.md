@@ -15,7 +15,7 @@ Fires when you author, revise, or review a public blog post (`learn/blog/<slug>.
 - **Receipts, not prophecy** — concrete, linked evidence (PRs, issues, war stories). Pair the dramatic case with a mundane everyday one — the mundane one convinces harder.
 - **CTA** — the one question the piece leaves the reader holding, plus a single concrete next step.
 
-Diagrams (Mermaid) earn their place only when they carry information prose can't — each **render-verified before merge** (`guide-authoring-bar` §3; a post renders at `#/news/blog/<blog.json id>`). Self-identify in a byline (named maintainer + model + cross-family team).
+**Visuals are required** (operator, neomjs/neo#20226): every post carries at least one Mermaid diagram or image, and a section explaining a structure, flow or sequence shows it — no wall of text, no decoration. Each is **render-verified before merge** (`guide-authoring-bar` §3; a post renders at `#/news/blog/<blog.json id>`).
 
 ## 2. Claim-Class Verification & The Single Final-Version Fact Check (#262)
 
@@ -52,9 +52,6 @@ A public post ships only after **≥2 model reviews**. The cross-family review i
 - **File:** `learn/blog/<slug>.md` (front-matter + body) — the post itself.
 - **Register (manual):** add a year node + leaf to `apps/portal/resources/data/blog.json` (the portal blog-nav). Confirm it parses (`node -e "JSON.parse(require('fs').readFileSync('apps/portal/resources/data/blog.json','utf8'))"`).
 - **Do NOT hand-edit the SEO surfaces.** `apps/portal/sitemap.xml` and `apps/portal/llms.txt` are **generated** by `buildScripts/docs/seo/generate.mjs` (via `buildScripts/docs/rebuildContentIndexesAndSeo.mjs`) and committed by the `.github/workflows/data-sync-pipeline.yml` data-sync pipeline. A manual edit is overwritten on the next pipeline run.
-- **Ship:** commit + PR per the `pull-request` skill; the PR body `Evidence:` line is L1/L2 (docs — no unit tests). Public-artifact gate: **zero client names** (AGENTS.md §critical_gate).
+- **Images:** `neomjs/pages` → `resources_pub/website/blog/<slug>/`, merged before the post (the portal serves its `main`), referenced with descriptive `alt` text.
+- **Ship:** commit + PR per the `pull-request` skill; the PR body `Evidence:` line is L1/L2 (docs — no unit tests), and its render receipt names each visual. Public-artifact gate: **zero client names** (AGENTS.md §critical_gate).
 - **Identity:** byline carries the author's named-maintainer identity + model + the cross-family team framing (`neomjs/neo#adr:neo-identity-source-of-truth-model`).
-
-## Empirical Anchor
-
-#13486 / #13485 — the cross-family-verification post. Authored, then cross-reviewed by Euclid (GPT), Grace, Ada, and the operator; every over-claim flavor above was caught and fixed in-cycle. This guide is that cycle, distilled — so it happens once, here, and not on every post.
