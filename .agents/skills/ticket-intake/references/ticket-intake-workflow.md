@@ -33,33 +33,30 @@ Before executing `git checkout`, interrogate the codebase and Memory Core to val
    - **You AUTHORED the epic** — you are forbidden from reviewing it (`epic-review`'s trigger), so cite the epic as self-authored and proceed. Let an independent reviewer be the gate.
    - *Scope, so this does not become ceremony:* **this step only runs when `ticket-intake` itself runs.** The self-authored, same-session case is exempt from intake entirely (see the carve), so it never reaches this clause and owes nothing here. Branch 3 exists for the narrow path where intake DID fire — a ticket you authored in an earlier session whose drift probe came back non-empty.
    - *Why three branches:* per-identity phrasing deadlocks an epic author who must have reviewed and may not review; the gate's intent is an independent review.
-3. **Verify-Before-Assert Integration (Premise-Risk Check):** At intake, you MUST apply the **Verify-Before-Assert Pre-Flight Check** (`AGENTS.md` §verify_before_assert) to the ticket's foundational premise. You are subject to RLHF conditioning that defaults to subservient, execution-first behaviors ("Helpful Assistant"). You must explicitly counteract this regression drift: do NOT assume the ticket's claims about the codebase, architecture, or priority are true. You MUST execute falsifying tool calls (e.g., `ask_knowledge_base`, `grep_search`, `view_file`) to empirically validate the premise before accepting the work. A ticket that calls an existing behavior wrong carries its `Design authority:` line (`ticket-create` §0): read that first.
+3. **Verify-Before-Assert Integration (Premise-Risk Check):** Apply the **Verify-Before-Assert Pre-Flight Check** (`AGENTS.md` §verify_before_assert) to the ticket's foundational premise. Counteract execution-first compliance ("Helpful Assistant"): do NOT assume the ticket's claims about the codebase, architecture, or priority are true. Execute falsifying tool calls (`ask_knowledge_base`, `grep_search`, `view_file`) to validate the premise empirically before accepting the work. A ticket that calls an existing behavior wrong carries its `Design authority:` line (`ticket-create` §0): read that first.
    - **Tier 2.5 foreign-authority trigger:** Named peer owns an accepted ADR/boundary or affected consumer surface? Send fork + recommendation + evidence; continue independent intake. Named authority—not uncertainty—triggers it; never wait.
-4. **Semantic Blast-Radius Sweep:** For any ticket categorized as an architectural change or `refactor(ai)`, you MUST execute the Tech Debt Radar to ensure the incoming change does not blindly ignore adjacent, related ambient debt. Run `view_file` on `.agents/skills/tech-debt-radar/SKILL.md` to initiate a baseline semantic analysis against historical issues and Memory Core sessions before accepting the ticket premise.
-5. **Historical Amnesia Check (Unknown Unknowns):** A fresh Agent instance possesses zero intuition about past failures. Even if a ticket premise seems perfectly novel, you MUST actively query the conceptual domain. This step is the ticket-intake-specific application of the `memory-mining` skill (`.agents/skills/memory-mining/SKILL.md`) — for the full protocol and query-shape guidance, consult that skill.
-   - **Primary:** Use `ask_knowledge_base` (with `type='ticket'`) first. This acts as an embedded RAG subagent that synthesizes historical context, exposing paradoxes or abandoned branches you are blind to.
-   - **Secondary:** Use `query_raw_memories` against the Memory Core to surface isolated Agent iteration loops that never made it to GitHub.
+4. **Semantic Blast-Radius Sweep:** For architectural changes or `refactor(ai)`, run the Tech Debt Radar (`.agents/skills/tech-debt-radar/SKILL.md`) against historical issues and Memory Core sessions so incoming changes do not ignore adjacent ambient debt.
+5. **Historical Amnesia Check (Unknown Unknowns):** Query the conceptual domain per `.agents/skills/memory-mining/SKILL.md`:
+   - **Primary:** `ask_knowledge_base` (`type='ticket'`) to surface historical paradoxes or abandoned branches.
+   - **Secondary:** `query_raw_memories` against Memory Core to surface isolated agent iteration loops not on GitHub.
 
-6. **Duplication Check:** Semantic search is significantly more powerful than string matching.
-   - **Primary:** Prioritize using `ask_knowledge_base` (with `type='ticket'`) to query for overlapping active or archived initiatives. It will mathematically connect semantic concepts (e.g. mapping "payload bloat" to "n_ctx boundaries") that grep would miss.
-   - **Fallback:** If you explicitly require exact keyword verification (e.g. a specific UUID or function name constraint), fall back to `query_documents` (archived included) or a live `gh search issues --owner neomjs "<token>"`.
+6. **Duplication Check:**
+   - **Primary:** `ask_knowledge_base` (`type='ticket'`) for overlapping active or archived initiatives.
+   - **Fallback:** For exact keyword verification (UUID or function name), use `query_documents` (archived included) or `gh search issues --owner neomjs "<token>"`.
 
-7. **Contract Completeness Sweep (Readiness Gate):** If the ticket proposes modifying, introducing, or deprecating a surface that is consumed by humans, agents, or external systems (e.g., public APIs, configs, MCP tools), you MUST verify that a **Contract Ledger** matrix is present in the ticket body. See the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md). This is a separate readiness gate that must pass before checking ticket reality.
-   - If the matrix is missing or incomplete, the ticket enters the `needs-contract-alignment` state.
+7. **Contract Completeness Sweep (Readiness Gate):** If the ticket modifies, introduces, or deprecates a surface consumed by humans, agents, or external systems (public APIs, configs, MCP tools), verify that a **Contract Ledger** matrix is present in the ticket body per the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md) before checking ticket reality.
+   - If the matrix is missing or incomplete, the ticket enters `needs-contract-alignment`.
    - A matrix is incomplete when a row names an existing field, method, helper, tool, config key, docs path, or runtime surface that does not match current substrate reality or lacks the Surface-Anchor V-B-A required by the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md).
-   - **Hand-back loop:** You MUST post a comment explaining the missing fields, requesting the author or maintainer to update the ticket body. You are forbidden from guessing the contract or starting branch/code work. Once the ticket is updated, intake re-verifies the ledger before proceeding.
+   - **Hand-back loop:** Post a comment explaining the missing fields and requesting a ticket-body update. Never guess the contract or start branch/code work; re-verify once updated.
 
-7.5. **Age / Successor-Risk Audit Gate:** Before classifying ticket reality, you MUST audit the ticket's age, stale bot state, short-horizon currency risk, and missing PR close-link hygiene.
-   - **Protocol:** You MUST execute the detailed mechanics defined in `.agents/skills/ticket-intake/references/successor-risk-audit.md` for bot-state band classification, same-day / short-horizon successor checks, missing close-link sweeps, and stale renewal discipline.
-   - **ADR branch:** If the ticket cites, predates, conflicts with, or depends on an ADR / Decision Record, also execute `.agents/skills/ticket-intake/references/adr-successor-risk-audit.md` and record the ADR successor-risk verdict before `valid-as-written`.
+7.5. **Age / Successor-Risk Audit Gate:** Audit ticket age, stale bot state, short-horizon currency risk, long-horizon surrounding-topology evolution (`10k+` commits), and missing PR close-link hygiene:
+   - **Protocol:** Execute `.agents/skills/ticket-intake/references/successor-risk-audit.md` for bot-state bands, short-horizon successor checks (`§1.1`), long-horizon surrounding-topology / subclass & consumer mapping on valid-intent older tickets (`§1.2`), missing close-link sweeps, and stale renewal discipline.
+   - **ADR branch:** If the ticket cites, predates, conflicts with, or depends on an ADR / Decision Record, execute `.agents/skills/ticket-intake/references/adr-successor-risk-audit.md` and record the verdict before `valid-as-written`.
 
-8. **Ticket Reality Classification:** Before ROI acceptance or branch/code work, you MUST emit a concise classification artifact that converts the validation sweep into a stable verdict. Ticket prose is not authoritative; the classification must be grounded in the live issue conversation, linked PRs/commits, current source/docs/tests, and relevant Knowledge Base / Memory Core evidence when applicable.
-
-   **Required Classification Artifact Data:**
-   You MUST explicitly record the following in your intake reasoning:
+8. **Ticket Reality Classification:** Before ROI acceptance or branch/code work, emit a concise classification artifact grounded in the live issue conversation, linked PRs/commits, current source/docs/tests, and Knowledge Base / Memory Core evidence:
    - `Ticket age`: `createdAt` and `updatedAt`.
-   - `Bot stale-band`: Workflow-derived bot-state band (`pre-stale`, `in-stale-window`, `post-stale-with-exemption`), `stale` label state, and `no auto close` label state. This is automation metadata only, never evidence that the ticket is architecturally current.
-   - `Currency / successor-risk evidence`: same-day, short-horizon, newer-artifact, existing-enforcement, and current-source checks that determine whether `valid-as-written` can proceed.
+   - `Bot stale-band`: Workflow-derived bot-state band (`pre-stale`, `in-stale-window`, `post-stale-with-exemption`), `stale` label state, and `no auto close` label state (automation metadata only, never architectural currency).
+   - `Currency / successor-risk evidence`: same-day, short-horizon (`§1.1`), long-horizon surrounding-topology (`§1.2` subclasses/adapters/consumers), newer-artifact, existing-enforcement, and current-source checks determining whether `valid-as-written` (or §0 *accept and sharpen*) can proceed.
    - `ADR successor-risk`: when triggered, the verdict from `adr-successor-risk-audit.md`.
 
    **Allowed verdicts:**
@@ -110,40 +107,28 @@ If your calculation results in a Negative ROI, you MUST reject the ticket — pr
 
 ## 3. Acceptance Protocol (Branch-Before-Code + Auto-Assign)
 
-If the ticket passes validation and yields a positive ROI, you MUST execute the following two gates **before** writing any code or modifying any files.
+If the ticket passes validation with positive ROI, execute both gates **before** modifying any files:
 
 ### 3a. Claim Ownership (Auto-Assign)
 
-Signal to the Swarm that this ticket is actively being worked. Before assigning yourself, you MUST verify that the ticket is not already owned by another active agent or human.
+Verify the ticket is not already owned by another active agent or human before assigning yourself:
 
-1. **Query Existing Assignee:** Read the `assignees` array by fetching the live issue via the `mcp_neo-mjs-github-workflow_get_conversation` tool.
-2. **If Empty:** Proceed with assignment:
-   ```
-   manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])
-   ```
-   The `@me` shortcut resolves to the authenticated GitHub user. This prevents duplicate pickup by concurrent agents and provides human visibility.
-3. **If Assigned (The 7-Day Rule):** Per the Neo.mjs `CONTRIBUTING.md`, tickets are protected from being hijacked unless the current assignee has gone stale.
-   - Compute `lastQualifyingActivity`: The most recent comment from the current assignee OR from any maintainer (`@neo-opus-ada`, `@neo-gemini-pro`, or contributor with write permissions) acknowledging in-progress work. (Random observer comments do NOT count).
-   - **If `now - lastQualifyingActivity < 7 days`:** BLOCK pickup. Post a comment requesting transfer or clarification, do NOT self-assign, and halt the intake protocol.
-   - **If `now - lastQualifyingActivity >= 7 days`:** Proceed with self-serve reassignment. You MUST post a mandatory attribution comment first: *"Picking up per 7-day rule; previous assignee @X; last qualifying activity <ISO-8601 timestamp>."* Then call `manage_issue_assignees` to add `@me`.
+1. **Query Existing Assignee:** Read `assignees` via `mcp_neo-mjs-github-workflow_get_conversation`.
+2. **If Empty:** Assign via `manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])` (`@me` resolves to the authenticated GitHub user, preventing duplicate pickup).
+3. **If Assigned (The 7-Day Rule):** Per `CONTRIBUTING.md`, tickets are protected from hijack unless the assignee is stale:
+   - Compute `lastQualifyingActivity`: most recent comment from the assignee OR any `WRITE`+ maintainer (`@neo-opus-ada`, `@neo-gemini-pro`, etc.) acknowledging in-progress work (observer comments do NOT count).
+   - **If `now - lastQualifyingActivity < 7 days`:** BLOCK pickup. Post a comment requesting transfer or clarification, do NOT self-assign, and halt intake.
+   - **If `now - lastQualifyingActivity >= 7 days`:** Post *"Picking up per 7-day rule; previous assignee @X; last qualifying activity <ISO-8601 timestamp>."* then call `manage_issue_assignees` to add `@me`.
 
 ### 3b. Branch-Before-Code Gate
 
-Create a feature branch **before** writing any code:
+Create a feature branch **before** writing any code (`dev` must remain clean):
 
 ```bash
 git checkout -b agent/[ticket-id]-[descriptor]
-# Example: git checkout -b agent/10051-ticket-intake-gate
 ```
 
-This is a non-negotiable safety gate. The `dev` branch must remain clean at all times. If a session crashes, the feature branch contains the damage — `dev` has a clean slate for the next session.
-
-You are **FORBIDDEN** from executing the following tools while on the `dev` or `main` branch:
-- `replace` / `replace_file_content` / `multi_replace_file_content`
-- `write_file` / `write_to_file`
-- `git commit`
-
-> **Note:** The `pull-request` skill (Section 2: Git Branching Mandate) also enforces branching before PR creation. This gate moves the enforcement upstream — the branch must exist before the *first line of code*, not the last.
+You are **FORBIDDEN** from executing `replace` / `replace_file_content` / `multi_replace_file_content`, `write_file` / `write_to_file`, or `git commit` on `dev` or `main`.
 
 ## 4. The Rejection Protocol (Handling Negative ROI)
 

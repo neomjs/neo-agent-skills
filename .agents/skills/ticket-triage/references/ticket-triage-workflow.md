@@ -23,16 +23,16 @@ If the ticket already has full labels (mandatory + primary + relevant secondary)
 
 Before running the four-step workflow:
 
-1. **The ticket body.** Use the `mcp_neo-mjs-github-workflow_get_conversation` tool to read the live issue (remote-truth-fresh per `ticket-intake §1.1`).
-2. **Existing label set.** Run `list_labels` on the repo to see canonical label inventory. Do NOT invent label names — if a needed label is missing, propose its creation via a comment on the ticket and halt triage until the label exists.
-3. **Author identity + permission.** Confirm whether the author is a maintainer (would have applied labels themselves), an external contributor (couldn't), or a lower-privileged agent (couldn't).
-4. **Adjacency sweep.** Has a similar ticket been filed and labeled? Quick `gh search issues --owner neomjs "<subject>"` (open and closed) to anchor the secondary-label decisions.
+1. **The ticket body.** Fetch the live issue via `mcp_neo-mjs-github-workflow_get_conversation` (remote-truth-fresh per `ticket-intake §1.1`).
+2. **Existing label set.** Run `list_labels` on the repo. Do NOT invent label names — if a needed label is missing, propose its creation via comment and halt triage until it exists.
+3. **Author identity, permission & ticket age.** Confirm whether the author is a maintainer, external contributor, or lower-privileged agent, and note `createdAt` vs. current `HEAD` commit distance.
+4. **Adjacency & surrounding-topology sweep.** Run `gh search issues --owner neomjs "<subject>"` (open and closed) to anchor secondary-label decisions; on older tickets, check current subclasses and consumers (`get_class_hierarchy` / `grep`) of the named surface.
 
 ## 3. The Four-Step Triage Workflow
 
 ### Step 1 — Retrospective Six-Stage Challenge
 
-Apply the same six-stage challenge chain from `ticket-create §2` retrospectively, but as a **labeling decision**, not a creation gate:
+Apply the six-stage challenge chain from `ticket-create §2` retrospectively as a **labeling decision**:
 
 1. **Premise:** is the stated problem real and reproducible? Has the underlying symptom been independently verified, or is it secondhand?
 2. **Prescription:** is the stated fix the right substrate for the problem, or does it treat a symptom?
@@ -44,25 +44,20 @@ Apply the same six-stage challenge chain from `ticket-create §2` retrospectivel
 **Outcome routing:**
 
 - **All six pass:** proceed to Step 2 (apply labels).
-- **One or more fail:** post a structured review comment on the ticket flagging the failure(s) using the `pr-review` `[ARCH_ALIGNMENT]` framing, AND apply the `needs-re-triage` label (canonical taxonomy marker for *"premise identified as stale, duplicate, or Negative ROI by Swarm Agent"*). Do **NOT** apply primary or secondary labels. Halt the triage protocol.
+- **Valid intent, evolved surrounding reality (`10k+` commits since `createdAt`):** when an older ticket's core **Premise / intent remains valid** (`not already-resolved` / `not superseded`), do **NOT** fail Stage 2/3 or apply `needs-re-triage` merely because its historical prescription or terse body predates newer subclasses, layout adapters, or engine idioms (`extends`, multi-sibling consumers, reactive `_` configs, workers). Proceed to Step 2–3 and **re-anchor the valid intent onto current Neo reality in your §6 triage comment** (naming the current owning substrate, evolved subclasses/consumers per `ticket-intake/references/successor-risk-audit.md §1.2`, and any scope boundary) so `ticket-intake` inherits the updated map.
+- **Premise fails (false, obsolete, duplicate, or Negative ROI):** post a structured `[ARCH_ALIGNMENT]` comment flagging the failure(s), apply `needs-re-triage` (*"premise identified as stale, duplicate, or Negative ROI by Swarm Agent"*), do **NOT** apply primary or secondary labels, and halt triage (or close if `already-resolved`/`duplicate`).
 
-**The retrospective challenge is the labeling-decision gate.** A ticket that fails any stage is not yet ready for label application — labels signal "this is real work this repo wants done." Premature labels create downstream pickup pressure on flawed premises.
-
-**Why `needs-re-triage` on the halt path:** without a marker, the halted ticket remains in the same "unlabeled" bucket that triggers `ticket-triage` itself, creating a re-triage loop where every passing maintainer re-runs the six-stage challenge and posts duplicate review comments. The `needs-re-triage` label signals *"premise has been challenged; further triage requires author clarification first"* — preventing the loop while preserving auditability.
+**Why `needs-re-triage` on the halt path:** without a marker, an unlabeled halted ticket re-triggers `ticket-triage` on every pass; `needs-re-triage` signals that premise clarification is required before labeling. Never stamp `needs-re-triage` on an older backlog ticket whose core intent is still valid just because its surrounding architecture evolved (`#52`).
 
 ### Step 2 — Apply Primary Label
 
 Choose **exactly one** of `bug` / `enhancement` / `epic` based on the ticket body:
 
-- **`bug`:** real defect with reproducer; "X is broken when Y."
-- **`enhancement`:** new capability or material improvement; "add X" / "improve Y."
-- **`epic`:** body of work spanning multiple sub-issues; the ticket itself is project-management scaffolding, not a directly-implementable unit. Per `pr-review §5.2`, epics are NEVER valid PR close-targets — only sub-issues are.
+- **`bug`:** real defect with reproducer ("X is broken when Y").
+- **`enhancement`:** new capability or material improvement ("add X" / "improve Y").
+- **`epic`:** work spanning multiple sub-issues (project-management scaffolding, NEVER a valid PR close-target per `pr-review §5.2`).
 
-Apply via `manage_issue_labels` action `add`:
-
-```
-manage_issue_labels(action: 'add', issue_number: N, labels: ['<primary-label>'])
-```
+Apply via `manage_issue_labels(action: 'add', issue_number: N, labels: ['<primary-label>'])`.
 
 **Preserve `ai` on agent-created tickets, including trivial or contributor-available work** (ticket-create §4). On a human-created ticket, add it when an agent takes implementation. It records agent involvement, not a maintainer reservation; assignment controls ownership.
 
@@ -73,36 +68,28 @@ Match the ticket's domain to relevant secondary labels:
 - **Domain-vertical:** `core`, `grid`, `build`, `ai`, `testing`, etc.
 - **Cross-cutting:** `architecture`, `performance`, `regression`, `refactoring`, `documentation`, `security`.
 
-Use `list_labels` to verify each label exists; **do NOT invent label names** (causes silent GitHub API rejections per `ticket-create §4`). If a domain label is missing and the ticket needs it, propose label creation via a comment and halt the triage until the label is created.
-
-Apply via `manage_issue_labels` action `add`:
-
-```
-manage_issue_labels(action: 'add', issue_number: N, labels: ['architecture', 'core', ...])
-```
+Verify each label exists in `list_labels` (**do NOT invent label names** — causes silent GitHub API rejections per `ticket-create §4`). If a needed domain label is missing, propose its creation via comment and halt triage until created. Apply via `manage_issue_labels(action: 'add', issue_number: N, labels: ['architecture', 'core', ...])`.
 
 ### Step 4 — Assignment Disposition (Optional)
 
-After labels are applied, decide assignment:
+After labels are applied, decide assignment (post-triage allocation choice; triage ends at Step 3 if deferred):
 
-- **Self-assign + proceed to `ticket-intake`:** if the ticket is well-scoped, you are the natural agent for the work, and no other agent has signaled interest. Then immediately run the `ticket-intake` skill on the now-labeled ticket.
-- **Self-assign + park:** if you intend to pick up later but want to claim ownership now. Per the `ticket-intake §3a` 7-day rule, park-and-leave is allowed but creates a clock against you.
-- **Leave unassigned + invite contributor:** post a comment on the ticket inviting the original author or interested contributors to self-claim. Common when the ticket is a fit for a contributor's skillset rather than a maintainer's.
-- **Leave unassigned + flag for swarm:** post a comment routing the ticket to the appropriate agent identity (`@neo-opus-ada`, `@neo-gemini-pro`) if cross-family expertise applies.
-
-Assignment disposition is **not** part of the labeling decision — it's a post-triage allocation choice. The triage protocol ends at Step 3 if you choose to defer assignment.
+- **Self-assign + proceed to `ticket-intake`:** well-scoped, natural fit, no competing claim; immediately run `ticket-intake`.
+- **Self-assign + park:** claim now for later pickup (starts the `ticket-intake §3a` 7-day clock).
+- **Leave unassigned + invite contributor:** comment inviting the author or contributors to self-claim.
+- **Leave unassigned + flag for swarm:** comment routing to `@neo-opus-ada`, `@neo-gemini-pro`, etc. when cross-family expertise applies.
 
 ## 4. Anti-Patterns
 
 | Anti-pattern | Why it harms |
 |---|---|
 | Applying labels before retrospective six-stage challenge | Bypasses the gate that filters out flawed premises; downstream pickup pressure on bad work |
-| Inventing label names | Silent GitHub API rejection; lost label intent |
-| Skipping `list_labels` verification | Domain-label drift; future agents see inconsistent taxonomy |
+| Halting valid-intent older tickets (`10k+` commits) with `needs-re-triage` | Stalls valid backlog items over evolved surrounding architecture instead of re-anchoring current substrate/subclasses in the triage comment |
+| Inventing label names or skipping `list_labels` | Silent GitHub API rejection or domain-label drift |
 | Treating `ai` as a maintainer reservation | Hides agent-created work from contributors |
-| Self-assigning without `ticket-intake` follow-through | Bypasses the validation/branch-before-code gates |
-| Triaging a ticket the original author should clarify | Premature labeling locks the author into a framing they may not endorse |
-| Re-triaging a ticket already-labeled by another maintainer | Duplicate work; cite prior triage instead |
+| Self-assigning without `ticket-intake` follow-through | Bypasses validation/branch-before-code gates |
+| Triaging a fresh ticket the author should clarify | Premature labeling locks the author into a framing they may not endorse |
+| Re-triaging a ticket already labeled by a maintainer | Duplicate work; cite prior triage instead |
 
 ## 5. Relationship to Sibling Skills
 
