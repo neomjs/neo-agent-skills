@@ -49,14 +49,14 @@ Before executing `git checkout`, interrogate the codebase and Memory Core to val
    - A matrix is incomplete when a row names an existing field, method, helper, tool, config key, docs path, or runtime surface that does not match current substrate reality or lacks the Surface-Anchor V-B-A required by the [Contract Ledger protocol](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/contract-ledger.md).
    - **Hand-back loop:** Post a comment explaining the missing fields and requesting a ticket-body update. Never guess the contract or start branch/code work; re-verify once updated.
 
-7.5. **Age / Successor-Risk Audit Gate:** Audit ticket age, stale bot state, short-horizon currency risk, long-horizon surrounding-topology evolution (`10k+` commits), and missing PR close-link hygiene:
-   - **Protocol:** Execute `.agents/skills/ticket-intake/references/successor-risk-audit.md` for bot-state bands, short-horizon successor checks (`§1.1`), long-horizon surrounding-topology / subclass & consumer mapping on valid-intent older tickets (`§1.2`), missing close-link sweeps, and stale renewal discipline.
+7.5. **Age / Successor-Risk Audit Gate:** Audit ticket age, stale bot state, short-horizon currency risk, long-horizon surrounding-topology evolution when the named surface or its class family changed since `createdAt` (`git log --since=<createdAt> -- <path>`, `get_class_hierarchy`), and missing PR close-link hygiene:
+   - **Protocol:** Execute `.agents/skills/ticket-intake/references/successor-risk-audit.md` for bot-state bands, short-horizon successor checks (`§1.1`), long-horizon surrounding-topology / subclass & consumer mapping when the surface changed since `createdAt` (`§1.2`), missing close-link sweeps, and stale renewal discipline.
    - **ADR branch:** If the ticket cites, predates, conflicts with, or depends on an ADR / Decision Record, execute `.agents/skills/ticket-intake/references/adr-successor-risk-audit.md` and record the verdict before `valid-as-written`.
 
 8. **Ticket Reality Classification:** Before ROI acceptance or branch/code work, emit a concise classification artifact grounded in the live issue conversation, linked PRs/commits, current source/docs/tests, and Knowledge Base / Memory Core evidence:
    - `Ticket age`: `createdAt` and `updatedAt`.
    - `Bot stale-band`: Workflow-derived bot-state band (`pre-stale`, `in-stale-window`, `post-stale-with-exemption`), `stale` label state, and `no auto close` label state (automation metadata only, never architectural currency).
-   - `Currency / successor-risk evidence`: same-day, short-horizon (`§1.1`), long-horizon surrounding-topology (`§1.2` subclasses/adapters/consumers), newer-artifact, existing-enforcement, and current-source checks determining whether `valid-as-written` (or §0 *accept and sharpen*) can proceed.
+   - `Currency / successor-risk evidence`: same-day, short-horizon (`§1.1`), long-horizon surrounding-topology when the surface or its class family changed since `createdAt` (`§1.2` subclasses/adapters/consumers), newer-artifact, existing-enforcement, and current-source checks determining whether `valid-as-written` (or §0 *accept and sharpen*) can proceed.
    - `ADR successor-risk`: when triggered, the verdict from `adr-successor-risk-audit.md`.
 
    **Allowed verdicts:**

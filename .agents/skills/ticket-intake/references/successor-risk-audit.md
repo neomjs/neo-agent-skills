@@ -21,10 +21,10 @@ Before emitting `valid-as-written`, check for same-day or short-horizon successo
 
 If a newer artifact or current source state already solves or reshapes the failure mode, route to `already-resolved`, `superseded`, `duplicate`, `needs-narrowing`, or `invalid-or-negative-roi` instead of treating bot pre-stale status as low risk.
 
-### 1.2 Long-Horizon Surrounding-Topology Check (10k+ Commits Reality Mapping)
-When an older ticket's **core intent remains valid** (`not already-resolved` / `not superseded`), thousands of commits may still have reshaped its surrounding architecture since `createdAt`. Never stamp `valid-as-written` by inspecting only the originally named file in isolation:
+### 1.2 Long-Horizon Surrounding-Topology Check (Surface Evolved Since `createdAt`)
+When an older ticket's **core intent remains valid** (`not already-resolved` / `not superseded`) and the named surface or its class family changed since `createdAt` (`git log --since=<createdAt> -- <path>`, `get_class_hierarchy`), never stamp `valid-as-written` by inspecting only the originally named file in isolation:
 
-1. **Subclass & Consumer Sweep:** Query `get_class_hierarchy` and `grep` for subclasses (`extends`), mixins, layout adapters, and main-thread/worker consumers added since filing (e.g., `Neo.dashboard.DockSplitter` and `Neo.dashboard.LayoutAdapter` around `Neo.component.Splitter` in `neomjs/neo#4723` → `#20252`).
+1. **Subclass & Consumer Sweep:** Query `get_class_hierarchy` and `grep` for subclasses (`extends`), mixins, layout adapters, and main-thread/worker consumers added since filing (e.g., `Neo.dashboard.dock.interaction.DockSplitter` and `Neo.dashboard.dock.projection.LayoutAdapter` around `Neo.component.Splitter` in `neomjs/neo#4723` → `#20252`).
 2. **Downstream Compatibility:** Verify whether changing the base class affects specialized subclasses or multi-sibling topologies (e.g., a vertical dock splitter touching 2+ stacked sibling containers, or conserved-pair `counterTargetId` resizing).
 3. **Upstream Generalization vs. Scope Split:** Evaluate whether custom logic built in a newer subclass belongs in the base class now or in a linked follow-up ticket (`neomjs/neo#20282`). Route via `ticket-intake-workflow.md §0` (**accept and sharpen**): record the current-reality mapping in the intake record/comment and file any out-of-scope unification follow-up before branching.
 

@@ -25,8 +25,8 @@ Before running the four-step workflow:
 
 1. **The ticket body.** Fetch the live issue via `mcp_neo-mjs-github-workflow_get_conversation` (remote-truth-fresh per `ticket-intake §1.1`).
 2. **Existing label set.** Run `list_labels` on the repo. Do NOT invent label names — if a needed label is missing, propose its creation via comment and halt triage until it exists.
-3. **Author identity, permission & ticket age.** Confirm whether the author is a maintainer, external contributor, or lower-privileged agent, and note `createdAt` vs. current `HEAD` commit distance.
-4. **Adjacency & surrounding-topology sweep.** Run `gh search issues --owner neomjs "<subject>"` (open and closed) to anchor secondary-label decisions; on older tickets, check current subclasses and consumers (`get_class_hierarchy` / `grep`) of the named surface.
+3. **Author identity, permission & surface history since `createdAt`.** Confirm whether the author is a maintainer, external contributor, or lower-privileged agent, and check whether the named surface or its class family changed since `createdAt` (`git log --since=<createdAt> -- <path>`, `get_class_hierarchy`).
+4. **Adjacency & surrounding-topology sweep.** Run `gh search issues --owner neomjs "<subject>"` (open and closed) to anchor secondary-label decisions; when the named surface changed since `createdAt`, check current subclasses and consumers (`get_class_hierarchy` / `grep`).
 
 ## 3. The Four-Step Triage Workflow
 
@@ -44,10 +44,10 @@ Apply the six-stage challenge chain from `ticket-create §2` retrospectively as 
 **Outcome routing:**
 
 - **All six pass:** proceed to Step 2 (apply labels).
-- **Valid intent, evolved surrounding reality (`10k+` commits since `createdAt`):** when an older ticket's core **Premise / intent remains valid** (`not already-resolved` / `not superseded`), do **NOT** fail Stage 2/3 or apply `needs-re-triage` merely because its historical prescription or terse body predates newer subclasses, layout adapters, or engine idioms (`extends`, multi-sibling consumers, reactive `_` configs, workers). Proceed to Step 2–3 and **re-anchor the valid intent onto current Neo reality in your §6 triage comment** (naming the current owning substrate, evolved subclasses/consumers per `ticket-intake/references/successor-risk-audit.md §1.2`, and any scope boundary) so `ticket-intake` inherits the updated map.
-- **Premise fails (false, obsolete, duplicate, or Negative ROI):** post a structured `[ARCH_ALIGNMENT]` comment flagging the failure(s), apply `needs-re-triage` (*"premise identified as stale, duplicate, or Negative ROI by Swarm Agent"*), do **NOT** apply primary or secondary labels, and halt triage (or close if `already-resolved`/`duplicate`).
+- **Premise passes on an older ticket, and the only failures are Stage 2/3 because the prescription predates current topology** (the named surface or its class family changed since `createdAt` via `git log --since=<createdAt> -- <path>` / `get_class_hierarchy`): do **NOT** apply `needs-re-triage` merely because a historical prescription or terse body predates newer subclasses, layout adapters, or engine idioms (`extends`, multi-sibling consumers, reactive `_` configs, workers). Proceed to Step 2–3 and **re-anchor the valid intent onto current Neo reality in your §6 triage comment** (naming the current owning substrate, evolved subclasses/consumers per `ticket-intake/references/successor-risk-audit.md §1.2`, and any scope boundary) so `ticket-intake` inherits the updated map.
+- **One or more fail (default):** post a structured `[ARCH_ALIGNMENT]` comment flagging the failure(s), apply `needs-re-triage` (*"premise identified as stale, duplicate, or Negative ROI by Swarm Agent"*), do **NOT** apply primary or secondary labels, and halt triage.
 
-**Why `needs-re-triage` on the halt path:** without a marker, an unlabeled halted ticket re-triggers `ticket-triage` on every pass; `needs-re-triage` signals that premise clarification is required before labeling. Never stamp `needs-re-triage` on an older backlog ticket whose core intent is still valid just because its surrounding architecture evolved (`#52`).
+**Why `needs-re-triage` on the halt path:** without a marker, an unlabeled halted ticket re-triggers `ticket-triage` on every pass; `needs-re-triage` signals that premise clarification is required before labeling. Never stamp `needs-re-triage` on an older backlog ticket whose core intent is still valid just because its surrounding architecture evolved (`neomjs/neo-agent-skills#269`).
 
 ### Step 2 — Apply Primary Label
 
@@ -84,7 +84,7 @@ After labels are applied, decide assignment (post-triage allocation choice; tria
 | Anti-pattern | Why it harms |
 |---|---|
 | Applying labels before retrospective six-stage challenge | Bypasses the gate that filters out flawed premises; downstream pickup pressure on bad work |
-| Halting valid-intent older tickets (`10k+` commits) with `needs-re-triage` | Stalls valid backlog items over evolved surrounding architecture instead of re-anchoring current substrate/subclasses in the triage comment |
+| Halting valid-intent older tickets whose surface changed since `createdAt` with `needs-re-triage` | Stalls valid backlog items over evolved surrounding architecture instead of re-anchoring current substrate/subclasses in the triage comment |
 | Inventing label names or skipping `list_labels` | Silent GitHub API rejection or domain-label drift |
 | Treating `ai` as a maintainer reservation | Hides agent-created work from contributors |
 | Self-assigning without `ticket-intake` follow-through | Bypasses validation/branch-before-code gates |
