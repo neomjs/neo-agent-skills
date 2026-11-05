@@ -53,7 +53,7 @@ A guide is *explanation*; it does NOT inline tool catalogs, payload specs, CLI f
 
 ## 5. Mechanics — register the guide; never commit the pipeline-owned SEO output — `MACHINE-ENFORCEABLE-CANDIDATE`
 
-- **File + registration (the inputs you edit).** A new document is `learn/<section>/<slug>.md` — with `<section>` and its navigation container chosen via the **§0 pre-write placement gate**, never left as an unexamined blank — and registered in **two source inputs**: (1) `learn/tree.json` — the nav SSOT (`npm run ai:lint-tree-json` green when present); and (2) `buildScripts/docs/seo/generate.mjs` — **add + rank the guide in the `PRIORITIES` map** (e.g. `['agentos/IdentityFirewall', 1.0]`).
+- **File + registration (the inputs you edit).** A new document is `learn/<section>/<slug>.md` — with `<section>` and its navigation container chosen via the **§0 pre-write placement gate**, never left as an unexamined blank — and registered in **two source inputs**: (1) `learn/tree.json` — the nav SSOT; and (2) `buildScripts/docs/seo/generate.mjs` — **add + rank the guide in the `PRIORITIES` map** (e.g. `['agentos/IdentityFirewall', 1.0]`).
 - **⛔ NEVER touch `apps/portal/sitemap.xml` or `apps/portal/llms.txt`** — not by hand, **not by running the generator**, not in your commit. They are **generated output owned by the data-sync pipeline**, which regenerates + commits them on its next run. Committing them yourself gets overwritten on the next pipeline run and collides guide PRs against each other (#14345 ↔ #14346). Edit the *inputs* (`tree.json` + `PRIORITIES`); leave the *output* to the pipeline.
 - **PR body:** `Evidence:` is L1/L2 (docs — no unit tests); zero client names (AGENTS.md §critical_gate).
 
