@@ -7,7 +7,7 @@ import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                 from 'node:os';
 import {dirname, join}                          from 'node:path';
 import {fileURLToPath}                          from 'node:url';
-import {VISIBLE_PR_BODY_ANCHORS, INVISIBLE_PR_BODY_ANCHORS, findBodyViolations, hasAnchor, run} from './check-pr-body.mjs';
+import {VISIBLE_PR_BODY_ANCHORS, INVISIBLE_PR_BODY_ANCHORS, findBodyViolations, findImageEmbedViolations, hasAnchor, run} from './check-pr-body.mjs';
 
 const
     here      = dirname(fileURLToPath(import.meta.url)),
@@ -294,6 +294,68 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
         assert.equal(cli(['--close-target-only'], `Resolves #1\n${line}`).code, 0, `"${line}" is not a closing reference`);
         assert.deepEqual(findBodyViolations({body: `${line}\n${goodBody()}`}).visible, [], `"${line}" keeps the agent scope green`)
     })
+}
+
+// ── raw.githubusercontent.com image embeds 404 on private repos (#271) ─────────────────────────
+{
+    const
+        rawBefore  = 'https://raw.githubusercontent.com/neomjs/neo-stage/13db9fc/docs/before.png',
+        blobBefore = 'https://github.com/neomjs/neo-stage/blob/13db9fc/docs/before.png?raw=true',
+        rawAfter   = 'https://raw.githubusercontent.com/neomjs/neo-stage/4d59715/docs/after.png',
+        blobAfter  = 'https://github.com/neomjs/neo-stage/blob/4d59715/docs/after.png?raw=true',
+        rawRefs    = 'https://raw.githubusercontent.com/neomjs/neo-stage/refs/heads/dev/docs/ref.png',
+        blobRefs   = 'https://github.com/neomjs/neo-stage/blob/dev/docs/ref.png?raw=true';
+
+    // Markdown image embed yields a visible finding naming the URL and its blob/...?raw=true replacement.
+    {
+        const body   = goodBody(`\n![before](${rawBefore})`),
+              res    = findBodyViolations({body}),
+              cliRes = cli([], body);
+
+        assert.equal(res.visible.length, 1);
+        assert.ok(res.visible[0].includes(rawBefore), 'finding must name the offending raw.githubusercontent.com URL');
+        assert.ok(res.visible[0].includes(blobBefore), 'finding must name the exact blob/<ref>/<path>?raw=true replacement');
+        assert.equal(cliRes.code, 1);
+        assert.ok(cliRes.text.includes(`First missing: ${res.visible[0]}`), 'CLI must print the finding after First missing:')
+    }
+
+    // HTML <img> embeds (double-quoted, single-quoted, with attributes, and refs/heads/<ref> form) are refused.
+    [
+        [`<img src="${rawAfter}" alt="after">`, rawAfter, blobAfter],
+        [`<IMG width="480" src='${rawAfter}' />`, rawAfter, blobAfter],
+        [`<img src="${rawRefs}">`, rawRefs, blobRefs]
+    ].forEach(([ snippet, rawUrl, expectedBlob ]) => {
+        const findings = findImageEmbedViolations(goodBody(`\n${snippet}`));
+
+        assert.equal(findings.length, 1, `HTML embed must be flagged: ${snippet}`);
+        assert.ok(findings[0].includes(rawUrl), 'HTML finding must name the raw URL');
+        assert.ok(findings[0].includes(expectedBlob), 'HTML finding must name the blob?raw=true replacement')
+    });
+
+    // Fenced blocks, indented code blocks, inline code spans, plain links, and blob/...?raw=true embeds stay green.
+    const allowed = goodBody([
+        '',
+        '```md',
+        `![fenced](${rawBefore})`,
+        `<img src="${rawAfter}">`,
+        '```',
+        '',
+        '~~~html',
+        `<img src="${rawBefore}">`,
+        '~~~',
+        '',
+        `    ![indented](${rawBefore})`,
+        `\t<img src="${rawAfter}">`,
+        '',
+        `Inline code: \`![code](${rawBefore})\` and \`\`<img src="${rawAfter}">\`\` or \`curl ${rawBefore}\`.`,
+        `Plain link: [raw data](${rawBefore}) and [ curl target ](${rawAfter}).`,
+        `Working Markdown embed: ![before](${blobBefore})`,
+        `Working HTML embed: <img alt="do not use src=${rawBefore}" src="${blobAfter}" width="400">`
+    ].join('\n'));
+
+    assert.deepEqual(findImageEmbedViolations(allowed), [], 'non-embed or code-wrapped raw URLs and blob?raw=true embeds must not trigger');
+    assert.deepEqual(findBodyViolations({body: allowed}).visible, [], 'allowed forms must keep findBodyViolations green');
+    assert.equal(cli([], allowed).code, 0, 'allowed forms must exit 0')
 }
 
 // ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────
