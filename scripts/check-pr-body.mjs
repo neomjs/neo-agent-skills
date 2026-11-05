@@ -199,6 +199,214 @@ export function findCloseTargetViolations(body = '') {
 }
 
 /**
+ * @summary Removes CommonMark inline code spans from a single line without joining adjacent tokens.
+ * @param {String} [line='']
+ * @returns {String}
+ */
+function stripInlineCodeSpans(line = '') {
+    let out = '',
+        pos = 0;
+
+    while (pos < line.length) {
+        const tickStart = line.indexOf('`', pos);
+        if (tickStart === -1) {
+            out += line.slice(pos);
+            break
+        }
+
+        out += line.slice(pos, tickStart);
+
+        let runLen = 0;
+        while (tickStart + runLen < line.length && line[tickStart + runLen] === '`') {
+            runLen++
+        }
+
+        let searchPos = tickStart + runLen,
+            closedAt  = -1;
+
+        while (searchPos < line.length) {
+            const candidate = line.indexOf('`', searchPos);
+            if (candidate === -1) break;
+
+            let candidateLen = 0;
+            while (candidate + candidateLen < line.length && line[candidate + candidateLen] === '`') {
+                candidateLen++
+            }
+
+            if (candidateLen === runLen) {
+                closedAt = candidate + candidateLen;
+                break
+            }
+
+            searchPos = candidate + candidateLen
+        }
+
+        if (closedAt !== -1) {
+            out += ' ';
+            pos = closedAt
+        } else {
+            out += line.slice(tickStart, tickStart + runLen);
+            pos = tickStart + runLen
+        }
+    }
+
+    return out
+}
+
+/**
+ * @summary Reads the `src` attribute from an `<img ...>` attribute slice in linear time.
+ * @param {String} [attrs='']
+ * @returns {String|null}
+ */
+function extractImgSrc(attrs = '') {
+    let i = 0;
+
+    while (i < attrs.length) {
+        while (i < attrs.length && (attrs[i] === ' ' || attrs[i] === '\t' || attrs[i] === '/')) i++;
+        if (i >= attrs.length) break;
+
+        const nameStart = i;
+        while (i < attrs.length && attrs[i] !== ' ' && attrs[i] !== '\t' && attrs[i] !== '=' && attrs[i] !== '/') i++;
+        const name = attrs.slice(nameStart, i).toLowerCase();
+
+        while (i < attrs.length && (attrs[i] === ' ' || attrs[i] === '\t')) i++;
+        if (attrs[i] !== '=') continue;
+        i++;
+
+        while (i < attrs.length && (attrs[i] === ' ' || attrs[i] === '\t')) i++;
+        if (i >= attrs.length) break;
+
+        let value = '';
+        if (attrs[i] === '"' || attrs[i] === "'") {
+            const quote = attrs[i++],
+                  close = attrs.indexOf(quote, i);
+            if (close === -1) {
+                value = attrs.slice(i);
+                i     = attrs.length
+            } else {
+                value = attrs.slice(i, close);
+                i     = close + 1
+            }
+        } else {
+            const valStart = i;
+            while (i < attrs.length && attrs[i] !== ' ' && attrs[i] !== '\t' && attrs[i] !== '/') i++;
+            value = attrs.slice(valStart, i)
+        }
+
+        if (name === 'src') return value.trim()
+    }
+
+    return null
+}
+
+/**
+ * @summary Extracts Markdown `![alt](url)` and HTML `<img src="url">` URLs from one prose line in source order.
+ * @param {String} [rawLine='']
+ * @returns {String[]}
+ */
+function lineImageEmbedUrls(rawLine = '') {
+    const
+        line   = stripInlineCodeSpans(rawLine),
+        lower  = line.toLowerCase(),
+        embeds = [];
+
+    let pos = 0;
+    while (pos < line.length) {
+        const mid = line.indexOf('](', pos);
+        if (mid === -1) break;
+
+        const bang = line.lastIndexOf('![', mid);
+        if (bang < pos || line.indexOf(']', bang + 2) !== mid) {
+            pos = mid + 2;
+            continue
+        }
+
+        const closeParen = line.indexOf(')', mid + 2);
+        if (closeParen === -1) break;
+
+        const
+            rawTarget = line.slice(mid + 2, closeParen).trim(),
+            angleEnd  = rawTarget.indexOf('>'),
+            url       = rawTarget.startsWith('<')
+                ? rawTarget.slice(1, angleEnd === -1 ? rawTarget.length : angleEnd).trim()
+                : rawTarget.split(/[ \t]/)[0];
+
+        if (url) embeds.push({offset: bang, url});
+        pos = closeParen + 1
+    }
+
+    pos = 0;
+    while (pos < line.length) {
+        const tagStart = lower.indexOf('<img', pos);
+        if (tagStart === -1) break;
+
+        const nextChar = line[tagStart + 4];
+        if (nextChar !== ' ' && nextChar !== '\t') {
+            pos = tagStart + 4;
+            continue
+        }
+
+        const tagEnd = line.indexOf('>', tagStart + 4);
+        if (tagEnd === -1) break;
+
+        const src = extractImgSrc(line.slice(tagStart + 4, tagEnd));
+        if (src) embeds.push({offset: tagStart, url: src});
+        pos = tagEnd + 1
+    }
+
+    return embeds.sort((a, b) => a.offset - b.offset).map(entry => entry.url)
+}
+
+/**
+ * @summary Converts a `raw.githubusercontent.com` URL to its session-authenticated `blob/...?raw=true` route.
+ * @param {String} [url='']
+ * @returns {String|null} Replacement URL when `url` is hosted on `raw.githubusercontent.com`, otherwise `null`.
+ */
+function rawGithubReplacement(url = '') {
+    let parsed;
+    try {
+        parsed = new URL(url)
+    } catch {
+        return null
+    }
+
+    if (parsed.hostname.toLowerCase() !== 'raw.githubusercontent.com') return null;
+
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    if (segments.length >= 6 && segments[2] === 'refs' && (segments[3] === 'heads' || segments[3] === 'tags')) {
+        const [owner, repo, , , ref, ...rest] = segments;
+        return `https://github.com/${owner}/${repo}/blob/${ref}/${rest.join('/')}?raw=true`
+    }
+
+    if (segments.length >= 4) {
+        const [owner, repo, ref, ...rest] = segments;
+        return `https://github.com/${owner}/${repo}/blob/${ref}/${rest.join('/')}?raw=true`
+    }
+
+    return 'https://github.com/<owner>/<repo>/blob/<ref>/<path>?raw=true'
+}
+
+/**
+ * @summary Refuses `raw.githubusercontent.com` image embeds, which 404 for signed-in viewers on private repos.
+ * @param {String} [body=''] Pull-request body.
+ * @returns {String[]} Violations, one per offending image embed in source order.
+ */
+export function findImageEmbedViolations(body = '') {
+    const violations = [];
+
+    for (const line of markdownContentLines(body)) {
+        for (const url of lineImageEmbedUrls(line)) {
+            const replacement = rawGithubReplacement(url);
+            if (replacement) {
+                violations.push(`image embed \`${url}\` 404s on private repos — use \`${replacement}\``)
+            }
+        }
+    }
+
+    return violations
+}
+
+/**
  * @summary Returns every reason this body must be refused, in the order a reader should fix them.
  *
  * Pure and transport-free: the same body yields the same findings whether it came from a webhook, a
@@ -212,7 +420,7 @@ export function findBodyViolations({body = ''} = {}) {
         visible   = VISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
         invisible = INVISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor);
 
-    visible.push(...findCloseTargetViolations(body));
+    visible.push(...findCloseTargetViolations(body), ...findImageEmbedViolations(body));
 
     return {invisible, visible}
 }
