@@ -1,20 +1,31 @@
 # Canonical non-product PR baseline for repositories consuming neo-agent-skills.
 #
 # Callers own only their event trigger and a published release tag (`uses: …@vX.Y.Z`), which the
-# `release-ref` job enforces. This workflow owns the executable jobs, so adding another consumer does
-# not copy any contract. It names no version: the `version` job reads `package.json` at this file's
-# commit, and every install takes the version from there.
+# `Release ref` step enforces. This workflow owns the executable steps, so adding another consumer does
+# not copy any contract. It names no version: the `Skills version` step reads `package.json` at this
+# file's commit, and the guard install takes the version from there.
 #
-# REQUIRED CALLER TRIGGER — the `pr-body` job is only as good as the events the caller fires:
+# TWO JOBS, ONE BOUNDARY. `PR baseline` runs every check that executes no pull-request code, as steps of
+# one job: one runner slot instead of nine under the organization's shared job cap (#281). `Skills
+# materialized` runs the caller's own install, so it stays alone. Steps of one job share `GITHUB_ENV`,
+# `GITHUB_PATH` and the filesystem, so pull-request code beside the guards could green every step after it.
+#
+# Every step after the first runs under `!cancelled()`: a failed check doesn't stop the later ones, the
+# job fails if any of them failed, and each red shows by name in the step list. `continue-on-error` is
+# forbidden, because it would let a red check leave the job green.
+#
+# REQUIRED CALLER TRIGGER — the PR-body steps are only as good as the events the caller fires:
 #
 #   on:
 #     pull_request:
 #       types: [opened, edited, synchronize, ready_for_review]
 #
-# `edited` is the one that is easy to omit and expensive to miss. This job reads the LIVE body, so a
+# `edited` is the one that is easy to omit and expensive to miss. The steps read the LIVE body, so a
 # corrected body goes green with no push — but only if the caller fires on the edit. Without it the
 # live fetch buys nothing: the author fixes the body, nothing re-runs, and the red stands until an
 # unrelated commit arrives. `ready_for_review` re-judges a draft at the moment it becomes reviewable.
+# Every event runs every check: one context carries all nine verdicts, so an edit that ran only the
+# body checks would overwrite another check's red on the same head.
 #
 # The trigger cannot be asserted here — a reusable workflow does not see its caller's `on:` block.
 # It is a caller obligation, tracked per repository under #14.
@@ -53,7 +64,7 @@ on:
       team_roster_repository:
         description: >-
           Repository holding the caller team's roster module, which exports registryAgentLogins() and
-          rosterEmailForLogin(login). Empty means no team, and the commit-authorship job checks no trailer.
+          rosterEmailForLogin(login). Empty means no team, and the commit-authorship step checks no trailer.
         required: false
         type: string
         default: ''
@@ -69,17 +80,37 @@ on:
         default: ''
 
 jobs:
-  # The release this workflow installs is read, never written: it is `package.json`'s version at the commit
-  # that defines this job. Every job below installs it, so the caller's tag, the installed package and the
-  # published release are one number from one file.
-  version:
-    name: Skills version
+  pr-baseline:
+    name: PR baseline
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.read.outputs.version }}
+    # The top-level grant is `contents: read`; the PR-body steps also read the pull request itself.
+    # Granted on this job, which runs no pull-request code, and never on `skills-materialized`.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
+      - name: Reject a non-PR caller
+        if: ${{ github.event_name != 'pull_request' }}
+        run: exit 1
+
+      # The commits the pull request adds are the authorship input, and the archaeology diff reads its base,
+      # so the exact head comes with its whole history.
+      - name: Checkout exact caller head
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch pull-request base
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags origin "${BASE_SHA}"
+
       # `job.workflow_*` name this reusable file's repository and commit; `github.*` would name the caller's.
       - name: Checkout this workflow's package.json
+        if: ${{ !cancelled() }}
         uses: actions/checkout@v7
         with:
           repository: ${{ job.workflow_repository }}
@@ -89,44 +120,42 @@ jobs:
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
-      - name: Read the release version
-        id: read
+      # The release this workflow installs is read, never written: it is `package.json`'s version at the commit
+      # that defines this job. The guard install takes it, so the caller's tag, the installed package and the
+      # published release are one number from one file. The copy leaves the caller's tree before any guard reads it.
+      - name: Skills version
+        id: version
+        if: ${{ !cancelled() }}
         env:
           WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: |
           version="$(jq -r .version .neo-agent-skills/package.json)"
+          rm -rf .neo-agent-skills
           if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "package.json at ${WORKFLOW_SHA::7} names no release version ('${version}')."
             exit 1
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
-  # A caller names the published release it runs: the tag must be the version above. A SHA or a branch
-  # names no release, and Dependabot can move only a tag. The guards need the version, not this verdict,
-  # so a caller at the wrong ref still gets every guard's result.
-  release-ref:
-    name: Release ref
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Refuse a caller that is not at this release's tag
+      # A caller names the published release it runs: the tag must be the version above. A SHA or a branch
+      # names no release, and Dependabot can move only a tag. The guards need the version, not this verdict,
+      # so a caller at the wrong ref still gets every guard's result.
+      - name: Release ref
+        if: ${{ !cancelled() }}
         env:
           WORKFLOW_REF: ${{ job.workflow_ref }}
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
+          SKILLS_VERSION: ${{ steps.version.outputs.version }}
         run: |
           if [[ "${WORKFLOW_REF}" != *"@refs/tags/v${SKILLS_VERSION}" ]]; then
             echo "Call neomjs/neo-agent-skills at @v${SKILLS_VERSION}, the release this workflow installs, not '${WORKFLOW_REF##*@}'."
             exit 1
           fi
 
-  pr-base:
-    name: PR base
-    runs-on: ubuntu-latest
-    steps:
       # Ordinary PRs target `required_base` (default `dev`). A caller that opts in via a JSON string array
       # `release_actors` may also admit exact pull-request author logins targeting `release_base` (default
       # `main`). Every input and event field enters through `env:` and is validated fail-closed.
-      - name: Reject a non-PR caller or an unauthorized base
+      - name: PR base
+        if: ${{ !cancelled() }}
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTUAL_BASE: ${{ github.event.pull_request.base.ref }}
@@ -190,231 +219,76 @@ jobs:
           fail(`Expected PR base '${REQUIRED_BASE}'${releaseBase && actors.length ? ` (or '${releaseBase}' for authorized release_actors)` : ''}, observed '${ACTUAL_BASE}' (author '${PR_AUTHOR}').`);
           EOF
 
-  skills-materialized:
-    name: Skills materialized
-    runs-on: ubuntu-latest
-    steps:
-      # With no repository override, checkout resolves the caller repository. The reusable workflow
-      # must inspect the consumer lockfile and projection, never its own source checkout.
-      - uses: actions/checkout@v7
-
       - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: npm
-
-      - name: Install consumer dependencies
-        run: npm ci
-
-      - name: Assert skills are materialized and unshadowed
-        run: npx --no-install neo-agent-skills-materialize --check
-
-  source-comment-archaeology:
-    name: Source comment archaeology
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reject a non-PR caller
-        if: ${{ github.event_name != 'pull_request' }}
-        run: exit 1
-
-      - name: Checkout exact caller head
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v7
+        if: ${{ !cancelled() }}
         with:
           node-version: ${{ inputs.node_version }}
 
-      - name: Fetch pull-request base
+      # Every guard runs from runner.temp, never from the caller workspace. A checked-out copy would be the diff
+      # under review, so a pull request could relax the gate it is judged by. The guards ship in one package, so
+      # one install at the release read above serves them all.
+      - name: Install immutable guards
+        if: ${{ !cancelled() }}
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git fetch --no-tags origin "${BASE_SHA}"
-
-      - name: Install immutable archaeology guard
-        env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
+          SKILLS_VERSION: ${{ steps.version.outputs.version }}
         run: >-
           npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
           "neo-agent-skills@${SKILLS_VERSION}"
 
-      - name: Reject tracking and review archaeology
+      - name: Source comment archaeology
+        if: ${{ !cancelled() }}
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-source-comment-archaeology
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-ticket-archaeology"
           --base "${BASE_SHA}"
 
-  substrate-size:
-    name: Substrate size
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reject a non-PR caller
-        if: ${{ github.event_name != 'pull_request' }}
-        run: exit 1
-
-      # The head tree is the whole input: this guard measures what a seat loads at this commit and
-      # compares nothing against the base, so it needs no history.
-      - name: Checkout exact caller head
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      # The guard runs from runner.temp, never from the caller workspace. A checked-out copy would
-      # be the same diff under review, so a pull request could widen the limit it is judged by, or
-      # drop an entry from the target roster, and pass its own gate. The limit ships with the
-      # pinned release; nothing on the command line can move it.
-      - name: Install immutable substrate guard
-        env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
-        run: >-
-          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
-          "neo-agent-skills@${SKILLS_VERSION}"
-
-      # Measured against the checked-out caller tree. A repository carrying none of the substrate
-      # entry points reports N/A and greens: three of the five consumers have no such files, and a
-      # baseline they cannot adopt is not a baseline.
+      # Measured against the checked-out caller tree. A repository carrying none of the substrate entry points
+      # reports N/A and greens: three of the five consumers have no such files, and a baseline they cannot
+      # adopt is not a baseline.
       #
-      # `working-directory` is PINNED to the workflow-owned `github.workspace` and is load-bearing,
-      # not tidiness. The guard resolves its root from cwd, and every target is ENOENT outside the
-      # checkout — so a bare invocation from any other directory reports all-N/A and GREENS. Under
-      # the negative-space contract a wrong root is indistinguishable from a legitimately empty
-      # consumer, which makes the pin the only thing separating "nothing to measure" from "measured
-      # nothing". Found by @neo-gpt in review; asserted by the workflow-contract suite.
-      - name: Measure the per-turn substrate budget
+      # `working-directory` is PINNED to the workflow-owned `github.workspace` and is load-bearing, not
+      # tidiness. The guard resolves its root from cwd, and every target is ENOENT outside the checkout — so a
+      # bare invocation from any other directory reports all-N/A and GREENS. Under the negative-space contract
+      # a wrong root is indistinguishable from a legitimately empty consumer, which makes the pin the only thing
+      # separating "nothing to measure" from "measured nothing". Found by @neo-gpt in review; asserted by the
+      # workflow-contract suite.
+      - name: Substrate size
+        if: ${{ !cancelled() }}
         working-directory: ${{ github.workspace }}
         env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-substrate-size
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"
 
-  npm-overrides:
-    name: npm overrides
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reject a non-PR caller
-        if: ${{ github.event_name != 'pull_request' }}
-        run: exit 1
-
-      # The head's package.json and package-lock.json are the whole input. The verdict can only change
-      # in a pull request that changes one of them, so it runs on every pull request without upstream
-      # releases ever reddening one that touches neither.
-      - name: Checkout exact caller head
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      # From runner.temp, like the substrate guard: a checked-out copy is the diff under review, so a
-      # pull request could relax the verdicts it is judged by.
-      - name: Install immutable npm-overrides guard
-        env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
-        run: >-
-          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
-          "neo-agent-skills@${SKILLS_VERSION}"
-
-      # Pinned and invoked bare: any other directory, or a `--root`, can point the guard at a nested
-      # package.json that is not the consumer's, and judge that manifest instead.
-      - name: Judge every override against the ranges its dependents declare
+      # The head's package.json and package-lock.json are the whole input. Pinned and invoked bare: any other
+      # directory, or a `--root`, can point the guard at a nested package.json that is not the consumer's, and
+      # judge that manifest instead.
+      - name: npm overrides
+        if: ${{ !cancelled() }}
         working-directory: ${{ github.workspace }}
         env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-npm-overrides
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-npm-overrides"
 
-  secrets:
-    name: Secrets
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reject a non-PR caller
-        if: ${{ github.event_name != 'pull_request' }}
-        run: exit 1
-
       # Every tracked file at the head is the input, not only the diff: a credential already on the base still
-      # fails, because it is one to revoke whichever pull request finds it.
-      - name: Checkout exact caller head
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      # From runner.temp, like the substrate guard: a checked-out copy is the diff under review, so a pull request
-      # could relax the patterns it is judged by.
-      - name: Install immutable credential guard
-        env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
-        run: >-
-          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
-          "neo-agent-skills@${SKILLS_VERSION}"
-
-      # Pinned to the checkout and given only `--all`: `git ls-files` there is the caller's whole tree, and a
-      # file list or another directory would scan less of it.
-      - name: Scan every tracked file for credential-shaped literals
+      # fails, because it is one to revoke whichever pull request finds it. Pinned to the checkout and given only
+      # `--all`: `git ls-files` there is the caller's whole tree, and a file list or another directory would scan
+      # less of it.
+      - name: Secrets
+        if: ${{ !cancelled() }}
         working-directory: ${{ github.workspace }}
         env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-secrets
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"
           --all
 
-  commit-authorship:
-    name: Commit authorship
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reject a non-PR caller
-        if: ${{ github.event_name != 'pull_request' }}
-        run: exit 1
-
-      # The commits the pull request adds are the input, so the history from its base to its head
-      - name: Checkout exact caller head
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - name: Fetch pull-request base
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git fetch --no-tags origin "${BASE_SHA}"
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      # From runner.temp, like the substrate guard: a checked-out copy is the diff under review, so a pull request
-      # could relax the checks it is judged by.
-      - name: Install immutable authorship guard
-        env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
-        run: >-
-          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
-          "neo-agent-skills@${SKILLS_VERSION}"
-
       # The roster says who the caller's team is, so it is read from the roster repository at the caller's ref and
       # never from the pull request: a diff that could edit the roster could add its own author to the team.
       - name: Checkout the team roster
-        if: ${{ inputs.team_roster_repository != '' }}
+        if: ${{ !cancelled() && inputs.team_roster_repository != '' }}
         uses: actions/checkout@v7
         with:
           repository: ${{ inputs.team_roster_repository }}
@@ -423,47 +297,18 @@ jobs:
 
       # The PR author is the GitHub-authenticated login, which no commit in the pull request can forge, so it decides
       # whether these commits are an agent's. Without a roster the guard says there is no team to check.
-      - name: Check the authorship of every commit the pull request adds
+      - name: Commit authorship
+        if: ${{ !cancelled() }}
         working-directory: ${{ github.workspace }}
         env:
           AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           ROSTER: ${{ inputs.team_roster_repository != '' && format('.team-roster/{0}', inputs.team_roster_path) || '' }}
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-commit-authorship
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: |
           args=(--base "${BASE_SHA}" --author-login "${AUTHOR_LOGIN}")
           [ -n "${ROSTER}" ] && args+=(--roster "${ROSTER}")
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-commit-authorship" "${args[@]}"
-
-  pr-body:
-    name: PR body
-    needs: version
-    runs-on: ubuntu-latest
-    # The top-level grant is `contents: read`; this job needs the pull request itself. Declared here
-    # rather than widened globally, so the other three jobs keep the narrower grant.
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Reject a non-PR caller
-        if: ${{ github.event_name != 'pull_request' }}
-        run: exit 1
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      # No checkout, deliberately. This job's whole input is the pull-request body, so the tree under
-      # review never enters it — a diff cannot weaken the gate that judges it, and there is nothing
-      # for a caller to shadow. The other jobs check out because they measure the tree; this one does
-      # not measure the tree.
-      - name: Install immutable PR-body guard
-        env:
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
-          SKILLS_VERSION: ${{ needs.version.outputs.version }}
-        run: >-
-          npm install --prefix "${SKILLS_ROOT}" --ignore-scripts --package-lock=false --no-save
-          "neo-agent-skills@${SKILLS_VERSION}"
 
       # The body is fetched LIVE, never read from `context.payload.pull_request.body`. An event
       # snapshot is wrong in both directions: a re-run replays the stale text, so a corrected body can
@@ -471,16 +316,18 @@ jobs:
       # `neomjs/neo#17431`, whose fix lived only in the workflow the split deleted.
       #
       # It is written to a FILE from JavaScript and never interpolated into a shell. A pull-request
-      # body is attacker-controlled text; `run:` steps below receive only a workflow-owned path.
+      # body is attacker-controlled text; `run:` steps below receive only a workflow-owned path. The
+      # checked-out tree runs no code in this job, so it cannot shadow the guard that judges the body.
       #
       # Two claims, two scopes. The close target is repository policy for EVERY pull request a person
       # or agent opens, draft or ready: it resolves exactly one ticket. A GitHub App's pull request
       # (dependabot's) resolves none, so a step reports it unjudged instead. The anchors are §9, the AGENT
       # protocol, so they judge only a `neo-` login or an `ai`-labelled PR; holding a human PR to that
       # template would be a policy nobody agreed to. The anchor step is gated rather than the job, so
-      # the check still REPORTS on a human PR — a skipped job cannot serve as the required status
+      # the job still REPORTS on a human PR — a skipped job cannot serve as the required status
       # context #14 needs.
       - name: Read the live pull-request body
+        if: ${{ !cancelled() }}
         uses: actions/github-script@v9
         env:
           BODY_FILE: ${{ runner.temp }}/pr-body.md
@@ -495,16 +342,16 @@ jobs:
             require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
 
       - name: Validate the close target
-        if: ${{ github.event.pull_request.user.type != 'Bot' }}
+        if: ${{ !cancelled() && github.event.pull_request.user.type != 'Bot' }}
         env:
           BODY_FILE  : ${{ runner.temp }}/pr-body.md
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
           --body-file "${BODY_FILE}" --close-target-only
 
       - name: Report a bot's unjudged close target
-        if: ${{ github.event.pull_request.user.type == 'Bot' }}
+        if: ${{ !cancelled() && github.event.pull_request.user.type == 'Bot' }}
         env:
           AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
         run: >-
@@ -512,10 +359,30 @@ jobs:
           so its close target is not judged."
 
       - name: Validate the required anchors
-        if: ${{ startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai') }}
+        if: ${{ !cancelled() && (startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai')) }}
         env:
           BODY_FILE  : ${{ runner.temp }}/pr-body.md
-          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-pr-body
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
           --body-file "${BODY_FILE}"
+
+  skills-materialized:
+    name: Skills materialized
+    runs-on: ubuntu-latest
+    steps:
+      # With no repository override, checkout resolves the caller repository. The reusable workflow
+      # must inspect the consumer lockfile and projection, never its own source checkout. This is the one
+      # check that runs pull-request code (the caller's install), so it never shares a job with the guards.
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+
+      - name: Install consumer dependencies
+        run: npm ci
+
+      - name: Assert skills are materialized and unshadowed
+        run: npx --no-install neo-agent-skills-materialize --check
