@@ -30,8 +30,8 @@ Silence is not a pass; only exit 0 is.
 Absent, the §3.1 class declaration still binds and stands unverified; say
 `agent-preflight: not hosted here; baseline <jobs> ran`, so a reader can tell an
 unrunnable gate from a skipped one. Its checks are carried by this corpus'
-`reusable-pr-baseline.yml`, which the consumer calls: `pr-body` for the §9
-anchors, `substrate-size` for §1.1. CI-shaped, not free — it reports rather than
+`reusable-pr-baseline.yml`, which the consumer calls: its `PR baseline` job's PR-body
+steps for the §9 anchors, its `Substrate size` step for §1.1. CI-shaped, not free — it reports rather than
 blocks, and gates only where bound as a required context.
 
 *Rejected:* invoking a Brain root fails wherever no Brain checkout exists, CI
@@ -348,7 +348,7 @@ CI-covered counts (red CI already means no review).>
 <one compressed paragraph per pivot — why direction changed, not the old text>
 ```
 
-The shared `PR body` job enforces six **unconditional** anchors (PR #14465), each with a match kind:
+The shared baseline's PR-body steps enforce six **unconditional** anchors (PR #14465), each with a match kind:
 
 - **line** — opens a content line, ≤3-space indent; not code or a `|` row: `## AC Evidence` · `## Test Evidence` · `## Post-Merge Validation` · `## Deltas`
 - **substring** — line prefixes, not headings: `Evidence:` · `Authored by `

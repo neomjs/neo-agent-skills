@@ -44,6 +44,19 @@ Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
 no bespoke lag gate anywhere in this contract.
 
+**The shared PR baseline runs two jobs.** `PR baseline` runs, as steps, every check that executes no
+pull-request code. `Skills materialized` runs the caller's own install, so it never shares a job with the
+guards that judge it. A caller whose job is named `baseline` binds the required contexts
+`baseline / PR baseline` and `baseline / Skills materialized`. The releases before 0.1.90 ran ten jobs.
+
+Moving a consumer to 0.1.90 is that consumer's own change. If the repository's rules require the ten old
+`baseline / *` contexts, an administrator swaps them for the two new ones in step with the pin: swapped early, every
+pull request waits on contexts no job reports; swapped late, a pull request can merge without the new ones. If the
+rules require none of them, only the pin moves. A repository that only pins the npm package runs none of this
+workflow and moves on its own schedule. A caller left at an older tag keeps that tag's ten jobs until its pin
+moves, so no consumer breaks before it migrates. The consumer-by-consumer map for 0.1.90 is on
+[neomjs/neo-agent-skills#281](https://github.com/neomjs/neo-agent-skills/issues/281).
+
 ## The check that matters
 
 ```bash
@@ -77,9 +90,9 @@ numeric HTML entity (`&#39;`) is a codepoint rather than a reference;
 anywhere else a bare number stays a ref. A token-scoped `[not-ticket-ref: …]` marker binds to the one
 token it follows: `css-color` on such a color, or any other non-blank reason on a numeric reference
 the author declares deliberate. A marker binding to neither, or carrying no reason, fails closed.
-Consumer repositories call the stable `Source comment archaeology` job in
-`.github/workflows/reusable-pr-baseline.yml` at a published release tag (`@vX.Y.Z`): its `Release ref` job fails
-a caller at a SHA or a branch, and every publish pushes the matching tag. That job installs
+Consumer repositories run it as the `Source comment archaeology` step of the stable `PR baseline` job in
+`.github/workflows/reusable-pr-baseline.yml`, called at a published release tag (`@vX.Y.Z`): its `Release ref` step
+fails a caller at a SHA or a branch, and every publish pushes the matching tag. That job installs
 its exact guard release outside the caller workspace, so a pull request cannot weaken its own gate by
 changing the caller lockfile or local binary.
 
@@ -106,10 +119,10 @@ some carry all three. **Only `ENOENT` means absent** — a permission denial or 
 error and fails the check, because absent is a claim about the repository while unreadable is a claim
 about the observation, and a failed observation supports neither.
 
-Consumer repositories call the stable `Substrate size` job in
-`.github/workflows/reusable-pr-baseline.yml` at a published release tag (`@vX.Y.Z`). **The limit ships
-with the guard, not with the caller**: the job installs its exact release outside the caller workspace
-and pins the measurement to the checked-out tree, so a pull request cannot widen the limit it is judged
+Consumer repositories run it as the `Substrate size` step of the stable `PR baseline` job in
+`.github/workflows/reusable-pr-baseline.yml`, called at a published release tag (`@vX.Y.Z`). **The limit ships
+with the guard, not with the caller**: the job installs its exact release outside the caller workspace,
+and the step pins the measurement to the checked-out tree, so a pull request cannot widen the limit it is judged
 by, drop an entry from the target roster, or move the measurement to a directory where every target is
 absent and the check greens on nothing.
 
@@ -138,9 +151,10 @@ Holding a package above an exact pin (`dompurify: "3.4.8"` held at `^3.4.13`) is
 security direction, so it reads `needed`. No `overrides` is N/A. A missing `package.json`, or
 overrides with no v2/v3 lock, is a failed observation and exits 1.
 
-Consumer repositories call the stable `npm overrides` job in `.github/workflows/reusable-pr-baseline.yml`.
-The verdict can only change in a pull request that edits `package.json` or `package-lock.json`, so
-the job runs on every pull request and never reddens one for an upstream release.
+Consumer repositories run it as the `npm overrides` step of the stable `PR baseline` job in
+`.github/workflows/reusable-pr-baseline.yml`. The verdict can only change in a pull request that edits
+`package.json` or `package-lock.json`, so the step runs on every pull request and never reddens one for an
+upstream release.
 
 ## Shared credential guard
 
@@ -162,8 +176,8 @@ the file has. The reason runs to the end of the line or to the comment's closer,
 something: `<!-- secret-scan-ok: -->` is a finding, because a closer is no reason, and so is the
 credential itself written after the marker. A marker covers its own line only.
 
-Consumer repositories call the stable `Secrets` job in `.github/workflows/reusable-pr-baseline.yml`. It
-scans **every tracked file** at the pull request's head, not only the diff: a credential already on
+Consumer repositories run it as the `Secrets` step of the stable `PR baseline` job in
+`.github/workflows/reusable-pr-baseline.yml`. It scans **every tracked file** at the pull request's head, not only the diff: a credential already on
 the base branch still fails, because it is one to revoke whichever pull request finds it.
 
 ## Shared PR-review check

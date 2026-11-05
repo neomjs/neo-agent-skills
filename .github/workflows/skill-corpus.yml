@@ -222,7 +222,7 @@ jobs:
 
           echo "regression arm holds: refused, $AFTER tracked file(s) intact"
 
-  # Steps mirror `reusable-pr-baseline.yml#pr-body` (whose comments carry the per-step why) and add
+  # Steps mirror the PR-body steps of `reusable-pr-baseline.yml#pr-baseline` (whose comments carry the per-step why) and add
   # the head `scripts/check-pr-body.mjs` pass after the released verdict so a PR modifying the guard
   # cannot pass itself.
   pr-body:
