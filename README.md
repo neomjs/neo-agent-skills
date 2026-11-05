@@ -47,8 +47,15 @@ no bespoke lag gate anywhere in this contract.
 **The shared PR baseline runs two jobs.** `PR baseline` runs, as steps, every check that executes no
 pull-request code. `Skills materialized` runs the caller's own install, so it never shares a job with the
 guards that judge it. A caller whose job is named `baseline` binds the required contexts
-`baseline / PR baseline` and `baseline / Skills materialized`. The releases before 0.1.90 ran ten jobs:
-moving the pin past them swaps the ten required contexts for these two in the same change.
+`baseline / PR baseline` and `baseline / Skills materialized`. The releases before 0.1.90 ran ten jobs.
+
+Moving a consumer to 0.1.90 is that consumer's own change. If the repository's rules require the ten old
+`baseline / *` contexts, an administrator swaps them for the two new ones in step with the pin: swapped early, every
+pull request waits on contexts no job reports; swapped late, a pull request can merge without the new ones. If the
+rules require none of them, only the pin moves. A repository that only pins the npm package runs none of this
+workflow and moves on its own schedule. A caller left at an older tag keeps that tag's ten jobs until its pin
+moves, so no consumer breaks before it migrates. The consumer-by-consumer map for 0.1.90 is on
+[neomjs/neo-agent-skills#281](https://github.com/neomjs/neo-agent-skills/issues/281).
 
 ## The check that matters
 

@@ -15,7 +15,8 @@
 
 import assert            from 'node:assert/strict';
 import {spawnSync}       from 'node:child_process';
-import {readFileSync}    from 'node:fs';
+import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {tmpdir}          from 'node:os';
 import {dirname, join}   from 'node:path';
 import {fileURLToPath}   from 'node:url';
 import {runInNewContext} from 'node:vm';
@@ -24,15 +25,50 @@ const
     here         = dirname(fileURLToPath(import.meta.url)),
     root         = join(here, '..'),
     workflowPath = join(root, '.github', 'workflows', 'reusable-pr-baseline.yml'),
-    // Anchored to end-of-line: a suffixed value is a DIFFERENT root that a substring match accepts (RA-2, PR #26)
+    // Anchored to end-of-line: a suffixed value is a DIFFERENT root that a substring match accepts
     GUARD_ROOT   = /^\s*SKILLS_ROOT: \$\{\{ runner\.temp \}\}\/neo-agent-skills-guards\s*$/m,
     WORKSPACE    = /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m,
     BASE_SHA     = /^\s*BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}\s*$/m,
     PR_HEAD      = /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m,
     VERSION      = /^\s*SKILLS_VERSION: \$\{\{ steps\.version\.outputs\.version \}\}\s*$/m,
-    bin          = name => new RegExp(`"\\$\\{SKILLS_ROOT\\}/node_modules/\\.bin/${name}"`);
+    bin          = name => new RegExp(`"\\$\\{SKILLS_ROOT\\}/node_modules/\\.bin/${name}"`),
+    // The PR-baseline steps that run under more than `!cancelled()`, each gate whole. Every other step after the
+    // first runs under `${{ !cancelled() }}` exactly.
+    BASELINE_GATES = {
+        'Read the team roster'                : "${{ !cancelled() && inputs.team_roster_repository != '' }}",
+        'Validate the close target'           : "${{ !cancelled() && github.event.pull_request.user.type != 'Bot' }}",
+        "Report a bot's unjudged close target": "${{ !cancelled() && github.event.pull_request.user.type == 'Bot' }}",
+        'Validate the required anchors'       : "${{ !cancelled() && (startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai')) }}"
+    };
 
 let mutationCount = 0;
+
+/**
+ * @summary The shell a job's steps run: every `run:` value, inline or as a block, one command line per line.
+ * @param {String} job A job's source, comments stripped
+ * @returns {String}
+ */
+function runScripts(job) {
+    const lines = job.split('\n'),
+          out   = [];
+
+    lines.forEach((line, index) => {
+        const match = line.match(/^(\s+)run: ?(.*)$/);
+
+        if (!match) return;
+
+        if (!/^[|>][-+]?$/.test(match[2])) {
+            out.push(match[2]);
+            return
+        }
+
+        for (let i = index + 1; i < lines.length && (!lines[i].trim() || lines[i].search(/\S/) > match[1].length); i++) {
+            out.push(lines[i].trim())
+        }
+    });
+
+    return out.join('\n')
+}
 
 /** @summary Executes the inline Node script from the `PR base` step against a synthetic `process.env`. */
 function runPrBaseScript(script, env) {
@@ -104,8 +140,6 @@ export function validateReusablePrBaseline(source) {
           step            = name => stepSource(baselineJob, name),
           headStep        = step('Checkout exact caller head'),
           baseFetchStep   = step('Fetch pull-request base'),
-          // The other checkout of another repository: this workflow's own package.json, never the caller's tree
-          versionCheckout = step("Checkout this workflow's package.json"),
           versionStep     = step('Skills version'),
           releaseRefStep  = step('Release ref'),
           prBaseStep      = step('PR base'),
@@ -114,8 +148,8 @@ export function validateReusablePrBaseline(source) {
           substrateStep   = step('Substrate size'),
           overridesStep   = step('npm overrides'),
           secretsStep     = step('Secrets'),
-          // The one checkout of another repository: the caller team's roster, read beside the caller's tree
-          rosterStep      = step('Checkout the team roster'),
+          // The one read of another repository's tree: the caller team's roster, cloned outside the caller's tree
+          rosterStep      = step('Read the team roster'),
           authorshipStep  = step('Commit authorship'),
           readBodyStep    = step('Read the live pull-request body'),
           closeTargetStep = step('Validate the close target'),
@@ -133,13 +167,12 @@ export function validateReusablePrBaseline(source) {
               ['Skills stable name', /^    name: Skills materialized\n/m],
               ['non-PR refusal', /^      - name: Reject a non-PR caller\n        if: \$\{\{ github\.event_name != 'pull_request' \}\}\n        run: exit 1\n/m, baselineJob],
               // `job.workflow_*` name THIS reusable file; `github.*` would read the caller's package.json.
-              ['version checks out its own repository', /^\s*repository: \$\{\{ job\.workflow_repository \}\}\s*$/m, versionCheckout],
-              ['version checks out its own commit', /^\s*ref: \$\{\{ job\.workflow_sha \}\}\s*$/m, versionCheckout],
-              ['version checks out package.json alone', /^\s*sparse-checkout: package\.json\s*$/m, versionCheckout],
+              ['version reads its own repository', /^\s*WORKFLOW_REPO: \$\{\{ job\.workflow_repository \}\}\s*$/m, versionStep],
+              ['version reads its own commit', /^\s*WORKFLOW_SHA: \$\{\{ job\.workflow_sha \}\}\s*$/m, versionStep],
+              // Over the API, into the step: nothing of this repository lands in the caller's tree
+              ['version reads package.json over the API',
+                  /gh api -H 'Accept: application\/vnd\.github\.raw\+json' "repos\/\$\{WORKFLOW_REPO\}\/contents\/package\.json\?ref=\$\{WORKFLOW_SHA\}" \| jq -r \.version/, versionStep],
               ['version step id', /^        id: version\s*$/m, versionStep],
-              ['version reads the version field', /jq -r \.version \.neo-agent-skills\/package\.json/, versionStep],
-              // The copy sits inside the caller's checkout until removed, where the guards would read it as the caller's
-              ['version copy leaves the caller tree', /^\s*rm -rf \.neo-agent-skills\s*$/m, versionStep],
               ['version output', /echo "version=\$\{version\}" >> "\$GITHUB_OUTPUT"/, versionStep],
               // `job.workflow_ref` names THIS reusable file's ref; `github.workflow_ref` is the caller's own.
               ['release-ref reads its own ref', /WORKFLOW_REF: \$\{\{ job\.workflow_ref \}\}/, releaseRefStep],
@@ -193,8 +226,13 @@ export function validateReusablePrBaseline(source) {
               ['authorship checked in the caller workspace', WORKSPACE, authorshipStep],
               // The one identity a pull request cannot forge decides whether its commits are an agent's
               ['authorship authenticated PR author', /^\s*AUTHOR_LOGIN: \$\{\{ github\.event\.pull_request\.user\.login \}\}\s*$/m, authorshipStep],
-              ['authorship roster from the caller inputs',
-                  /repository: \$\{\{ inputs\.team_roster_repository \}\}\n\s*ref: \$\{\{ inputs\.team_roster_ref \}\}\n/, rosterStep],
+              ['authorship roster repository from the caller inputs', /^\s*ROSTER_REPO: \$\{\{ inputs\.team_roster_repository \}\}\s*$/m, rosterStep],
+              ['authorship roster ref from the caller inputs', /^\s*ROSTER_REF: \$\{\{ inputs\.team_roster_ref \}\}\s*$/m, rosterStep],
+              ['authorship roster cloned outside the caller tree', /^\s*ROSTER_DIR: \$\{\{ runner\.temp \}\}\/team-roster\s*$/m, rosterStep],
+              ['authorship roster clone target', /git clone --quiet --depth 1 --branch "\$\{ROSTER_REF\}" "https:\/\/github\.com\/\$\{ROSTER_REPO\}\.git" "\$\{ROSTER_DIR\}"\s*$/m, rosterStep],
+              // The guard reads the roster where it was cloned, never a path of the same name in the caller's tree
+              ['authorship reads the cloned roster',
+                  /ROSTER: \$\{\{ inputs\.team_roster_repository != '' && format\('\{0\}\/team-roster\/\{1\}', runner\.temp, inputs\.team_roster_path\) \|\| '' \}\}/, authorshipStep],
               ['PR-body live fetch', /github\.rest\.pulls\.get/, readBodyStep],
               ['PR-body agent-author boundary', /startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/, anchorsStep],
               ['PR-body ai-label opt-in', /contains\(github\.event\.pull_request\.labels\.\*\.name, 'ai'\)/, anchorsStep],
@@ -221,22 +259,37 @@ export function validateReusablePrBaseline(source) {
 
     // Comments are stripped before any "must not contain" check: prose naming a hazard is not the hazard.
     const code         = text => text.split('\n').filter(line => !/^\s*#/.test(line)).join('\n'),
-          baselineCode = code(baselineJob);
+          baselineCode = code(baselineJob),
+          baselineRun  = runScripts(baselineCode);
 
     // Steps of one job share GITHUB_ENV, GITHUB_PATH and the filesystem, so pull-request code here could green every
-    // later step. Only the immutable guards run, by absolute path from runner.temp.
+    // later step. Only the immutable guards run, by absolute path from runner.temp, and Node runs only the workflow's
+    // own stdin scripts. A script argument, like any relative path, lets the caller's tree decide what runs.
     if (/\bnpm (?:ci|run|exec)\b|\bnpx\b|\byarn\b|\bpnpm\b|uses: \.\//.test(baselineCode) ||
         /npm install(?![^\n]*--prefix "\$\{SKILLS_ROOT\}")/.test(baselineCode) ||
-        /(?<!\$\{SKILLS_ROOT\}\/)node_modules\/\.bin/.test(baselineCode)) {
+        /(?<!\$\{SKILLS_ROOT\}\/)node_modules\/\.bin/.test(baselineCode) ||
+        /(?:^|[;&|(]\s*)(?:node|bash|sh|zsh|source)\s+(?!-(?:\s|$))\S/m.test(baselineRun) ||
+        /(?:^|[\s;&|("'=])\.{1,2}\//m.test(baselineRun)) {
         failures.push('PR baseline runs pull-request code')
     }
 
-    // A failed check must not stop the later ones, so every step after the first runs under !cancelled(). Without it
-    // the default success() gate skips the rest, and an author fixes one red per push.
-    baselineJob.split(/^      - /m).slice(2).forEach(stepText => {
-        const gate = stepText.match(/^        if: (.*)$/m)?.[1] || '';
+    // The caller head is this job's only checkout, and nothing here deletes or moves a file. A workflow-owned write
+    // inside the caller's tree replaces or removes a path the caller tracks, and a guard that reads the tree afterwards
+    // greens what it never saw.
+    if ((baselineCode.match(/uses: actions\/checkout@/g) || []).length !== 1 || !/uses: actions\/checkout@/.test(headStep)) {
+        failures.push('PR baseline writes a checkout into the caller tree')
+    }
+    if (/(?:^|[;&|(]\s*)(?:rm|mv|cp|ln|mkdir|touch|tee)\s/m.test(baselineRun)) failures.push('PR baseline writes into the caller tree');
 
-        if (!gate.includes('!cancelled()')) {
+    // A failed check must not stop the later ones, so every step after the first runs under exactly !cancelled(), or
+    // under one of the four gates below, each read whole. Without it the default success() gate skips the rest, and an
+    // author fixes one red per push. A gate is matched exactly, not searched: `!cancelled() && false` contains the
+    // condition and still never runs.
+    baselineJob.split(/^      - /m).slice(2).forEach(stepText => {
+        const name = stepText.match(/^name: (.*)$/m)?.[1] || '',
+              gate = stepText.match(/^        if: (.*)$/m)?.[1] || '';
+
+        if (gate !== (BASELINE_GATES[name] ?? '${{ !cancelled() }}')) {
             failures.push(`a PR-baseline step stops at an earlier red: ${stepText.split('\n')[0]}`)
         }
     });
@@ -244,8 +297,7 @@ export function validateReusablePrBaseline(source) {
     // One context carries all nine verdicts, so a step skipped by event would let a body edit overwrite another check's red
     if (/github\.event\.action/.test(baselineCode)) failures.push('a PR-baseline check skips an event');
 
-    if (/^\s+repository:/m.test(source.replace(rosterStep, '').replace(versionCheckout, ''))) failures.push('checkout repository override present');
-    if (rosterStep && !/^\s*path: \.team-roster\s*$/m.test(rosterStep)) failures.push('authorship roster replaces the caller tree');
+    if (/^\s+repository:/m.test(source)) failures.push('checkout repository override present');
     // The roster decides who the team is, so the step reading it may name nothing of the pull request under review
     if (/github\.event\.pull_request|github\.head_ref|github\.sha/.test(rosterStep)) {
         failures.push('authorship roster read from the pull request')
@@ -264,14 +316,13 @@ export function validateReusablePrBaseline(source) {
     //
     // THE BODY NEVER REACHES A SHELL — it is fetched in JavaScript and written to a file; `run:` steps
     // receive only a workflow-owned path. A pull-request body is attacker-controlled text, so
-    // interpolating it into `run:` is a shell-injection primitive. Carried from `neomjs/neo` PR
-    // #17917 AC-4, which was the only place this property had ever been written down.
+    // interpolating it into `run:` is a shell-injection primitive.
     //
     // Two claims, two scopes. The close target (exactly one `Resolves`) is policy for every pull request
     // a person or agent opens, so its only gate is the GitHub App exemption; the §9 anchors are the AGENT
     // protocol, so their step alone carries the `neo-` / `ai` boundary. COUNTED, not merely present: a
     // second gated step would silently exempt human PRs from the close target again, and a presence check
-    // passes on one survivor. A bot's step must REPORT the exemption, or its green is the vacuous pass #103 removed.
+    // passes on one survivor. A bot's step must REPORT the exemption, or its green is a vacuous pass.
     if ((baselineCode.match(/startsWith\(github\.event\.pull_request\.user\.login, 'neo-'\)/g) || []).length !== 1) {
         failures.push('PR-body author boundary must gate exactly one step — the anchors')
     }
@@ -293,7 +344,7 @@ export function validateReusablePrBaseline(source) {
 
     if (/DRAFT_FLAG|--draft/.test(bodyCode)) failures.push('PR-body steps still carry a draft exception');
 
-    // RA-4 — VALUE FLOW, not token presence. A token check passes on a decorative occurrence: the live
+    // VALUE FLOW, not token presence. A token check passes on a decorative occurrence: the live
     // fetch can sit in the file while an aliased event snapshot is what actually gets written.
     //
     // (a) The fetched response must be what reaches the file. A `pulls.get` whose result is discarded
@@ -320,7 +371,7 @@ export function validateReusablePrBaseline(source) {
         failures.push('PR-body content reaches a run: block')
     }
 
-    // The event snapshot is the defect `neomjs/neo#17431` records: a re-run replays stale text, so a
+    // An event snapshot is wrong in both directions: a re-run replays stale text, so a
     // corrected body can never go green and an edited one keeps a stale green.
     if (/context\.payload\.pull_request\.body/.test(bodyCode)) failures.push('PR-body read from the event snapshot');
 
@@ -507,6 +558,14 @@ expectMutationFailure('a check gated back to success()', source,
 expectMutationFailure('a check skipped on a body edit', source,
     inStep('Secrets', 'if: ${{ !cancelled() }}', "if: ${{ !cancelled() && github.event.action != 'edited' }}"),
     'a PR-baseline check skips an event');
+// A gate that contains the condition is not the gate: `&& false` keeps the substring and never runs.
+expectMutationFailure('a check gated to never run', source,
+    inStep('Secrets', 'if: ${{ !cancelled() }}', 'if: ${{ !cancelled() && false }}'),
+    'a PR-baseline step stops at an earlier red: name: Secrets');
+expectMutationFailure('an exception gate narrowed to never run', source,
+    inStep('Read the team roster', "if: ${{ !cancelled() && inputs.team_roster_repository != '' }}",
+                                   "if: ${{ !cancelled() && inputs.team_roster_repository != '' && false }}"),
+    'a PR-baseline step stops at an earlier red: name: Read the team roster');
 expectMutationFailure('continue on error', source,
     inStep('Secrets', '        if: ${{ !cancelled() }}\n', '        if: ${{ !cancelled() }}\n        continue-on-error: true\n'),
     'continue-on-error present');
@@ -525,17 +584,54 @@ expectMutationFailure('release-ref version written by hand', source,
     inStep('Release ref', 'SKILLS_VERSION: ${{ steps.version.outputs.version }}', "SKILLS_VERSION: 'latest'"),
     'missing release-ref version read from package.json');
 expectMutationFailure('version read from the caller commit', source,
-    value => value.replace('          ref: ${{ job.workflow_sha }}\n', '          ref: ${{ github.sha }}\n'),
-    'missing version checks out its own commit');
+    inStep('Skills version', 'WORKFLOW_SHA: ${{ job.workflow_sha }}', 'WORKFLOW_SHA: ${{ github.sha }}'),
+    'missing version reads its own commit');
 expectMutationFailure('version read from the caller repository', source,
-    value => value.replace('          repository: ${{ job.workflow_repository }}\n', '          repository: ${{ github.repository }}\n'),
-    'missing version checks out its own repository');
-expectMutationFailure('version checks out the whole tree', source,
-    value => value.replace('          sparse-checkout: package.json\n', ''),
-    'missing version checks out package.json alone');
-expectMutationFailure('version copy left in the caller tree', source,
-    value => value.replace('          rm -rf .neo-agent-skills\n', ''),
-    'missing version copy leaves the caller tree');
+    inStep('Skills version', 'WORKFLOW_REPO: ${{ job.workflow_repository }}', 'WORKFLOW_REPO: ${{ github.repository }}'),
+    'missing version reads its own repository');
+expectMutationFailure('version read from the caller tree', source,
+    inStep('Skills version', `gh api -H 'Accept: application/vnd.github.raw+json' "repos/\${WORKFLOW_REPO}/contents/package.json?ref=\${WORKFLOW_SHA}" | jq -r .version`,
+                             'jq -r .version package.json'),
+    'missing version reads package.json over the API');
+
+// ── No workflow-owned write lands in the caller's tree ───────────────────────────────────────────
+// The pre-fix shape: this repository checked out into the caller's tree, then removed. A caller-tracked file under
+// that path vanished from disk while `git ls-files` still listed it, so the secrets scan skipped it and greened.
+const PRE_FIX_CHECKOUT = "      - name: Checkout this workflow's package.json\n        if: ${{ !cancelled() }}\n" +
+    '        uses: actions/checkout@v7\n        with:\n          repository: ${{ job.workflow_repository }}\n' +
+    '          ref: ${{ job.workflow_sha }}\n          path: .neo-agent-skills\n\n';
+
+expectMutationFailure('a checkout of this repository into the caller tree', source,
+    value => value.replace('      - name: Skills version\n', `${PRE_FIX_CHECKOUT}      - name: Skills version\n`),
+    'PR baseline writes a checkout into the caller tree');
+expectMutationFailure('a workflow-owned path removed from the caller tree', source,
+    inStep('Skills version', '          if [[ ! "${version}"', '          rm -rf .neo-agent-skills\n          if [[ ! "${version}"'),
+    'PR baseline writes into the caller tree');
+expectMutationFailure('the roster cloned into the caller tree', source,
+    inStep('Read the team roster', 'ROSTER_DIR: ${{ runner.temp }}/team-roster', 'ROSTER_DIR: .team-roster'),
+    'missing authorship roster cloned outside the caller tree');
+expectMutationFailure('the roster checked out over the caller tree again', source,
+    value => value.replace(/      - name: Read the team roster\n[\s\S]*?"\$\{ROSTER_DIR\}"\n/,
+        "      - name: Read the team roster\n        if: ${{ !cancelled() && inputs.team_roster_repository != '' }}\n" +
+        '        uses: actions/checkout@v7\n        with:\n          path: .team-roster\n'),
+    'PR baseline writes a checkout into the caller tree');
+expectMutationFailure('authorship reads a roster from the caller tree', source,
+    inStep('Commit authorship', "format('{0}/team-roster/{1}', runner.temp, inputs.team_roster_path)", "format('.team-roster/{0}', inputs.team_roster_path)"),
+    'missing authorship reads the cloned roster');
+
+// ── Node runs only the workflow's own stdin, and no relative path runs ───────────────────────────
+expectMutationFailure('a caller script run by Node', source,
+    inStep('Secrets', '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"', 'node ./attacker.mjs'),
+    'PR baseline runs pull-request code');
+expectMutationFailure('a caller script run by Node without a dot', source,
+    inStep('Secrets', '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"', 'node scripts/attacker.mjs'),
+    'PR baseline runs pull-request code');
+expectMutationFailure('a caller script run by a shell', source,
+    inStep('Secrets', '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"', 'bash scripts/attacker.sh'),
+    'PR baseline runs pull-request code');
+expectMutationFailure('a relative executable', source,
+    inStep('Secrets', '"${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"', './attacker'),
+    'PR baseline runs pull-request code');
 expectMutationFailure('version step renamed out of reach', source,
     value => value.replace('        id: version\n', '        id: read\n'),
     'missing version step id');
@@ -652,7 +748,7 @@ expectMutationFailure('substrate steered invocation', source,
     inStep('Substrate size', 'run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size"',
                              'run: "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-substrate-size" --root docs'),
     'substrate guard invoked with arguments');
-// ── RA-2: any root OTHER than the caller workspace must red ────────────────────────────────────
+// ── Any root OTHER than the caller workspace must red ──────────────────────────────────────────
 //
 // One defect class, asserted per guard. Each assertion names a PATH, and an unanchored substring
 // accepts a suffix: a DIFFERENT root satisfying the contract that forbids different roots. A wrong
@@ -701,12 +797,9 @@ expectMutationFailure('authorship runner root — suffixed root', source,
     inStep('Commit authorship', 'neo-agent-skills-guards', 'neo-agent-skills-guards-shadow'),
     'missing authorship isolated runner root');
 expectMutationFailure('authorship roster read at the pull request head', source,
-    value => value.replace('          ref: ${{ inputs.team_roster_ref }}\n',
-        '          ref: ${{ inputs.team_roster_ref || github.event.pull_request.head.sha }}\n'),
+    inStep('Read the team roster', 'ROSTER_REF: ${{ inputs.team_roster_ref }}',
+        'ROSTER_REF: ${{ inputs.team_roster_ref || github.event.pull_request.head.sha }}'),
     'authorship roster read from the pull request');
-expectMutationFailure('authorship roster over the caller tree', source,
-    value => value.replace('          path: .team-roster\n', ''),
-    'authorship roster replaces the caller tree');
 
 // ── The PR-body steps ────────────────────────────────────────────────────────────────────────────
 expectMutationFailure('PR-body decorative live fetch', source,
@@ -758,4 +851,39 @@ expectMutationFailure('PR-body runner root — suffixed root', source,
     inStep('Validate the close target', 'neo-agent-skills-guards', 'neo-agent-skills-guards-shadow'),
     'missing PR-body isolated runner root');
 
-console.log(`reusable-pr-baseline: canonical contract + ${mutationCount} negative mutations passed`);
+// ── The candidate a pre-fix setup hid stays the secrets guard's to reject ────────────────────────
+// The contract above keeps every workflow-owned write out of the caller's tree, so the tree Secrets reads is the tree
+// the pull request brought. Here that candidate carries a credential under each path a setup step used to write, and
+// the guard rejects it as it arrived. The pre-fix setup's deletion hides one of those paths from the same guard: that
+// is the false green this boundary closes, and it proves this control can tell the two apart.
+{
+    const candidate  = mkdtempSync(join(tmpdir(), 'pr-baseline-candidate-')),
+          // Assembled at run time: as a literal it would be this repository's own finding
+          credential = 'AKIA' + 'Q'.repeat(16),
+          tracked    = ['.neo-agent-skills/package.json', '.team-roster/roster.mjs'],
+          secrets    = () => spawnSync(process.execPath, [join(root, 'scripts', 'check-secrets.mjs'), '--all'], {cwd: candidate, encoding: 'utf8'});
+
+    try {
+        spawnSync('git', ['init', '-q'], {cwd: candidate});
+
+        tracked.forEach(file => {
+            mkdirSync(join(candidate, dirname(file)), {recursive: true});
+            writeFileSync(join(candidate, file), `export const key = '${credential}';\n`)
+        });
+
+        spawnSync('git', ['add', '-A'], {cwd: candidate});
+
+        const asArrived = secrets();
+
+        assert.equal(asArrived.status, 1, `the guard must reject the candidate as it arrived: ${asArrived.stdout}${asArrived.stderr}`);
+        tracked.forEach(file => assert.ok(asArrived.stderr.includes(file), `the guard must name ${file}`));
+
+        rmSync(join(candidate, '.neo-agent-skills'), {recursive: true, force: true});
+
+        assert.ok(!secrets().stderr.includes('.neo-agent-skills/'), 'the pre-fix deletion must hide its path from the guard, or this control proves nothing')
+    } finally {
+        rmSync(candidate, {recursive: true, force: true})
+    }
+}
+
+console.log(`reusable-pr-baseline: canonical contract + ${mutationCount} negative mutations + the tracked-path collision control passed`);

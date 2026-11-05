@@ -108,29 +108,20 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: git fetch --no-tags origin "${BASE_SHA}"
 
-      # `job.workflow_*` name this reusable file's repository and commit; `github.*` would name the caller's.
-      - name: Checkout this workflow's package.json
-        if: ${{ !cancelled() }}
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ job.workflow_repository }}
-          ref: ${{ job.workflow_sha }}
-          path: .neo-agent-skills
-          sparse-checkout: package.json
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-
       # The release this workflow installs is read, never written: it is `package.json`'s version at the commit
-      # that defines this job. The guard install takes it, so the caller's tag, the installed package and the
-      # published release are one number from one file. The copy leaves the caller's tree before any guard reads it.
+      # that defines this job. `job.workflow_*` name this reusable file's repository and commit; `github.*` would
+      # name the caller's. The guard install takes it, so the caller's tag, the installed package and the published
+      # release are one number from one file. It is read over the API and never checked out: a checkout lands
+      # inside the caller's tree, where it replaces a path the caller tracks before any guard has read it.
       - name: Skills version
         id: version
         if: ${{ !cancelled() }}
         env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_REPO: ${{ job.workflow_repository }}
           WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: |
-          version="$(jq -r .version .neo-agent-skills/package.json)"
-          rm -rf .neo-agent-skills
+          version="$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/${WORKFLOW_REPO}/contents/package.json?ref=${WORKFLOW_SHA}" | jq -r .version)"
           if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "package.json at ${WORKFLOW_SHA::7} names no release version ('${version}')."
             exit 1
@@ -287,13 +278,15 @@ jobs:
 
       # The roster says who the caller's team is, so it is read from the roster repository at the caller's ref and
       # never from the pull request: a diff that could edit the roster could add its own author to the team.
-      - name: Checkout the team roster
+      # It is cloned into runner.temp, outside the caller's tree, so it can neither replace nor delete a path the caller
+      # tracks: the caller head is this job's only checkout.
+      - name: Read the team roster
         if: ${{ !cancelled() && inputs.team_roster_repository != '' }}
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ inputs.team_roster_repository }}
-          ref: ${{ inputs.team_roster_ref }}
-          path: .team-roster
+        env:
+          ROSTER_DIR: ${{ runner.temp }}/team-roster
+          ROSTER_REF: ${{ inputs.team_roster_ref }}
+          ROSTER_REPO: ${{ inputs.team_roster_repository }}
+        run: git clone --quiet --depth 1 --branch "${ROSTER_REF}" "https://github.com/${ROSTER_REPO}.git" "${ROSTER_DIR}"
 
       # The PR author is the GitHub-authenticated login, which no commit in the pull request can forge, so it decides
       # whether these commits are an agent's. Without a roster the guard says there is no team to check.
@@ -303,7 +296,7 @@ jobs:
         env:
           AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          ROSTER: ${{ inputs.team_roster_repository != '' && format('.team-roster/{0}', inputs.team_roster_path) || '' }}
+          ROSTER: ${{ inputs.team_roster_repository != '' && format('{0}/team-roster/{1}', runner.temp, inputs.team_roster_path) || '' }}
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: |
           args=(--base "${BASE_SHA}" --author-login "${AUTHOR_LOGIN}")
