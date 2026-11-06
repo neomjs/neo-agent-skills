@@ -42,6 +42,8 @@ Instead of querying DOM nodes for text content, the definitive Whitebox paradigm
 1. **Interact Layout:** Use standard Playwright `page.locator()` to simulate gross user interactions (clicks, keyboard).
 2. **Assert Engine Truth:** Use `nlApp.queryComponent()` to ask the *Component Instance* inside the remote App Worker what its state is.
 
+**Wait for what the test acts on.** A lazily imported plugin installs after first paint, so a gesture or one-shot read can beat it (`grid/IssuesShowcase.spec.mjs`). Wait on the plugin's own DOM node or listener, never a sleep.
+
 ```javascript
 // 1. Visually identify and interact using Playwright
 const rowComboBox = page.locator('.neo-combobox').filter({ hasText: 'Amount Rows' });
