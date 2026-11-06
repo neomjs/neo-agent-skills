@@ -307,17 +307,10 @@ Before PR prose, read the [reference-hygiene guide](https://github.com/neomjs/ne
   standalone `Resolves #N`, no second line, no `Resolves #X, #Y`. `Closes` and
   `Fixes` are forbidden. An AC the PR cannot deliver moves to the ticket's
   `## Post-Merge Validation` or the ticket is split; `Refs` never replaces it.
-- For referenced tickets that must remain open, branch history must also avoid
-  stale magic-close keywords. Before handoff, run:
-
-```bash
-git log origin/dev..HEAD --format='%h%x09%s%n%b'
-```
-
-If any branch commit body still contains a forbidden close keyword for a
-must-stay-open ticket, do not hand off as merge-ready. Clean path: fresh
-superseding branch/PR; preserving the same PR requires operator-explicit
-authorization before amend/rebase/force-push cleanup.
+- No commit message carries a closing keyword: squash bodies built from commit
+  messages carry it to the default branch, which closes the issue. The
+  `Commit authorship` guard refuses one at pre-push and in CI; reword before
+  pushing. A pushed one needs a fresh superseding branch/PR.
 
 **Minimum-viable PR body structure:**
 ```markdown

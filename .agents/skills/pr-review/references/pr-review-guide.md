@@ -85,14 +85,14 @@ Before review prose/tags, read the [reference-hygiene guide](https://github.com/
 
 10% AC/scope layer: binding on close-target overclaim; never a premise, placement, or diff-verdict substitute.
 
-Audit every magic close target in the PR body and commit messages: `Closes #N`, `Resolves #N`, `Fixes #N` (case-insensitive). For Neo agent / `ai` PRs, only newline-isolated `Resolves #N` may close a delivered leaf ticket; `Refs` / `Related` are non-closing extras. Epics are invalid close-targets.
+Audit every magic close target in the PR body (the `Commit authorship` check refuses any in commit messages): `Closes #N`, `Resolves #N`, `Fixes #N` (case-insensitive). For Neo agent / `ai` PRs, only newline-isolated `Resolves #N` may close a delivered leaf ticket; `Refs` / `Related` are non-closing extras. Epics are invalid close-targets.
 
 <!-- trigger: close-target over-claim or lint/body contradiction -> read ./close-target-remediation.md -->
 
 **Reviewer-side check:**
 
-1. Parse PR body + commit messages with an exact-head source such as `git log origin/dev..HEAD --format='%h%x09%s%n%b'`; do not trust `closingIssuesReferences` alone.
-2. Flag missing PR-body `Resolves #N`, any `Closes` / `Fixes`, prose-embedded/comma-separated targets, stale branch-body magic keywords for non-closing refs, or any target carrying `epic`.
+1. Parse the PR body; do not trust `closingIssuesReferences` alone.
+2. Flag missing PR-body `Resolves #N`, any `Closes` / `Fixes`, prose-embedded/comma-separated targets, or any target carrying `epic`.
 3. Required fix: isolate one delivered leaf as `Resolves #M`; move broad/epic refs to `Related:`; split broad work into leaf subs.
 4. While an AC is open, any named expiry blocks close — future, due or lapsed alike; satisfy or restate it. Deferred *authoring* (text not yet written) blocks with no expiry too: the close destroys the only pointer. Open-ended *verification* closes normally.
 
