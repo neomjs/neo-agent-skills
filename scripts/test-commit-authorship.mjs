@@ -13,7 +13,7 @@ import {existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSyn
 import {tmpdir}                                                          from 'node:os';
 import {dirname, join}                                                   from 'node:path';
 import {fileURLToPath}                                                   from 'node:url';
-import {findUnknownCoAuthors, pendingRanges, teamFromRoster}             from './check-commit-authorship.mjs';
+import {findClosingExpressions, findUnknownCoAuthors, pendingRanges, teamFromRoster} from './check-commit-authorship.mjs';
 
 const
     here     = dirname(fileURLToPath(import.meta.url)),
@@ -295,12 +295,45 @@ try {
         assert.equal(read(base).status, 0, 'the valid commit range remains readable')
     }
 
+    // ── A commit message never closes an issue: the PR body owns the one close target ──────────────
+    {
+        // CI reads `base..HEAD`, so each CI arm first moves HEAD onto the commit it judges
+        const ciAt = (sha, args = []) => {
+            git(repo, 'checkout', '-q', '--detach', sha);
+            return guard(repo, sha, args, {ci: true})
+        };
+
+        const
+            noun  = commit(repo, null, 'docs(roadmap): carry the regression fix #7 (#9)'),
+            prose = commit(repo, null, 'feat(x): reword the note (#9)\n\nThe first draft auto-closed #7 by quoting it.'),
+            url   = commit(repo, null, 'chore: bump the engine (#9)\n\nResolves https://github.com/owner/repo/issues/7'),
+            clean = commit(repo, null, 'fix(grid): keep the row (#9)\n\nfix: no target follows. Refs #7, and (#7).');
+
+        const refused = guard(repo, noun);
+
+        assert.equal(refused.status, 1, 'a noun "fix" before an issue number closes that issue: refused at the hook');
+        assert.match(refused.output, /fix #7/, 'the refusal names the expression');
+        assert.equal(ciAt(noun).status, 1, 'and in CI, with no roster');
+        assert.equal(guard(repo, prose).status, 1, 'a past-tense closing word inside prose closes too');
+        assert.equal(ciAt(url).status, 1, 'an issue URL is a closing target');
+        assert.equal(guard(repo, clean).status, 0, 'type prefixes, "Refs #N" and a bare "(#N)" close nothing');
+        assert.equal(ciAt(url, ['--author-login', 'dependabot[bot]']).status, 0,
+            'a GitHub App PR resolves no ticket, and its bodies quote upstream release notes');
+        assert.deepEqual(
+            findClosingExpressions([{sha: 'a1', subject: 'x (#3)', body: 'x (#3)\n\nResolves #3, then fixes #3. Resolves #3.'}])
+                .map(({expression}) => expression),
+            ['Resolves #3', 'fixes #3'], 'each distinct expression is named once, the subject not counted twice');
+
+        git(repo, 'checkout', '-q', '--detach', base)
+    }
+
     // ── It ships, or consumers cannot invoke it ────────────────────────────────────────────────────
     {
         const pkg = JSON.parse(readFileSync(join(here, '../package.json'), 'utf8'));
 
         assert.equal(pkg.bin['neo-agent-skills-commit-authorship'], './scripts/check-commit-authorship.mjs');
-        assert.ok(pkg.files.includes('scripts/check-commit-authorship.mjs'), 'the guard must be in the published file list')
+        assert.ok(pkg.files.includes('scripts/check-commit-authorship.mjs'), 'the guard must be in the published file list');
+        assert.ok(pkg.files.includes('scripts/check-pr-body.mjs'), 'and the closing matcher it imports')
     }
 } finally {
     rmSync(root, {recursive: true, force: true})

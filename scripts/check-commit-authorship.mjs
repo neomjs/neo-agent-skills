@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * @summary Refuses agent commits that carry the operator's identity, or that credit an address outside the team.
+ * @summary Refuses agent commits that carry the operator's identity or credit an address outside the team, and any
+ * commit whose message would close an issue.
  *
- * Two checks, split along what each needs to know:
+ * Three checks, split along what each needs to know:
  *
  * - **Operator identity** (pre-push hook). In an agent-owned checkout, no pushed commit may carry the identity from the
  *   operator's GLOBAL git config. That is what leaks when a worktree sets no identity of its own: a whole agent shift
@@ -14,6 +15,11 @@
  *   `registryAgentLogins()` and `rosterEmailForLogin(login)`. The roster marks one team apart from everyone else who
  *   uses the same tooling (other projects, forks, contributors who are not maintainers), so it is the caller's input
  *   and never data of this package. With no roster the check inspects nothing.
+ * - **Closing expressions** (hook and CI, every author). GitHub closes an issue when a commit whose message names it
+ *   with a closing keyword reaches the default branch, and a squash body built from commit messages carries every
+ *   branch commit's message there. A pull request declares its one close target in its body, so no commit message may
+ *   carry one. A GitHub App's pull request (`--author-login` ending in `[bot]`) is exempt: it resolves no ticket, and
+ *   its commit bodies quote upstream release notes.
  *
  * Whether a push is an agent's comes from sources its commits cannot forge: checkout ownership at the hook (a linked
  * worktree, or the `NEO_AGENT_IDENTITY` pin), and in CI the GitHub-authenticated PR author (`--author-login`). A
@@ -29,6 +35,7 @@ import {readFileSync, realpathSync} from 'node:fs';
 import path                          from 'node:path';
 import process                       from 'node:process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {GITHUB_CLOSING_EXPRESSION}    from './check-pr-body.mjs';
 
 const
     UNSEEN   = '--not --remotes',
@@ -241,10 +248,21 @@ function coAuthorAddresses(body) {
 }
 
 /**
+ * @summary Names every distinct closing expression in each commit's message, the matcher the PR body is judged by.
+ * @param {Object[]} commits `{sha, subject, body}` each, `body` being the full message
+ * @returns {Object[]} `{sha, subject, expression}` each
+ */
+export function findClosingExpressions(commits = []) {
+    return commits.flatMap(({sha, subject, body}) =>
+        [...new Set(`${subject}\n${body ?? ''}`.match(GITHUB_CLOSING_EXPRESSION) ?? [])]
+            .map(expression => ({sha, subject, expression})))
+}
+
+/**
  * @summary The commits in the ranges, with the full message each trailer lives in.
  *
  * Resolves the CI base to one commit before adding the range; hook object names were validated at intake.
- * Throws when git cannot read a range: an unreadable push is not a push without offenders, and both checks read here.
+ * Throws when git cannot read a range: an unreadable push is not a push without offenders, and every check reads here.
  * @param {String[]} ranges
  * @returns {Object[]} `{sha, authorEmail, subject, body}` each
  */
@@ -289,7 +307,7 @@ function option(args, name) {
 }
 
 /**
- * @summary Runs both checks.
+ * @summary Runs the three checks.
  * @param {String[]} args    The command line after the script
  * @param {String}   payload The hook's stdin
  * @returns {Promise<Number>} the exit code
@@ -327,15 +345,18 @@ export async function run(args, payload) {
         agentCheckout = isAgentCheckout(),
         operator      = tryGit('config', '--global', 'user.email').toLowerCase(),
         // The operator check only exists where an agent pushes, and only when there is a global identity to leak
-        checkOperator = Boolean(operator && agentCheckout);
+        checkOperator = Boolean(operator && agentCheckout),
+        checkClosing  = !login?.endsWith('[bot]');
 
-    if (!team && !checkOperator) {
+    if (!team && !checkOperator && !checkClosing) {
         return 0
     }
 
     // A range measured against the remote-tracking refs alone has no basis without them; one that also names its
-    // remote sha (`..`) keeps that basis, and merely excludes nothing more
-    if (ranges.some(range => range.endsWith(UNSEEN) && !range.includes('..')) && !tryGit('for-each-ref', '--count=1', 'refs/remotes')) {
+    // remote sha (`..`) keeps that basis, and merely excludes nothing more. Only the identity checks need a basis:
+    // without one, the closing check reads the whole unseen history, all of which this push publishes.
+    if ((team || checkOperator) && ranges.some(range => range.endsWith(UNSEEN) && !range.includes('..')) &&
+        !tryGit('for-each-ref', '--count=1', 'refs/remotes')) {
         console.error('check-commit-authorship: no remote-tracking ref to measure the pushed commits against. ' +
             'Fetch the remote first, or bypass with git push --no-verify.');
         return 1
@@ -348,6 +369,17 @@ export async function run(args, payload) {
     } catch (error) {
         console.error(`check-commit-authorship: cannot read the pushed commits (${String(error.stderr || error.message).trim().split('\n')[0]}). ` +
             'Fetch the remote first, or bypass with git push --no-verify.');
+        return 1
+    }
+
+    const closing = checkClosing ? findClosingExpressions(commits) : [];
+
+    if (closing.length > 0) {
+        console.error(`check-commit-authorship: ${closing.length} closing expression(s) in commit messages:`);
+        closing.forEach(({sha, subject, expression}) => console.error(`  ${sha.slice(0, 10)}  "${expression}"  ${subject}`));
+        console.error('GitHub closes that issue once this message reaches the default branch, and a squash body built from ' +
+            'commit messages carries it there. The PR body names the one close target (`Resolves #N`); a commit names ' +
+            'its ticket as `(#N)`. Reword the commit before pushing.');
         return 1
     }
 
