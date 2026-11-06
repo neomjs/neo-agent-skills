@@ -225,6 +225,11 @@ points to the PR.
 
 <!-- trigger: author-side review/re-review request -> read ./ci-green-review-routing.md before reviewer assignment -->
 
+**One-shot logic** (a data fix, migration or repair done after one run): before
+the review request, file its retirement ticket, assigned to you and `blocked_by`
+the close target. ACs: deploy if needed, run with a receipt, delete it with its
+tests and any code only it uses. Link it as `Related: #N`.
+
 Use role-routing, not naked multi-peer pings:
 
 1. **Default:** after current-head CI is green, request exactly one
