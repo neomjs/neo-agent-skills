@@ -34,11 +34,11 @@ export const PER_FILE_LIMIT_BYTES = 23800;
  *
  * The number's substrate is per-harness, and inheriting one harness's constant into another's
  * contract is how correct-looking arithmetic governs the wrong seat. `23800` is Antigravity's
- * content ceiling (`24,000` B `<RULE[path]>` cap minus wrapper). The Claude seat's own cap is an operator-stated constraint whose semantics —
- * what it is measured over — remain unconfirmed, because the experiment that would settle them
- * needs a fresh authenticated seat and has not run. Until it does, that row is checked against the
- * inherited number and `limitConfirmed: false` says so out loud, so the next reader inherits a
- * flagged assumption rather than a silent one.
+ * content ceiling (`24,000` B `<RULE[path]>` cap minus wrapper). The Claude row stays checked against it,
+ * because `.claude/CLAUDE.md` links to `AGENTS.md` and that number binds the same bytes. The CLI is
+ * measured to load more, and the Desktop host's `@`-imports are not measured at all. So the row keeps
+ * `limitConfirmed: false`, and its `note` states what is known and what is not. An unconfirmed row
+ * without a note prints the generic label instead.
  *
  * A repository that carries none of these is not in scope for the budget and is reported as such.
  *
@@ -47,7 +47,13 @@ export const PER_FILE_LIMIT_BYTES = 23800;
 export const TARGET_FILES = Object.freeze([
     {path: 'AGENTS.md',                    harness: 'Antigravity + Claude', limitConfirmed: true},
     {path: '.agents/ANTIGRAVITY_RULES.md', harness: 'Antigravity',          limitConfirmed: true},
-    {path: '.claude/CLAUDE.md',            harness: 'Claude Code',          limitConfirmed: false}
+    {
+        path          : '.claude/CLAUDE.md',
+        harness       : 'Claude Code',
+        limitConfirmed: false,
+        note          : 'CLI 2.1.212 loads ≥114,112 B per file, ≥64,000 B per @-import (neomjs/neo#17175); ' +
+                        'Desktop @-imports unmeasured; checked at the shared Antigravity budget'
+    }
 ]);
 
 /**
@@ -143,12 +149,12 @@ export function resolveLoadedSize(file, {root = process.cwd(), seen = new Set()}
  * @param {String}   [options.root=process.cwd()] Tree to measure.
  * @param {Object[]} [options.targets=TARGET_FILES]
  * @param {Number}   [options.limit=PER_FILE_LIMIT_BYTES] Test seam only; no caller passes this.
- * @returns {Object[]} Rows: `{file, harness, limitConfirmed, applicable, bytes, members, over, headroom, error}`.
+ * @returns {Object[]} Rows: `{file, harness, limitConfirmed, note, applicable, bytes, members, over, headroom, error}`.
  */
 export function collectReport({root = process.cwd(), targets = TARGET_FILES, limit = PER_FILE_LIMIT_BYTES} = {}) {
-    return targets.map(({path: file, harness, limitConfirmed}) => {
+    return targets.map(({path: file, harness, limitConfirmed, note = null}) => {
         const row = {
-            file, harness, limitConfirmed,
+            file, harness, limitConfirmed, note,
             applicable: true, bytes: null, members: [], over: false, headroom: null, error: null
         };
 
@@ -215,10 +221,11 @@ function printHelp(out) {
 /**
  * @summary Reports every target and returns the process exit code.
  * @param {String[]} argv
- * @param {{cwd?: String, out?: Function, error?: Function}} options
+ * @param {{cwd?: String, out?: Function, error?: Function, targets?: Object[]}} options `targets` is a
+ * test seam only; no caller passes it.
  * @returns {Number} Process exit code.
  */
-export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = console.log, error = console.error} = {}) {
+export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = console.log, error = console.error, targets} = {}) {
     let parsed;
 
     try {
@@ -245,9 +252,9 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
     const
         root  = resolve(cwd, parsed.values.root ?? '.'),
         quiet = parsed.values.quiet,
-        rows  = collectReport({root});
+        rows  = collectReport({root, targets});
 
-    rows.forEach(({file, harness, limitConfirmed, applicable, bytes, members, over, headroom, error: rowError}) => {
+    rows.forEach(({file, harness, limitConfirmed, note, applicable, bytes, members, over, headroom, error: rowError}) => {
         if (quiet) {
             return
         }
@@ -267,7 +274,7 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
         // the bytes an author may still ADD, which is the question they are actually asking.
         out(`${over ? '❌' : '✅'} ${file.padEnd(30)} : ${bytes} bytes · limit ${PER_FILE_LIMIT_BYTES} · ` +
             `${over ? `OVER by ${-headroom}` : `headroom ${headroom}`} · ${harness}` +
-            `${limitConfirmed ? '' : ' · limit inherited from another harness, semantics unconfirmed'}`);
+            `${limitConfirmed ? '' : ` · ${note ?? 'limit inherited from another harness, semantics unconfirmed'}`}`);
 
         // Name what the total is made of whenever it is more than the file itself, so a reader can
         // see WHY an entry point costs more than its own bytes rather than re-deriving the chain.

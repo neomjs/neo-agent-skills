@@ -33,10 +33,10 @@ function write(root, file, body) {
 }
 
 /** @summary Collects a run's stdout/stderr without printing it. */
-function capture(argv, cwd) {
+function capture(argv, cwd, targets) {
     const lines = [];
 
-    return {code: run(argv, {cwd, out: line => lines.push(line), error: line => lines.push(line)}), text: lines.join('\n')}
+    return {code: run(argv, {cwd, targets, out: line => lines.push(line), error: line => lines.push(line)}), text: lines.join('\n')}
 }
 
 // ── A repository with no substrate files greens the job ────────────────────────────────────────
@@ -312,6 +312,34 @@ function capture(argv, cwd) {
     assert.equal(blocked.applicable, true, 'an unreadable target must not be scored as absent');
     assert.match(blocked.error, /EACCES/, 'the error must name the filesystem cause');
     assert.equal(code, 1, 'an unreadable target must exit non-zero, not green as an empty consumer')
+}
+
+// ── The Claude row prints its measured bound, still checked at the shared budget ───────────────
+{
+    const root = fixture();
+
+    write(root, 'AGENTS.md', 'A'.repeat(100));
+    write(root, '.claude/CLAUDE.md', 'C'.repeat(100));
+
+    const claude = collectReport({root}).find(row => row.file === '.claude/CLAUDE.md'),
+          line   = capture([], root).text.split('\n').find(text => text.includes('.claude/CLAUDE.md'));
+
+    assert.equal(claude.limitConfirmed, false, 'the Desktop @-import path is unmeasured, so the row stays unconfirmed');
+    assert.ok(line.includes(`limit ${PER_FILE_LIMIT_BYTES}`), 'the row is still checked at the shared budget');
+    assert.ok(line.includes('≥114,112 B per file, ≥64,000 B per @-import (neomjs/neo#17175)'), 'it prints the measured bound');
+    assert.ok(line.includes('Desktop @-imports unmeasured'), 'and the gap that remains');
+    assert.ok(!line.includes('semantics unconfirmed'), 'instead of the generic label')
+}
+
+// ── An unconfirmed row without a note keeps the generic label ──────────────────────────────────
+{
+    const root = fixture();
+
+    write(root, 'OTHER.md', 'O'.repeat(10));
+
+    const {text} = capture([], root, [{path: 'OTHER.md', harness: 'Other', limitConfirmed: false}]);
+
+    assert.match(text, /OTHER\.md .*limit inherited from another harness, semantics unconfirmed/)
 }
 
 // ── The CLI ships with a bin entry, or consumers cannot invoke it ──────────────────────────────
