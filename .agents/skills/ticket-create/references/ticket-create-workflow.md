@@ -32,7 +32,7 @@ If live GitHub state cannot be fetched, retry through the approved path; if stil
 
 Record both on the same attestation line in the ticket body, e.g. `Live latest-open + closed sweep: checked latest 20 open + closed search (<problem nouns>, Out of Scope / Avoided Traps read on hits) at <timestamp>; no equivalent or prior exclusion found` (or link the existing ticket instead of filing).
 
-**Backlog band:** add the open-issue count to that line (under 25 green, 25–50 orange, over 50 red). Every open ticket is prior art; in orange or red, fold into an owning ticket or epic before filing.
+**Backlog band:** add the open-issue count to that line (under 25 green, 25–50 orange, over 50 red). Every open ticket is prior art; in orange or red, fold into an owning ticket or epic if one exists, else file the needed ticket.
 
 **(ii) A2A in-flight claim sweep (mandatory) — catches IN-FLIGHT duplicates not yet on GitHub:** in a thundering herd a peer's intent first exists only as an A2A `[lane-claim]`/`[lane-intent]` invisible to `(i)`. Immediately before `create_issue`, scan the mailbox for recent claims on the same scope:
 
