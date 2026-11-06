@@ -28,9 +28,11 @@ gh issue list --state closed --search "<problem nouns>" --limit 15
 
 Read the `Out of Scope` and `Avoided Traps` sections of any same-surface closed hit — a closed ticket's title rarely reveals that it governs adjacent scope, and a closed hit answers what was already decided, never whether the premise matters (`neomjs/neo#18308` zero-backwards-compatibility ruling while `#18537` still closed `not_planned`, `neomjs/neo#18399` `Out of Scope` exclusion, `neomjs/neo#16391` / PR `#16403` already-shipped `hasLandedInPlace`). An equivalent MCP call for the open page is acceptable only when live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is supplemental because it buries untouched fresh filings (`#15603`). Both runs are required even when KB and local searches return no hits.
 
-If live GitHub state cannot be fetched due to sandbox, network, or auth state, retry through the approved path; if still unreachable, stop before `create_issue` and report the blocker rather than filing from stale evidence.
+If live GitHub state cannot be fetched, retry through the approved path; if still unreachable, stop before `create_issue` and report the blocker rather than filing from stale evidence.
 
 Record both on the same attestation line in the ticket body, e.g. `Live latest-open + closed sweep: checked latest 20 open + closed search (<problem nouns>, Out of Scope / Avoided Traps read on hits) at <timestamp>; no equivalent or prior exclusion found` (or link the existing ticket instead of filing).
+
+**Backlog band:** add the open-issue count to that line (under 25 green, 25–50 orange, over 50 red). Every open ticket is prior art; in orange or red, fold into an owning ticket or epic before filing.
 
 **(ii) A2A in-flight claim sweep (mandatory) — catches IN-FLIGHT duplicates not yet on GitHub:** in a thundering herd a peer's intent first exists only as an A2A `[lane-claim]`/`[lane-intent]` invisible to `(i)`. Immediately before `create_issue`, scan the mailbox for recent claims on the same scope:
 
