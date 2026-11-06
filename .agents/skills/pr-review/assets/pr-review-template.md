@@ -18,7 +18,7 @@ Per §9 Strategic-Fit Step-Back:
 - **Successor landing pad:** [ticket / amended ticket / closure artifact]
 - **Successor map citation:** [successor URL or anchor that cites this salvage map]
 
-**Peer-Review Opening:** [Friendly Opening / General encouragement. e.g., "Thanks for putting this together! Great approach to solving [Problem]. I've left some review notes below. Let's get these squared away so we can merge."]
+**Peer-Review Opening:** [Thanks, naming what this PR got right. For an external or first-time contributor, add the micro form's pointers into Neo, each linked at its canonical owner: what Neo is, the part this PR touched, how to run it, what to pick up next.]
 
 **Self-Review Opening:** [Clinical assessment. e.g., "Self-review of #[Ticket]. This implementation chose [approach] over [alternative] because [rationale]. Key trade-offs and gaps noted below."]
 
