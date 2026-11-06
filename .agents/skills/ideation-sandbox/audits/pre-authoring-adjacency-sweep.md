@@ -19,6 +19,9 @@ Question or adjacent Epic is a substrate failure, not a fresh idea.
 - **Memory sweep:** use `query_raw_memories` when the concept plausibly appeared
   in your own or team sessions; self-remembering is the failure mode this gate
   exists to counter.
+- **Code sweep:** `git grep` the files the proposal would change for ticket
+  references (`tracker:` fields, `#N` in comments and selection lists). Every open
+  ticket they name is prior art, whatever words its title uses.
 
 ## Exit Criteria
 
