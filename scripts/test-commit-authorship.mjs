@@ -317,8 +317,17 @@ try {
         assert.equal(guard(repo, prose).status, 1, 'a past-tense closing word inside prose closes too');
         assert.equal(ciAt(url).status, 1, 'an issue URL is a closing target');
         assert.equal(guard(repo, clean).status, 0, 'type prefixes, "Refs #N" and a bare "(#N)" close nothing');
-        assert.equal(ciAt(url, ['--author-login', 'dependabot[bot]']).status, 0,
-            'a GitHub App PR resolves no ticket, and its bodies quote upstream release notes');
+        // The rule protects the text GitHub acts on, whoever opened the PR
+        const bot = commit(repo, null, 'chore: bump the engine (#9)\n\nResolves #7');
+
+        assert.equal(guard(repo, bot).status, 1, 'a bot-shaped commit is refused at the hook');
+        assert.equal(ciAt(bot, ['--author-login', 'dependabot[bot]']).status, 1, 'and in CI for a GitHub App PR author');
+
+        // A message carrying the reader's old field and record separators still shows its whole text
+        const separated = commit(repo, null, 'feat(x): note (#9)\n\nnote \x1f hidden \x1e\nResolves #7');
+
+        assert.equal(guard(repo, separated).status, 1, 'an expression after an ASCII separator is refused at the hook');
+        assert.equal(ciAt(separated).status, 1, 'and in CI');
         assert.deepEqual(
             findClosingExpressions([{sha: 'a1', subject: 'x (#3)', body: 'x (#3)\n\nResolves #3, then fixes #3. Resolves #3.'}])
                 .map(({expression}) => expression),

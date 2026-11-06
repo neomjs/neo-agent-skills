@@ -18,8 +18,7 @@
  * - **Closing expressions** (hook and CI, every author). GitHub closes an issue when a commit whose message names it
  *   with a closing keyword reaches the default branch, and a squash body built from commit messages carries every
  *   branch commit's message there. A pull request declares its one close target in its body, so no commit message may
- *   carry one. A GitHub App's pull request (`--author-login` ending in `[bot]`) is exempt: it resolves no ticket, and
- *   its commit bodies quote upstream release notes.
+ *   carry one. The rule reads the published text alone: who authored the commit or opened the PR never exempts it.
  *
  * Whether a push is an agent's comes from sources its commits cannot forge: checkout ownership at the hook (a linked
  * worktree, or the `NEO_AGENT_IDENTITY` pin), and in CI the GitHub-authenticated PR author (`--author-login`). A
@@ -268,7 +267,6 @@ export function findClosingExpressions(commits = []) {
  */
 function readCommits(ranges) {
     return ranges.flatMap(range => {
-        // \x1f between fields and \x1e between records: a body carries newlines, so splitting lines would cut trailers
         const unseen = range.endsWith(` ${UNSEEN}`);
 
         let revision = unseen ? range.slice(0, -(UNSEEN.length + 1)) : range;
@@ -281,17 +279,19 @@ function readCommits(ranges) {
             revision = `${commit}..HEAD`
         }
 
-        const log = execFileSync('git', ['log', revision, ...(unseen ? ['--not', '--remotes'] : []),
-                  '--format=%H%x1f%ae%x1f%s%x1f%B%x1e', '--'], {
+        // NUL between records (`-z`), a byte no commit message can carry, and newlines between the one-line
+        // fields: the body is everything after the third newline, so no byte in a message ends it early
+        const log = execFileSync('git', ['log', '-z', revision, ...(unseen ? ['--not', '--remotes'] : []),
+                  '--format=%H%n%ae%n%s%n%B', '--'], {
             encoding: 'utf8',
             stdio   : ['pipe', 'pipe', 'pipe']
-        }).trim();
+        });
 
-        return log ? log.split('\x1e').map(entry => {
-            const [sha, authorEmail, subject, body] = entry.replace(/^\n+/, '').split('\x1f');
+        return log.split('\0').filter(Boolean).map(entry => {
+            const [sha, authorEmail, subject, ...body] = entry.split('\n');
 
-            return sha ? {sha, authorEmail, subject, body} : null
-        }).filter(Boolean) : []
+            return {sha, authorEmail, subject, body: body.join('\n')}
+        })
     })
 }
 
@@ -345,12 +345,7 @@ export async function run(args, payload) {
         agentCheckout = isAgentCheckout(),
         operator      = tryGit('config', '--global', 'user.email').toLowerCase(),
         // The operator check only exists where an agent pushes, and only when there is a global identity to leak
-        checkOperator = Boolean(operator && agentCheckout),
-        checkClosing  = !login?.endsWith('[bot]');
-
-    if (!team && !checkOperator && !checkClosing) {
-        return 0
-    }
+        checkOperator = Boolean(operator && agentCheckout);
 
     // A range measured against the remote-tracking refs alone has no basis without them; one that also names its
     // remote sha (`..`) keeps that basis, and merely excludes nothing more. Only the identity checks need a basis:
@@ -372,7 +367,7 @@ export async function run(args, payload) {
         return 1
     }
 
-    const closing = checkClosing ? findClosingExpressions(commits) : [];
+    const closing = findClosingExpressions(commits);
 
     if (closing.length > 0) {
         console.error(`check-commit-authorship: ${closing.length} closing expression(s) in commit messages:`);
