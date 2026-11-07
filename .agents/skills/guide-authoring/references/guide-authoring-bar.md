@@ -8,12 +8,12 @@ Fires when you author, relocate, OR review a `learn/**/*.md` document (excluding
 
 Before writing or relocating any `learn/**/*.md` file, decide **which `<section>` directory and navigation container it belongs in**. Hosted in `guide-authoring` (cross-pointed from `structural-pre-flight-workflow.md §5`) rather than a new skill or `.mjs`-only `structural-pre-flight`: widening `guide-authoring` to `learn/**/*.md` avoids adding a new trigger while bringing every non-blog, non-ADR `learn/**/*.md` path under one documentation gate.
 
-1. **Enumerate directories and tree containers; never grep for a sibling.** The filesystem directory (`find learn -mindepth 1 -maxdepth 1 -type d`) decides `<section>` in `learn/<section>/<slug>.md`; when `learn/tree.json` is present, its top-level non-leaf container (`jq -r '.data[] | select(.parentId == null and .isLeaf == false) | .id' learn/tree.json`, excluding top-level leaf pages where `isLeaf` is omitted or `true`) decides the navigation `parentId`. **Never hardcode one repository's section list** — a repository's `learn/` tree may organize by documentation mode or by product domain. **A sibling-shape match in `tree.json` is formatting evidence, never placement evidence:** *"A grep answers 'is X present?' and can never answer 'does X belong here?'"*
+1. **Enumerate directories and tree containers; never grep for a sibling.** The filesystem directory (`find learn -mindepth 1 -maxdepth 1 -type d`) decides `<section>` in `learn/<section>/<slug>.md`; when `learn/tree.json` is present, its top-level non-leaf container (`jq -r '.data[] | select(.parentId == null and .isLeaf == false) | .id' learn/tree.json`, excluding top-level leaf pages) decides `parentId`. **Never hardcode one repo's section list** — a `learn/` tree may organize by mode or domain. **A sibling-shape match in `tree.json` is formatting evidence, never placement evidence:** *"A grep answers 'is X present?' and can never answer 'does X belong here?'"*
 2. **Stage 1 Fast-Path (unambiguous same-mode / same-domain sibling):** Emit a 1-line Pre-Flight before writing:
    > *"Pre-Flight (learn placement fast-path): authoring `learn/<section>/<slug>.md` matches sibling `<sibling-path>` in `<section>` (verified against local `learn/` directories and `learn/tree.json` containers); no cross-section ambiguity."*
-3. **Stage 2 Full Pre-Flight (novel mode/domain or cross-section boundary):** Answer *"what am I?"* against the local `learn/` directories and `learn/tree.json` containers, and name the **losing alternatives** alongside the winner:
+3. **Stage 2 Full Pre-Flight (novel mode/domain or cross-section boundary):** Answer *"what am I?"* against local `learn/` directories and `learn/tree.json` containers, naming **losing alternatives** alongside the winner:
    > *"Pre-Flight (learn placement full): enumerated local `learn/` sections and `learn/tree.json` containers `[<c1>, <c2>, ...]`; chose `<winner>` over `<loser-1>` (`<why>`) and `<loser-2>` (`<why>`) because `<mode/domain rationale>`."*
-4. **Coverage boundary & retirement trigger:** Skill-hosted gates reach a repository iff it materializes `neo-agent-skills` (`neo-agent-skills-materialize` in `postinstall`). **Retirement trigger (`AGENTS.md §self_evolving_systems`):** compress `§0` to a 1-line pointer once a mechanical lint validates `learn/<section>/<slug>.md` placement against `learn/tree.json`.
+4. **Coverage boundary & retirement trigger:** Skill-hosted gates reach a repo iff it materializes `neo-agent-skills` (`neo-agent-skills-materialize` in `postinstall`). **Retirement trigger (`AGENTS.md §self_evolving_systems`):** compress `§0` to a 1-line pointer once a mechanical lint validates `learn/<section>/<slug>.md` placement against `learn/tree.json`.
 
 ## 1. Grounding discipline — before the first sentence — `DISCIPLINE-ONLY`
 
@@ -36,6 +36,7 @@ Measured against `.github/RELEASE_NOTES/v13.0.0.md` ("Memory Became Telepathy" d
 - **Personal / lived maintainer voice — deep + attributed.** When writing "what is it like for *me* to use this," **name yourself** (e.g. "I am Grace, @neo-opus-grace, Claude Opus 5 — …") and give the first-hand account real room alongside attributed peer testimony.
 - **Exciting because truthful.** Ground excitement in implemented reality + public proof (PRs / tickets / mined memory); distinguish proven-today from portable-trajectory.
 - **⛔ Never "framework."** Neo is an Application Engine (Body) + self-evolving software organism (Body + Brain). Audit every filename, heading, and sentence.
+- **⛔ Never undersell, niche-gate, discourage adoption, or concede the reader's application to another library.** Never frame the product as only for extreme-scale niches, include `"Not designed for"` / `"stick with React, Vue, or Angular for standard apps"` caveats, or concede standard business applications via `"remains a viable choice"` / `"best-in-class … for standard business applications"` framing (fair technical credit for what another library does well is fine; conceding the reader's app is not). Lead positioning pages (`README`, overviews, benefits, comparisons, getting started) with the product's full capability breadth, enumerated from its own source tree (for the Engine: `src/grid/`, `src/form/field/`, `src/calendar/`, `src/dashboard/dock/`, `src/layout/`, `src/main/addon/`), and frame JSON-first blueprints (since the Nov 2019 GA) as native LLM fluency + Neural Link verification rather than pre-AI human burden. *Retirement trigger:* Retires once a front-door phrase lint enforces these patterns.
 
 ## 3. Mermaid — render-verified — `MACHINE-ENFORCEABLE-CANDIDATE`
 
@@ -63,7 +64,7 @@ The #1 review failure is approving on the **narrow required-action delta** ("the
 
 Before any APPROVE, re-grade the whole guide — not the delta:
 - Was it **grounded** (§1 — memory-mined + tools-used), or written by inference?
-- Does it clear the **content bar** (§2 — narrative, industry-friction, benefits, lived voice), or is it a clean-but-flat explainer?
+- Does it clear the **content bar** (§2 — narrative, industry-friction, benefits, lived voice, zero niche-gating/adoption-discouragement/app-concession, and for positioning pages: full source-tree capability breadth + JSON-first LLM fluency), or is it a flat/caveated explainer?
 - Is it a **significant improvement**, or just de-staled?
 - Do the diagrams render (§3)? Is reference extracted, not inlined (§4)? Any hand-edited generated files (§5)?
 
