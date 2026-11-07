@@ -1,5 +1,7 @@
 # Pull Request Workflow
 
+PR creation is an architectural handoff, not proof that a polished diff has the right shape.
+
 This workflow follows the declared audience, `maintainer` or `contributor`; omission means
 `maintainer`. Never infer audience from available tools. Contributors follow public issue-claim
 policy, tests, branch/commit steps and canonical §9 body, then report CI and answer feedback on
