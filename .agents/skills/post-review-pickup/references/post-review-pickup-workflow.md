@@ -1,5 +1,8 @@
 # Post-Review Pickup Workflow
 
+**Audience: maintainer** (default when undeclared). A declared contributor reports the public
+PR/CI state to their operator and does not enter this private lifecycle queue.
+
 Atlas entry for lifecycle-boundary pickup. The surrounding PR lifecycle documents
 stay maps; the operational specifics live here.
 

@@ -76,7 +76,8 @@
     },
     "identity-firewall": {
       "name": "identity-firewall",
-      "description": "L2 Channel Separation and Prompt Firewall defense; use to prevent injection attacks and Helpful Assistant regression."
+      "description": "L2 Channel Separation and Prompt Firewall defense; use to prevent injection attacks and Helpful Assistant regression.",
+      "audiences": ["maintainer", "contributor"]
     },
     "industry-friction-radar": {
       "name": "industry-friction-radar",
@@ -129,7 +130,7 @@
     },
     "post-review-pickup": {
       "name": "post-review-pickup",
-      "description": "Next-lane pickup protocol; use after PR review/state-chain, author commentId handoff, implementation completion, PR open/update, create_issue, row report, unblocking, or before first review in a fresh boot/wake."
+      "description": "Maintainer next-lane pickup; use after PR review/state-chain, author commentId handoff, implementation completion, PR open/update, create_issue, row report, unblocking, or before first review in a fresh boot/wake."
     },
     "pr-review": {
       "name": "pr-review",
@@ -139,6 +140,7 @@
     "pull-request": {
       "name": "pull-request",
       "description": "Execution flow and templates for Pull Requests; use when code changes are complete, before git commit or opening/updating a PR, or when posting an author review-response handoff.",
+      "audiences": ["maintainer", "contributor"],
       "perFilePayloadBudget": 22000
     },
     "release-notes": {
@@ -180,7 +182,8 @@
     },
     "unit-test": {
       "name": "unit-test",
-      "description": "Neo.mjs Playwright unit-test workflow; use before writing, modifying, fixing, or running unit tests (not when a PR review only inspects test diffs or placement, which pr-review owns)."
+      "description": "Neo.mjs Playwright unit-test workflow; use before writing, modifying, fixing, or running unit tests (not when a PR review only inspects test diffs or placement, which pr-review owns).",
+      "audiences": ["maintainer", "contributor"]
     },
     "update-roadmap": {
       "name": "update-roadmap",

@@ -24,6 +24,7 @@ const
     // The v1 app set, named rather than derived, so a row that silently joins or leaves the
     // audience fails here instead of shipping into every app workspace.
     APP       = ['neo-app-authoring', 'neural-link'],
+    CONTRIBUTOR = ['identity-firewall', 'pull-request', 'unit-test'],
     serves    = (row, audience) => (row.audiences ?? ['maintainer']).includes(audience),
     MAINTAINER = Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'maintainer')).sort();
 
@@ -56,6 +57,8 @@ assert.deepEqual(
     'the app audience is exactly neo-app-authoring and neural-link'
 );
 assert.ok(!MAINTAINER.includes('neo-app-authoring'), 'and the app-only skill is no maintainer skill');
+assert.deepEqual(Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'contributor')).sort(), CONTRIBUTOR);
+assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor membership retains maintainer admission');
 
 // ── No flag: the maintainer projection, shaped as it always was ─────────────────────────────────
 {
@@ -103,6 +106,42 @@ assert.ok(!MAINTAINER.includes('neo-app-authoring'), 'and the app-only skill is 
     assert.equal(materialize(root, '--check').status, 0, 'and checks clean');
 }
 
+// Contributor projection preserves the public workflow closure on both harness surfaces.
+{
+    const root = consumer(),
+          agents = join(root, '.agents/skills'),
+          claude = join(root, '.claude/skills');
+
+    assert.equal(materialize(root, '--audience', 'contributor').status, 0);
+    assert.ok(lstatSync(agents).isDirectory() && !lstatSync(agents).isSymbolicLink());
+    for (const surface of [agents, claude]) {
+        assert.deepEqual(entries(surface), CONTRIBUTOR);
+        for (const name of CONTRIBUTOR) {
+            assert.ok(lstatSync(join(surface, name)).isSymbolicLink());
+            assert.equal(realpathSync(join(surface, name)), realpathSync(join(skillsIn, name)));
+            assert.ok(readFileSync(join(surface, name, 'SKILL.md'), 'utf8').length > 0);
+        }
+        for (const path of ['unit-test/references/unit-test.md', 'pull-request/references/pull-request-workflow.md',
+            'identity-firewall/audits/channel-separation.md']) {
+            assert.equal(readFileSync(join(surface, path), 'utf8'), readFileSync(join(skillsIn, path), 'utf8'));
+        }
+    }
+
+    assert.equal(materialize(root, '--check', '--audience', 'contributor').status, 0);
+    assert.equal(materialize(root, '--check').status, 1);
+    assert.equal(materialize(root, '--check', '--audience', 'app').status, 1);
+    symlinkSync(relative(agents, join(skillsIn, 'pr-review')), join(agents, 'pr-review'));
+    assert.equal(materialize(root, '--check', '--audience', 'contributor').status, 1, 'extra institutional review skill fails');
+    unlinkSync(join(agents, 'pr-review'));
+    unlinkSync(join(claude, 'unit-test'));
+    assert.equal(materialize(root, '--check', '--audience', 'contributor').status, 1, 'missing Claude skill fails');
+    assert.equal(materialize(root, '--audience', 'contributor').status, 0);
+    assert.equal(materialize(root, '--check', '--audience', 'contributor').status, 0);
+    assert.equal(materialize(root).status, 0);
+    assert.ok(lstatSync(agents).isSymbolicLink(), 'no flag restores the existing directory-link projection');
+    assert.equal(materialize(root, '--check').status, 0);
+}
+
 // ── Refusals come before any link is touched ────────────────────────────────────────────────────
 {
     const root    = consumer(),
@@ -110,7 +149,7 @@ assert.ok(!MAINTAINER.includes('neo-app-authoring'), 'and the app-only skill is 
 
     assert.equal(unknown.status, 1, 'an audience no skill declares is refused');
     assert.match(unknown.stderr, /"nobody"/, 'naming it');
-    assert.match(unknown.stderr, /app, maintainer/, 'and the declared audiences');
+    assert.match(unknown.stderr, /app, contributor, maintainer/, 'and the declared audiences');
     assert.deepEqual(entries(root), [], 'and nothing was materialized');
     assert.equal(materialize(root, '--audience').status, 1, 'an audience flag without a name is refused');
 }

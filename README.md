@@ -38,6 +38,12 @@ audience is declared by the caller, never inferred. A row without `audiences` se
 projection without the flag is unchanged. The matching instruction file comes from
 `neo-agent-skills-agents-md --repo neo-app-workspace --audience app`.
 
+**Outside contributors can select the public author path.** `neo-agent-skills-materialize
+--audience contributor` (and the matching `--check`) projects `unit-test`, `pull-request` and
+`identity-firewall` on both surfaces. It grants no institutional review role. Print its on-demand
+guidance with `neo-agent-skills-agents-md --repo neo --audience contributor`; stdout configures
+nothing and is not a tracked contributor instruction variant.
+
 **Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests
 retain the package version and run validation without publishing or tagging** (see *Authority*).
 Consumers update the dependency like any other.
@@ -214,13 +220,19 @@ const {text} = generate({audience: 'maintainer', repos: ['neo', 'neo-agent-brain
 ```
 
 The instructions a seat loads every turn are composed from `agents-md/sections/`. Each section declares
-the repositories and the audience (`maintainer` or `contributor`) it applies to; nothing is inferred. A
+the repositories and audience (`maintainer`, `contributor` or `app`) it applies to; nothing is inferred. A
 set of repositories composes one file, with every section once, in source order, when any repository
 in the set declares it. A peer working in several repositories loads that one file and keeps each
 repository's own rules.
 
-Both callers get the same refusals: an undeclared repository or audience, two sections claiming one
-numbered rule, and output over the **23,800-byte** budget. The bin writes `--out`, or stdout. The
+An optional comma-separated `skills:` declaration on a section drives the emitted workflow links.
+Only included sections contribute dependencies; links are deduplicated in declaration order.
+Every named skill must exist in the manifest and admit the selected audience (omitted membership
+means `maintainer`). This is section metadata, not an extra `SKILL.md` router field.
+
+Both callers refuse unknown/ineligible skill dependencies, undeclared repositories/audiences,
+duplicate numbered rules and output over **23,800 bytes**, before emitting or replacing output.
+The bin writes `--out`, or stdout. The
 import writes nothing: Fleet puts the text into each seat's harness home with its own safe write.
 
 ## What is in the package

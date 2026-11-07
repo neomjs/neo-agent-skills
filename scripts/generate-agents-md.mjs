@@ -31,6 +31,7 @@ const
     here        = dirname(fileURLToPath(import.meta.url)),
     packageRoot = dirname(here),
     sourceRoot  = join(packageRoot, 'agents-md'),
+    skillManifest = JSON.parse(readFileSync(join(packageRoot, '.agents/skills/skills.manifest.json'), 'utf8')),
     WRAPPER_OPEN  = '<neo_core_overrides authority="repo-local" target="training-prior">',
     WRAPPER_CLOSE = '</neo_core_overrides>';
 
@@ -61,11 +62,11 @@ function trimFinalLineFeeds(text) {
  * @summary Splits one section file into its declarations and its body.
  *
  * The front-matter is read as a flat key/value block rather than through a YAML dependency: the
- * schema is five keys, two of them lists, and a parser is cheaper than a dependency in a package
+ * schema uses scalar and comma-separated list declarations; a parser is cheaper than a dependency in a package
  * consumers install to get guards.
  * @param {String} text
  * @param {String} name File name, for the error message.
- * @returns {{audiences: String[], body: String, id: String, order: Number, repos: String[], wrapperGroup: (String|null)}}
+ * @returns {{audiences: String[], body: String, id: String, order: Number, repos: String[], skills: String[], wrapperGroup: (String|null)}}
  */
 export function parseSection(text, name) {
     const match = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(text);
@@ -93,6 +94,7 @@ export function parseSection(text, name) {
         listNumber  : declared.listNumber === undefined ? null : Number(declared.listNumber),
         order       : Number(declared.order),
         repos       : list('repos'),
+        skills      : declared.skills === undefined ? [] : list('skills'),
         wrapperGroup: declared.wrapperGroup ?? null
     }
 }
@@ -130,14 +132,23 @@ export function readSections(root = sourceRoot) {
  * @param {String} options.preamble
  * @param {String[]} options.repos
  * @param {Object[]} options.sections
+ * @param {Object} [options.manifest=skillManifest] Skill audience declarations; dependencies render only after admission.
  * @returns {String}
  */
-export function assemble({audience, preamble, repos, sections}) {
+export function assemble({audience, preamble, repos, sections, manifest = skillManifest}) {
     const
         included = sections.filter(section =>
             section.repos.some(repo => repos.includes(repo)) && section.audiences.includes(audience)),
         blocks   = [],
-        numbered = new Map();
+        numbered = new Map(),
+        dependencies = [...new Set(included.flatMap(section => section.skills ?? []))];
+
+    for (const name of dependencies) {
+        if (!Object.hasOwn(manifest.skills, name)) throw new Error(`unknown skill "${name}" in section dependencies`);
+        if (!(manifest.skills[name].audiences ?? ['maintainer']).includes(audience)) {
+            throw new Error(`skill "${name}" does not declare audience "${audience}"`)
+        }
+    }
 
     included.forEach(section => {
         // A set can include what no single repository does: a repository-specific replacement for a
@@ -177,7 +188,10 @@ export function assemble({audience, preamble, repos, sections}) {
         return block.group ? `${WRAPPER_OPEN}\n${joined}\n${WRAPPER_CLOSE}` : joined
     });
 
-    return [preamble, ...rendered].join('\n\n') + '\n'
+    const workflows = dependencies.length ? ['## Workflows', ...dependencies.map(name =>
+        `- [${name}](.agents/skills/${name}/SKILL.md)`)].join('\n') : null;
+
+    return [preamble, ...rendered, ...(workflows ? [workflows] : [])].join('\n\n') + '\n'
 }
 
 /**

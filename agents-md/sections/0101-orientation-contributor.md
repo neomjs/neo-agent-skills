@@ -3,6 +3,7 @@ id: orientation_contributor
 order: 101
 repos: neo
 audiences: contributor
+skills: unit-test, pull-request
 ---
 ## §orientation
 **Get it running first.** `CONTRIBUTING.md` holds the loop and is the only copy of it: clone,
@@ -20,8 +21,9 @@ is the long-form version.
 
 **Your agent needs nothing private.** The maintainers' own agents use a Knowledge Base and a Memory
 Core that are not public, and you need neither: `neo-agent-skills` is published on npm, and
-`npm install` already linked its skills into this checkout. The same testing, review and
-pull-request skills the maintainers work from are available to you.
+`npm install` already linked its skills into this checkout. Follow the testing and PR-authoring
+workflows linked below using their contributor path. This does not enroll you as a maintainer or
+an institutional reviewer.
 
 **Where to look.** `learn/guides/fundamentals/CodebaseOverview.md` for the layout, `src/` for the
 engine, `apps/` and `examples/` for working code. The `.agents/` and `learn/agentos/` trees are the
