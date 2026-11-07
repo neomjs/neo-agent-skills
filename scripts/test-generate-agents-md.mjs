@@ -3,7 +3,7 @@
 
 import assert                                      from 'node:assert/strict';
 import {execFileSync, spawnSync}                   from 'node:child_process';
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                    from 'node:os';
 import {dirname, join}                             from 'node:path';
 import {fileURLToPath}                             from 'node:url';
@@ -29,12 +29,13 @@ function fixture(sections, preamble = '# Title\n\nIntro.\n') {
         audiences.split(',').map(value => value.trim()))])
         .forEach(audience => writeFileSync(join(root, `preamble.${audience}.md`), preamble));
 
-    sections.forEach(({audiences = 'maintainer', body, id, listGroup, listNumber, order, repos = 'neo', wrapperGroup}) => {
+    sections.forEach(({audiences = 'maintainer', body, id, listGroup, listNumber, order, repos = 'neo', skills, wrapperGroup}) => {
         const fm = ['---', `id: ${id}`, `order: ${order}`];
 
         wrapperGroup && fm.push(`wrapperGroup: ${wrapperGroup}`);
         listGroup    && fm.push(`listGroup: ${listGroup}`);
         listNumber   && fm.push(`listNumber: ${listNumber}`);
+        skills       && fm.push(`skills: ${skills}`);
         fm.push(`repos: ${repos}`, `audiences: ${audiences}`, '---', '');
         writeFileSync(join(root, 'sections', `${String(order).padStart(3, '0')}-${id}.md`), fm.join('\n') + body + '\n')
     });
@@ -148,6 +149,61 @@ function capture(argv) {
     assert.match(brain,        /§brainonly/,   'and does ship where it is load-bearing');
     assert.doesNotMatch(contributor, /§internal/, 'the contributor variant drops what a fork cannot act on');
     assert.match(contributor,  /§everywhere/,  'and keeps what it can');
+}
+
+// One dependency declaration owns both the emitted links and audience admission.
+{
+    const fm = '---\nid: linked\norder: 10\nrepos: neo\naudiences: contributor\n',
+          section = parseSection(fm + 'skills: unit-test, pull-request\n---\nBody.\n', 'linked.md'),
+          manifest = {skills: {
+              'unit-test': {audiences: ['maintainer', 'contributor']},
+              'pull-request': {audiences: ['maintainer', 'contributor']},
+              internal: {}
+          }},
+          duplicate = {...section, id: 'duplicate', order: 20, skills: ['unit-test']},
+          excluded = {...section, id: 'excluded', audiences: ['maintainer'], skills: ['missing']},
+          options = {audience: 'contributor', preamble: 'Intro.', repos: ['neo'],
+              sections: [section, duplicate, excluded], manifest},
+          text = assemble(options);
+
+    assert.deepEqual(section.skills, ['unit-test', 'pull-request']);
+    assert.deepEqual(parseSection(fm + '---\nBody.\n', 'plain.md').skills, []);
+    assert.throws(() => parseSection(fm + 'skills: TODO\n---\nBody.\n', 'todo.md'), /still TODO/);
+    assert.match(text, /\[unit-test\]\(\.agents\/skills\/unit-test\/SKILL\.md\)/);
+    assert.match(text, /\[pull-request\]\(\.agents\/skills\/pull-request\/SKILL\.md\)/);
+    assert.equal(text.match(/\.agents\/skills\/unit-test\/SKILL\.md/g).length, 1, 'shared dependencies render once');
+    assert.ok(text.indexOf('[unit-test]') < text.indexOf('[pull-request]'), 'declaration order is stable');
+    assert.doesNotMatch(text, /missing/, 'excluded sections do not add dependencies');
+
+    for (const [skill, refusal] of [['missing', /unknown skill/], ['constructor', /unknown skill/], ['internal', /does not declare audience/]]) {
+        assert.throws(() => assemble({...options, sections: [{...section, skills: [skill]}]}), refusal);
+    }
+
+    const noLinks = assemble({...options, sections: [{...section, skills: []}]});
+    assert.equal(noLinks, 'Intro.\n\nBody.\n', 'an absent dependency declaration preserves prior composition');
+}
+
+// CLI and API refuse bad dependencies before creating or replacing a document.
+for (const [skill, refusal] of [['missing-skill', /unknown skill/], ['constructor', /unknown skill/], ['neo-app-authoring', /does not declare audience/]]) {
+    const root = fixture([{id: 'dependency', order: 10, body: 'Body.', skills: skill}]),
+          target = join(root, 'AGENTS.md');
+
+    assert.throws(() => generate({audience: 'maintainer', repos: ['neo'], root}), refusal);
+
+    for (const exists of [false, true]) {
+        if (exists) writeFileSync(target, 'preserve this file\n');
+        const errors = [], documents = [],
+              code = run(['--repo', 'neo', '--out', target], {
+                  root, out: value => documents.push(value), error: value => errors.push(value),
+                  write: value => documents.push(value)
+              });
+
+        assert.equal(code, 1);
+        assert.match(errors.join('\n'), refusal);
+        assert.deepEqual(documents, []);
+        assert.equal(existsSync(target), exists);
+        if (exists) assert.equal(readFileSync(target, 'utf8'), 'preserve this file\n');
+    }
 }
 
 // ── The budget is enforced on the EMITTED file ──────────────────────────────────────────────────
@@ -486,6 +542,59 @@ function capture(argv) {
 
     assert.equal(composed.name, 'neo-agent-skills', 'control: the consumer resolves the package by name');
     assert.ok(composed.gate, 'and imports the generator by name, composing a repository set in-process');
+
+    // Reuse this installed tarball in a non-git consumer, not a symlink to the source checkout.
+    const selected = ['identity-firewall', 'pull-request', 'unit-test'],
+          materializer = join(binDir, 'neo-agent-skills-materialize'),
+          installed = join(consumer, 'node_modules/neo-agent-skills'),
+          publicOptions = {cwd: consumer, encoding: 'utf8', env: {PATH: process.env.PATH}},
+          contributor = execFileSync(process.execPath, [bin, '--repo', 'neo', '--audience', 'contributor'],
+              publicOptions);
+
+    assert.ok(!existsSync(join(consumer, '.git')));
+    execFileSync(process.execPath, [materializer, '--root', consumer, '--audience', 'contributor'], publicOptions);
+    execFileSync(process.execPath, [materializer, '--root', consumer, '--audience', 'contributor', '--check'], publicOptions);
+    for (const surface of ['.agents/skills', '.claude/skills']) {
+        assert.deepEqual(readdirSync(join(consumer, surface)).sort(), selected);
+        for (const name of selected) {
+            assert.equal(realpathSync(join(consumer, surface, name)), realpathSync(join(installed, '.agents/skills', name)));
+            assert.ok(existsSync(join(consumer, surface, name, 'SKILL.md')));
+            assert.match(contributor, new RegExp(`\\[${name}\\]\\(\\.agents/skills/${name}/SKILL\\.md\\)`));
+        }
+        for (const path of ['unit-test/references/unit-test.md', 'pull-request/references/pull-request-workflow.md',
+            'identity-firewall/audits/channel-separation.md']) {
+            assert.equal(readFileSync(join(consumer, surface, path), 'utf8'), readFileSync(join(root, '.agents/skills', path), 'utf8'));
+        }
+    }
+
+    // A real CLI invocation also refuses a package declaration mismatch before touching output.
+    const manifestPath = join(installed, '.agents/skills/skills.manifest.json'),
+          originalManifest = readFileSync(manifestPath, 'utf8'),
+          wrongManifest = JSON.parse(originalManifest);
+
+    wrongManifest.skills['unit-test'].audiences = ['maintainer'];
+    writeFileSync(manifestPath, JSON.stringify(wrongManifest));
+    writeFileSync(out, 'preserve installed output\n');
+    const refused = spawnSync(process.execPath, [bin, '--repo', 'neo', '--audience', 'contributor', '--out', out],
+        publicOptions);
+    assert.equal(refused.status, 1);
+    assert.match(refused.stderr, /does not declare audience/);
+    assert.equal(readFileSync(out, 'utf8'), 'preserve installed output\n');
+    writeFileSync(manifestPath, originalManifest);
+
+    // The public author uses the shipped canonical body, without inventing private session identity.
+    const workflow = readFileSync(join(installed, '.agents/skills/pull-request/references/pull-request-workflow.md'), 'utf8'),
+          template = /\*\*Minimum-viable PR body structure:\*\*\n```markdown\n([\s\S]*?)```/.exec(workflow)[1],
+          publicBody = template.replace('Resolves #N', 'Resolves #1') + '\nAuthored by external-author fixture (test model, test harness).\n',
+          bodyPath = join(consumer, 'public-author-body.md'),
+          bodyBin = join(binDir, 'neo-agent-skills-pr-body');
+
+    assert.doesNotMatch(publicBody, /Origin Session ID|Session <|session-uuid/);
+    writeFileSync(bodyPath, publicBody);
+    execFileSync(process.execPath, [bodyBin, '--body-file', bodyPath], publicOptions);
+    writeFileSync(bodyPath, publicBody.replace(/\nAuthored by .*\n/, '\n'));
+    assert.equal(spawnSync(process.execPath, [bodyBin, '--body-file', bodyPath], publicOptions).status, 1,
+        'the public branch still requires factual author attribution');
 }
 
 // ── CLI contract ────────────────────────────────────────────────────────────────────────────────

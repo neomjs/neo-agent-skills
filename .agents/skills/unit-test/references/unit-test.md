@@ -1,5 +1,9 @@
 # Unit Test Specialist Workflow
 
+**Audience:** use the declared instruction audience. With none declared, use `maintainer`;
+missing tools never select `contributor`. Contributors follow the public-source steps below;
+private-service initialization, retrieval and diary saves apply only to maintainers.
+
 ## 1. Review-Only Boundary
 
 During a PR review, `pr-review` owns execution-evidence allocation. Merely inspecting a diff that contains, adds, or moves unit tests—or checking their placement/idioms—does **not** activate this author/executor workflow.
@@ -14,7 +18,7 @@ During a PR review, `pr-review` owns execution-evidence allocation. Merely inspe
 
 After this workflow is activated:
 
-1. Run the Memory Core healthcheck and `get_all_summaries({limit: 5})`; save the initialization turn with `add_memory`.
+1. **Maintainer only:** run the Memory Core healthcheck and `get_all_summaries({limit: 5})`; save the initialization turn with `add_memory`.
 2. Read the repository sources of truth:
    - `src/Neo.mjs`: `setupClass()`, `create()`, namespaces, and `ntype`.
    - `src/core/Base.mjs`: static/reactive configs, lifecycle, and config hooks.
@@ -25,10 +29,10 @@ After this workflow is activated:
 ## 3. Operational Protocols
 
 ### Knowledge Base First
-- **Query, Don't Guess:** Use `query_documents` to find relevant implementation details before writing tests.
+- **Query, Don't Guess:** maintainers use `query_documents`; contributors read the public source, closest tests and Git history before writing tests.
 - **Enhancement Strategy:** If the code you are testing lacks JSDoc or clear intent, **you MUST document it first**. You cannot write a valid unit test for code you do not fully understand.
 
-### Memory Core Protocol
+### Memory Core Protocol (Maintainer Only)
 - **Consolidate-Then-Save:** Accumulate your thoughts and tool outputs. Call `add_memory` **once** at the end of every turn, just before your final response.
 
 ## 4. Technical Constraints & Patterns
