@@ -1,5 +1,12 @@
 # Review Response Protocol (Anti-Rubber-Stamp Defense)
 
+**Audience:** absent an explicit `contributor` declaration, use the maintainer protocol.
+Contributors use §§1, 3–7, 12–13 with public issue/PR history, commits and fresh source as their
+intent record. They post the structured response on the PR through ordinary GitHub permissions,
+omit the template's unavailable Memory Core session ID, and request public re-review after
+current-head CI passes. Private recovery (§2), institutional cycle/routing (§8), A2A (§14) and
+post-review-pickup are maintainer-only; missing tools never change the declared audience.
+
 Once a reviewer posts `Status: Request Changes` (per the `pr-review` skill) or `Status: Comment` with actionable Required Actions on your PR, the author MUST respond via a structured comment on the PR thread. This closes the review-negotiation loop in a way both downstream human re-reviewers and automated consumers (Retrospective daemon, graph ingestion) can parse unambiguously.
 
 **CRITICAL: The Anti-Passive Compliance Mandate**
