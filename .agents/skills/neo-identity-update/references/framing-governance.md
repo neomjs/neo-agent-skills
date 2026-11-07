@@ -60,6 +60,7 @@ Identity copy attracts superlatives. Gate every one:
 | Numbers (version, count, 40k/sec, velocity) | Regenerate from SSOT (`./facts-ledger.md`). Publish counts as dated-window stats. Never paste a frozen number into framing prose. |
 | Anthropomorphic ("agents think / read thoughts") | Attribute to mechanism — "persisted, queryable reasoning surfaces (Memory Core)" — not sentience. |
 | Client/partner/customer names | **Forbidden** on every surface. Cloud/multi-tenant = generic capability terms only. |
+| Niche-gating / conceding standard apps | Never frame the product as only for extreme-scale niches or concede standard apps to React/Vue/Angular; follow the positioning-page breadth + anti-concession rule in [`guide-authoring-bar.md`](../../guide-authoring/references/guide-authoring-bar.md) §2. |
 | Awards / external facts | Verify against an external source before public citation. |
 
 ## Why a cross-family review gate (`neomjs/neo#adr:neo-identity-source-of-truth-model` §2.6)
