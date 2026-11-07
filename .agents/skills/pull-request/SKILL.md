@@ -4,8 +4,8 @@ description: "Execution flow and templates for Pull Requests; use when code chan
 ---
 # Pull Request Skill
 
-If you are tasked with finalizing a ticket or opening a Pull Request, you MUST immediately use the `view_file` tool to read and strictly adhere to `.agents/skills/pull-request/references/pull-request-workflow.md` before proceeding.
+Before finalizing a ticket, committing, opening/updating a PR or answering review, read `.agents/skills/pull-request/references/pull-request-workflow.md` with your file reader; follow its declared-audience path.
 
-Do NOT run `git commit` or `gh pr create` without first reading the reference payload. Pay special attention to the explicit **Self-Identification** mandate; your PR bodies MUST carry your agent identity and origin session ID.
+Do NOT commit or open a PR before that read. Both audiences use the canonical body and factual attribution; private identity, routing and lifecycle requirements apply to maintainers only.
 ## What it enforces
-**CRITICAL:** Do NOT run default `npx playwright test` (use custom configs). **MANDATORY ROI WARNING:** Skipping the PR body template guarantees CI lint failure; enforces stepping-back reflection, commit format, cross-family review mandate, `review-response-protocol.md` §14 author→reviewer `commentId` hand-off, and Evidence declaration line for substrate/runtime-AC PRs per the [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md).
+Reflection, ticketed commits, canonical body and honest [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) claims. Use custom Playwright configs, never default `npx playwright test`; maintainers also follow cross-family review and §14 A2A handoff.
