@@ -7,7 +7,7 @@ Fires when you author, revise, or review a public blog post (`learn/blog/<slug>.
 ## 1. Pre-Flight & Narrative Arc — a hero piece, not a changelog
 
 - **Reader / acceptance pre-flight (before drafting):**
-  - **Blog & outbound posts:** Name the target reader and answer the hardest read first — *"why would the audience NOT click or read past the first paragraph?"*
+  - **Blog & outbound posts:** Name the target reader and answer the hardest read first — *"why would the audience NOT click or read past the first paragraph?"* Draft the outbound with the post: its venues and their `outbound-post.md` §0 fills go through review in the same PR. A post nobody is sent to has delivered nothing.
   - **Funding & accelerator pitches (`funding/**`):** Apply the acceptance lens first — *"why would they NOT accept us, and why would they?"* Mine the verified record (`strategy/areas/**`, `decisions-in-force.md`, Memory Core) before inventing a hook; nothing to re-invent.
 - **TL;DR thesis** — one bold paragraph stating the single bet so a skimmer gets the whole argument.
 - **The hook** — the tension the reader already feels, framed in *their* terms (a real problem they have, never a *"Your AI can't…"* swipe at their tools; see §3 flavors #4–#5).
