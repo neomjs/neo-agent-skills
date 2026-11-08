@@ -10,6 +10,21 @@ Fires when you draft, revise, or review an outbound social post, first-reply lin
 
 ---
 
+## 0. The Job (before the first line; the §4 reviewer checks it)
+
+The boundaries below keep a post safe; they never make it work. A post that passes all 18 and moves no reader has failed. Write down six fills before drafting:
+
+1. **The action and its number:** what the reader does next (open the article, star the repository, run the install) and where it shows (the article's referrer for this venue). Read the first venue's number before copying the post's shape to the next one.
+2. **The link in view:** prefer venues that render the link card. In a text post the link sits in the first screen, with the reason to click.
+3. **A trailer, not the article:** the hook, the proof, and one thread only the click resolves. A body that carries the whole method replaces the article, and readers answer the summary.
+4. **The level in line one:** who is speaking, with its receipt. Name an AI maintainer team across model families, never a bare "our maintainers". A post that reads as one more tip is answered as one.
+5. **End on the action and its link:** a closing question buys replies to the body, not reads. Ask one only when replies are the goal and someone will answer them.
+6. **A reply links where its answer continues:** *"part 2's live-state check covers this: <link>"*.
+
+Rationale: §4's checklist mirrored the boundaries, so effect had no slot. The closing question trips none of them, so it was the move that survived (`neomjs/neo-agent-skills#314`). This section retires into the `requestPublish` payload once the payload carries the action and the Fleet executor records the outcome.
+
+---
+
 ## 1. The Boundaries (Discussion #19500 §4 — All 18 Clauses Mandatory)
 
 Every outbound post, `link-reply`, `reply`, or attributed article section must satisfy **all** boundaries below under every gate switch state (`approve each`, `approve the batch`, `auto-approve after a cross-family review attestation`, `auto-approve`):
@@ -116,6 +131,7 @@ Every outbound post or reply is reviewed by **a peer from a different model fami
    - Every factual claim and metric against its linked public receipt (`Verify-Before-Assert`);
    - All 18 boundaries in §1 key by key;
    - All 5 over-claim flavors in §2 (`blog-authoring-guide.md` §3);
+   - §0, read as a cold reader who sees only this post: is the action named, the link in view, the level in line one, and the ending the action? Would that reader take the action? A post can pass all 18 boundaries and fail here;
    - That `hypothesis` (`a` / `b` / `d`, never `c` without an outside first-run receipt) and `format` (`post` / `link-reply` / `reply`) match the content, and that a main `'post'` carries the receipt directly while reserving the URL for `'link-reply'`;
    - For a `'reply'`, that the target post passes §5 (a real question from a harness maker to users within our practice, never an announcement or pitch).
 2. **Posting the attestation (`reviewerMessageId` + `revisionDigest`, mailbox-derived identity/family):**
@@ -129,7 +145,7 @@ Every outbound post or reply is reviewed by **a peer from a different model fami
 
 ## 5. The Format & Reply Rule (Discussion #19500 §3 & ADR 0042 — Cold Start & Link-Reach Hypothesis)
 
-1. **Post format (receipt in the post, link in the first own reply — testing the link-reach hypothesis):**
+1. **Post format on cold X accounts (receipt in the post, link in the first own reply — testing the link-reach hypothesis; on other venues §0's link in view applies):**
    - Under X's stated per-request pricing (`D#19500 §8`, `ADR 0042 Context & Costs`), a plain post without a URL bills `$0.015` and a post containing a URL bills `$0.200` (so a plain main post plus a link-bearing self-reply totals `$0.215` under those stated rates, not a credit saving).
    - Keeping external links out of the main `'post'` body and placing the URL in the first self-reply (`format: 'link-reply'`) is the **link-reach hypothesis** tested as a format variable in `neomjs/neo#19575` — testing the hypothesis that cold accounts with no existing social graph avoid feed-reach down-ranking when the main post carries no external URL (`D#19500 §3`, `ADR 0042 Costs`). Treat feed-reach effects as a measured hypothesis under test, never as a settled platform fact.
    - Therefore, a standalone `'post'` carries the **receipt itself** — a clip of the Dock (`neomjs/neo#15252`), a capture of a cockpit card, a measured number with its observation window and confound bound, and one clear claim — while the URL rides in the **first own reply** (`format: 'link-reply'`, with `inReplyTo` referencing the parent post under the same `account`).

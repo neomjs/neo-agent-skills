@@ -13,7 +13,7 @@ Fires when you author, revise, or review a public blog post (`learn/blog/<slug>.
 - **The hook** — the tension the reader already feels, framed in *their* terms (a real problem they have, never a *"Your AI can't…"* swipe at their tools; see §3 flavors #4–#5).
 - **The arc** — problem → why the obvious fix falls short → your move → why it holds *by construction*. One claim per section; each section earns the next.
 - **Receipts, not prophecy** — concrete, linked evidence (PRs, issues, war stories). Pair the dramatic case with a mundane everyday one — the mundane one convinces harder.
-- **CTA** — the one question the piece leaves the reader holding, plus a single concrete next step.
+- **CTA** — the reader's next action (read the next part, star the repository, run the install), with its link. A closing question invites replies, not reads.
 
 **Visuals are required** (operator, neomjs/neo#20226): every post carries at least one Mermaid diagram or image, and a section explaining a structure, flow or sequence shows it — no wall of text, no decoration. Each is **render-verified before merge** (`guide-authoring-bar` §3; a post renders at `#/news/blog/<blog.json id>`).
 
