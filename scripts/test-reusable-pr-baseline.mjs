@@ -3,8 +3,9 @@
  * @summary Mutation-sensitive contract checks for the reusable consumer PR baseline.
  *
  * GitHub validates YAML syntax when the branch is published; this suite protects the semantic
- * boundary that syntax cannot: one workflow-call entrypoint, read-only permissions, two jobs whose
- * boundary keeps pull-request code away from the guards, a caller held to a release tag, a release
+ * boundary that syntax cannot: one workflow-call entrypoint, read-only permissions, three jobs whose
+ * boundary keeps pull-request code away from the shared guards, a caller's own guard list run whole on the
+ * pull-request-code side, a caller held to a release tag, a release
  * version read from `package.json` and written nowhere in the workflow, stable step names, every check
  * running after an earlier red, caller-repository checkout, the explicit dev-base decision, immutable
  * guard execution, and the supported materializer command. Each negative fixture removes one property
@@ -15,7 +16,7 @@
 
 import assert            from 'node:assert/strict';
 import {spawnSync}       from 'node:child_process';
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}          from 'node:os';
 import {dirname, join}   from 'node:path';
 import {fileURLToPath}   from 'node:url';
@@ -102,9 +103,10 @@ function runPrBaseScript(script, env) {
 /** @summary Isolates one top-level job so a sibling cannot satisfy its contract. */
 function jobSource(source, jobId) {
     const marker = `  ${jobId}:\n`,
-          start  = source.indexOf(marker);
+          // At a line start: an input of the same name sits deeper, and its line contains the marker
+          start  = source.indexOf(`\n${marker}`) + 1;
 
-    if (start === -1) return '';
+    if (start === 0) return '';
 
     const after = source.slice(start + marker.length),
           next  = after.search(/^  [a-z0-9_-]+:\n/m);
@@ -137,6 +139,8 @@ export function validateReusablePrBaseline(source) {
     const failures        = [],
           baselineJob     = jobSource(source, 'pr-baseline'),
           skillsJob       = jobSource(source, 'skills-materialized'),
+          guardsJob       = jobSource(source, 'guards'),
+          guardsRunStep   = stepSource(guardsJob, 'Run the declared guards'),
           step            = name => stepSource(baselineJob, name),
           headStep        = step('Checkout exact caller head'),
           baseFetchStep   = step('Fetch pull-request base'),
@@ -239,7 +243,15 @@ export function validateReusablePrBaseline(source) {
               ['PR-body isolated absolute bin', bin('neo-agent-skills-pr-body'), closeTargetStep],
               ['PR-body isolated runner root', GUARD_ROOT, closeTargetStep],
               ['PR-body anchors isolated absolute bin', bin('neo-agent-skills-pr-body'), anchorsStep],
-              ['PR-body anchors isolated runner root', GUARD_ROOT, anchorsStep]
+              ['PR-body anchors isolated runner root', GUARD_ROOT, anchorsStep],
+              ['guards input default', /^      guards:\n(?:        .*\n)*?        default: '\[\]'\n/m],
+              ['guards job id', /^  guards:\n/m],
+              ['guards stable name', /^    name: guards\n/m, guardsJob],
+              ['guards job skipped without a list', /^    if: \$\{\{ inputs\.guards != '\[\]' \}\}\n/m, guardsJob],
+              ['guards caller checkout', /uses: actions\/checkout@v\d+/, guardsJob],
+              ['guards Node input', /node-version: \$\{\{ inputs\.node_version \}\}/, guardsJob],
+              ['guards lockfile install', /run: npm ci/, guardsJob],
+              ['guards list through env', /^\s*GUARDS: \$\{\{ inputs\.guards \}\}\s*$/m, guardsRunStep]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -252,9 +264,9 @@ export function validateReusablePrBaseline(source) {
         failures.push('direct event trigger present')
     }
 
-    // Two jobs, and the boundary is why: the caller's install shares a job with no guard
-    if ((source.slice(source.indexOf('\njobs:\n')).match(/^  [a-z0-9_-]+:\n/gm) || []).length !== 2) {
-        failures.push('the workflow must run exactly two jobs')
+    // Three jobs, and the boundary is why: the caller's install and the caller's own guards share a job with no shared guard
+    if ((source.slice(source.indexOf('\njobs:\n')).match(/^  [a-z0-9_-]+:\n/gm) || []).length !== 3) {
+        failures.push('the workflow must run exactly three jobs')
     }
 
     // Comments are stripped before any "must not contain" check: prose naming a hazard is not the hazard.
@@ -449,6 +461,68 @@ export function validateReusablePrBaseline(source) {
         }
     }
 
+    // ── The guards job's own invariants ────────────────────────────────────────────────────────────
+    //
+    // A caller's guards are its own scripts, so they never run in the job that runs no pull-request code. The list
+    // reaches its runner through `env:` only, and the runner is exercised for real: node runs the script, bash runs
+    // each guard, and every guard appends its name to a file, so "ran" means a guard ran rather than the runner
+    // reporting that it did.
+    if (/inputs\.guards/.test(baselineCode)) failures.push('PR baseline runs the declared guards');
+
+    const guardsRun    = guardsRunStep.match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '',
+          guardsScript = guardsRun.match(/          node - <<'EOF'\n([\s\S]*?)\n          EOF\n/)?.[1] || '';
+
+    if (/\$\{\{/.test(guardsRun)) failures.push('guards list interpolated into run:');
+
+    if (!guardsScript) {
+        failures.push('missing guards runner script')
+    } else {
+        const dir    = mkdtempSync(join(tmpdir(), 'neo-baseline-guards-')),
+              ran    = join(dir, 'ran'),
+              mark   = name => ({name, run: `printf '%s\\n' '${name}' >> ran`}),
+              runAll = list => {
+                  const summary = join(dir, 'summary.md');
+
+                  rmSync(ran, {force: true});
+                  writeFileSync(summary, '');
+
+                  const result = spawnSync(process.execPath, ['-'], {
+                      cwd     : dir,
+                      encoding: 'utf8',
+                      input   : guardsScript,
+                      env     : {...process.env, GITHUB_STEP_SUMMARY: summary, GUARDS: typeof list === 'string' ? list : JSON.stringify(list)}
+                  });
+
+                  return {status: result.status, ran: existsSync(ran) ? readFileSync(ran, 'utf8') : '', summary: readFileSync(summary, 'utf8')}
+              };
+
+        try {
+            const green = runAll([mark('first'), mark('second')]),
+                  mixed = runAll([{...mark('red'), run: `${mark('red').run}; exit 3`}, mark('after')]);
+
+            if (green.status !== 0 || green.ran !== 'first\nsecond\n') failures.push('guards do not run every declared guard in order');
+            if (mixed.status !== 1) failures.push('a red guard leaves the guards job green');
+            if (mixed.ran !== 'red\nafter\n') failures.push('guards stop at an earlier red');
+            if (!/^\| red \| \*\*fail\*\* \|$/m.test(mixed.summary) || !/^\| after \| pass \|$/m.test(mixed.summary)) {
+                failures.push('guards summary does not name each result')
+            }
+
+            // Each list carries a guard that WOULD write, so a malformed list that runs anything shows in `ran`
+            const malformed = ['', 'x', 'null', '{}', '[]', '[1]', [mark('a'), {name: 'b'}], [mark('a'), {...mark('b'), extra: 1}],
+                [mark('a'), {name: '', run: 'true'}], [mark('a'), {name: 'b', run: ' '}], [mark('a'), mark('b::c')], [mark('a'), mark('a')]];
+
+            if (malformed.some(list => {
+                const result = runAll(list);
+
+                return result.status !== 1 || result.ran !== ''
+            })) {
+                failures.push('a malformed guard list runs or passes')
+            }
+        } finally {
+            rmSync(dir, {force: true, recursive: true})
+        }
+    }
+
     // A red check under continue-on-error leaves its job green
     if (/continue-on-error:\s*true/.test(source)) failures.push('continue-on-error present');
     if (/^\s+[a-z_-]+: write(?:-all)?\s*$/m.test(source) ||
@@ -531,9 +605,9 @@ expectMutationFailure('baseline job removed', source,
 expectMutationFailure('baseline stable name', source,
     value => value.replace('    name: PR baseline\n', '    name: Baseline\n'),
     'missing PR baseline stable name');
-expectMutationFailure('a third job split off', source,
+expectMutationFailure('a fourth job split off', source,
     value => value.replace('  skills-materialized:\n', '  extra:\n    runs-on: ubuntu-latest\n    steps:\n      - run: "true"\n\n  skills-materialized:\n'),
-    'the workflow must run exactly two jobs');
+    'the workflow must run exactly three jobs');
 expectMutationFailure('the caller install folded into the baseline', source,
     value => value.replace('      - name: Install immutable guards\n',
                            '      - name: Install consumer dependencies\n        if: ${{ !cancelled() }}\n        run: npm ci\n\n      - name: Install immutable guards\n'),
@@ -885,5 +959,31 @@ expectMutationFailure('PR-body runner root — suffixed root', source,
         rmSync(candidate, {recursive: true, force: true})
     }
 }
+
+// The guards job: each arm breaks one property the caller's single context stands behind
+expectMutationFailure('guards skip gate', source,
+    value => value.replace("    if: ${{ inputs.guards != '[]' }}\n", ''),
+    'missing guards job skipped without a list');
+expectMutationFailure('guards list interpolated', source,
+    value => value.replace("const {GITHUB_STEP_SUMMARY = '', GUARDS = ''} = process.env;",
+        "const {GITHUB_STEP_SUMMARY = ''} = process.env, GUARDS = '${{ inputs.guards }}';"),
+    'guards list interpolated into run:');
+expectMutationFailure('guards stop at the first red', source,
+    value => value.replace('              return {name, passed: status === 0};',
+        '              if (status !== 0) process.exit(1);\n              return {name, passed: true};'),
+    'guards stop at an earlier red');
+expectMutationFailure('a red guard exits green', source,
+    value => value.replace('process.exit(results.every(({passed}) => passed) ? 0 : 1);', 'process.exit(0);'),
+    'a red guard leaves the guards job green');
+expectMutationFailure('a duplicate guard name runs', source,
+    value => value.replace('              if (names.has(guard.name)) {', '              if (false) {'),
+    'a malformed guard list runs or passes');
+expectMutationFailure('the summary hides a red', source,
+    value => value.replace("passed ? 'pass' : '**fail**'", "'pass'"),
+    'guards summary does not name each result');
+expectMutationFailure('the guards list reaches PR baseline', source,
+    value => value.replace('      - name: Reject a non-PR caller\n',
+        '      - name: Reject a non-PR caller\n        env:\n          GUARDS: ${{ inputs.guards }}\n'),
+    'PR baseline runs the declared guards');
 
 console.log(`reusable-pr-baseline: canonical contract + ${mutationCount} negative mutations + the tracked-path collision control passed`);

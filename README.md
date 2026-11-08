@@ -50,10 +50,12 @@ Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
 no bespoke lag gate anywhere in this contract.
 
-**The shared PR baseline runs two jobs.** `PR baseline` runs, as steps, every check that executes no
-pull-request code. `Skills materialized` runs the caller's own install, so it never shares a job with the
-guards that judge it. A caller whose job is named `baseline` binds the required contexts
-`baseline / PR baseline` and `baseline / Skills materialized`. The releases before 0.1.90 ran ten jobs.
+**The shared PR baseline runs two jobs, and a third when a caller declares guards.** `PR baseline` runs, as
+steps, every check that executes no pull-request code. `Skills materialized` runs the caller's own install, so it
+never shares a job with the guards that judge it, and `guards` runs the caller's own guard list (see "Shared guard
+list"). A caller whose job is named `baseline` binds the required contexts `baseline / PR baseline` and
+`baseline / Skills materialized`, plus `baseline / guards` once it declares guards. The releases before 0.1.90 ran
+ten jobs.
 
 Moving a consumer to 0.1.90 is that consumer's own change. If the repository's rules require the ten old
 `baseline / *` contexts, an administrator swaps them for the two new ones in step with the pin: swapped early, every
@@ -185,6 +187,31 @@ credential itself written after the marker. A marker covers its own line only.
 Consumer repositories run it as the `Secrets` step of the stable `PR baseline` job in
 `.github/workflows/reusable-pr-baseline.yml`. It scans **every tracked file** at the pull request's head, not only the diff: a credential already on
 the base branch still fails, because it is one to revoke whichever pull request finds it.
+
+## Shared guard list
+
+```yaml
+jobs:
+  baseline:
+    uses: neomjs/neo-agent-skills/.github/workflows/reusable-pr-baseline.yml@vX.Y.Z
+    with:
+      guards: >-
+        [{"name": "lint", "run": "npm run lint"},
+         {"name": "types", "run": "npm run check-types"}]
+```
+
+A repository's own guards, the checks only it has, run in the `guards` job of
+`.github/workflows/reusable-pr-baseline.yml`, one step for the whole list:
+- each guard is `{"name", "run"}`, and `run` is a shell command, run from the repository root under
+  `bash -e -o pipefail` after `npm ci`;
+- every guard runs, even after a red, in its own log group; the step summary lists each result, and the job fails
+  if any guard failed;
+- a list that is not a non-empty JSON array of `{name, run}`, with names of letters, digits, spaces, dots, slashes,
+  underscores or hyphens and no duplicate, fails before any guard runs.
+
+The guards run pull-request code, so they get a job of their own, apart from `PR baseline`. It is one job however
+many guards a caller declares, so a caller binds one required context, `<caller job> / guards`, and a new guard
+needs no ruleset edit. A caller that declares no guards skips the job and holds no runner slot for it.
 
 ## Shared PR-review check
 

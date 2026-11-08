@@ -5,10 +5,11 @@
 # not copy any contract. It names no version: the `Skills version` step reads `package.json` at this
 # file's commit, and the guard install takes the version from there.
 #
-# TWO JOBS, ONE BOUNDARY. `PR baseline` runs every check that executes no pull-request code, as steps of
+# THREE JOBS, ONE BOUNDARY. `PR baseline` runs every check that executes no pull-request code, as steps of
 # one job: one runner slot instead of nine under the organization's shared job cap (#281). `Skills
-# materialized` runs the caller's own install, so it stays alone. Steps of one job share `GITHUB_ENV`,
-# `GITHUB_PATH` and the filesystem, so pull-request code beside the guards could green every step after it.
+# materialized` runs the caller's own install and `guards` the guards a caller declares: both run
+# pull-request code, so neither shares that job. Steps of one job share `GITHUB_ENV`, `GITHUB_PATH` and the
+# filesystem, so pull-request code beside the shared guards could green every step after it.
 #
 # Every step after the first runs under `!cancelled()`: a failed check doesn't stop the later ones, the
 # job fails if any of them failed, and each red shows by name in the step list. `continue-on-error` is
@@ -78,6 +79,14 @@ on:
         required: false
         type: string
         default: ''
+      guards:
+        description: >-
+          JSON array of the caller's own guards, each {"name": "<label>", "run": "<command>"}. The `guards` job
+          runs them from the repository root after `npm ci`, every one even after a red, and reports one context.
+          Empty by default, and then the job is skipped.
+        required: false
+        type: string
+        default: '[]'
 
 jobs:
   pr-baseline:
@@ -379,3 +388,90 @@ jobs:
 
       - name: Assert skills are materialized and unshadowed
         run: npx --no-install neo-agent-skills-materialize --check
+
+  # A caller's own guards run its own scripts, so they are pull-request code and stay out of `PR baseline`. One
+  # job runs the whole list, so a caller binds one context however many guards it declares, and a caller that
+  # declares none skips the job and holds no runner slot for it.
+  guards:
+    name: guards
+    if: ${{ inputs.guards != '[]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+
+      - name: Install consumer dependencies
+        run: npm ci
+
+      # The list reaches the script through `env:`, never a shell. A list that is not a non-empty JSON array of
+      # {name, run} fails before any guard runs. Every guard runs, even after a red, and the job fails if one did.
+      - name: Run the declared guards
+        env:
+          GUARDS: ${{ inputs.guards }}
+        run: |
+          node - <<'EOF'
+          const {spawnSync}      = require('node:child_process');
+          const {appendFileSync} = require('node:fs');
+          const {GITHUB_STEP_SUMMARY = '', GUARDS = ''} = process.env;
+
+          const fail = message => {
+              console.error(message.replace(/[\r\n]+/g, ' ').slice(0, 240));
+              process.exit(1);
+          };
+
+          let guards;
+
+          try {
+              guards = JSON.parse(GUARDS);
+          } catch (error) {
+              fail(`guards is not JSON: ${error.message}`);
+          }
+
+          if (!Array.isArray(guards) || !guards.length) {
+              fail('guards must be a non-empty JSON array of {name, run}; a caller with no guards omits the input.');
+          }
+
+          const names = new Set();
+
+          guards.forEach((guard, index) => {
+              const isEntry = guard !== null && typeof guard === 'object' && !Array.isArray(guard) &&
+                  Object.keys(guard).sort().join() === 'name,run' &&
+                  typeof guard.name === 'string' && /^[A-Za-z0-9][\w .\/-]*$/.test(guard.name) &&
+                  typeof guard.run === 'string' && guard.run.trim() !== '';
+
+              if (!isEntry) {
+                  fail(`guard ${index} must be {name, run}: a name of letters, digits, spaces, dots, slashes, underscores or hyphens, and a command.`);
+              }
+
+              if (names.has(guard.name)) {
+                  fail(`guard ${index} repeats the name '${guard.name}'.`);
+              }
+
+              names.add(guard.name);
+          });
+
+          const results = guards.map(({name, run}) => {
+              console.log(`::group::${name}`);
+
+              const {signal, status} = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', run], {stdio: 'inherit'});
+
+              console.log('::endgroup::');
+
+              if (status !== 0) {
+                  console.log(`::error title=guard failed::${name} exited with ${signal ?? status}`);
+              }
+
+              return {name, passed: status === 0};
+          });
+
+          if (GITHUB_STEP_SUMMARY) {
+              appendFileSync(GITHUB_STEP_SUMMARY, ['### Guards', '', '| Guard | Result |', '| --- | --- |',
+                  ...results.map(({name, passed}) => `| ${name} | ${passed ? 'pass' : '**fail**'} |`), ''].join('\n'));
+          }
+
+          process.exit(results.every(({passed}) => passed) ? 0 : 1);
+          EOF
