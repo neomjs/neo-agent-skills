@@ -37,6 +37,7 @@ const
     // first runs under `${{ !cancelled() }}` exactly.
     BASELINE_GATES = {
         'Read the team roster'                : "${{ !cancelled() && inputs.team_roster_repository != '' }}",
+        'Guides'                              : '${{ !cancelled() && inputs.guides }}',
         'Validate the close target'           : "${{ !cancelled() && github.event.pull_request.user.type != 'Bot' }}",
         "Report a bot's unjudged close target": "${{ !cancelled() && github.event.pull_request.user.type == 'Bot' }}",
         'Validate the required anchors'       : "${{ !cancelled() && (startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai')) }}"
@@ -152,6 +153,7 @@ export function validateReusablePrBaseline(source) {
           substrateStep   = step('Substrate size'),
           overridesStep   = step('npm overrides'),
           secretsStep     = step('Secrets'),
+          guidesStep      = step('Guides'),
           // The one read of another repository's tree: the caller team's roster, cloned outside the caller's tree
           rosterStep      = step('Read the team roster'),
           authorshipStep  = step('Commit authorship'),
@@ -225,6 +227,14 @@ export function validateReusablePrBaseline(source) {
               // `--all` and nothing after it: a file list, or any narrowing, scans less of the caller's tree
               ['secrets scans every tracked file', /neo-agent-skills-secrets"\n\s+--all\s*$/m, secretsStep],
               ['secrets scanned in the caller workspace', WORKSPACE, secretsStep],
+              // Off unless the caller asks, so an upgrade adds no check nobody chose
+              ['guides input default off', /^      guides:\n(?:        .*\n)*?        type: boolean\n        default: false\n/m],
+              ['guides_skip input default', /^      guides_skip:\n(?:        .*\n)*?        default: '\[\]'\n/m],
+              ['guides isolated absolute bin', bin('neo-agent-skills-guides'), guidesStep],
+              ['guides isolated runner root', GUARD_ROOT, guidesStep],
+              // The lint's root is the cwd: outside the checkout it would judge no guides and green
+              ['guides judged in the caller workspace', WORKSPACE, guidesStep],
+              ['guides skip list through env', /^\s*GUIDES_SKIP: \$\{\{ inputs\.guides_skip \}\}\s*$/m, guidesStep],
               ['authorship isolated absolute bin', bin('neo-agent-skills-commit-authorship'), authorshipStep],
               ['authorship isolated runner root', GUARD_ROOT, authorshipStep],
               ['authorship checked in the caller workspace', WORKSPACE, authorshipStep],
@@ -306,7 +316,7 @@ export function validateReusablePrBaseline(source) {
         }
     });
 
-    // One context carries all nine verdicts, so a step skipped by event would let a body edit overwrite another check's red
+    // One context carries every verdict, so a step skipped by event would let a body edit overwrite another check's red
     if (/github\.event\.action/.test(baselineCode)) failures.push('a PR-baseline check skips an event');
 
     if (/^\s+repository:/m.test(source)) failures.push('checkout repository override present');
@@ -323,6 +333,9 @@ export function validateReusablePrBaseline(source) {
     // judged. `--root` would point the measurement, or the manifest, somewhere other than the caller head.
     if (/neo-agent-skills-substrate-size"[^\n]*\S/.test(substrateStep)) failures.push('substrate guard invoked with arguments');
     if (/neo-agent-skills-npm-overrides"[^\n]*\S/.test(overridesStep)) failures.push('overrides guard invoked with arguments');
+    // The guide lint takes one narrowing, the caller's declared skip list, and no root: a root would judge other guides
+    if (/--(?:root|script-root|openapi-root)\b/.test(code(guidesStep))) failures.push('guides lint pointed away from the caller checkout');
+    if (/\$\{\{/.test(runScripts(code(guidesStep)))) failures.push('guides skip list interpolated into run:');
 
     // ── The PR-body steps' own invariants ──────────────────────────────────────────────────────────
     //
@@ -586,6 +599,49 @@ assert.deepEqual(validateReusablePrBaseline(source), [], 'canonical reusable wor
     assert.equal(execStep({ACTUAL_BASE: 'main', PR_AUTHOR: 'neo-gemini-maryam', RELEASE_ACTORS: '["tobiu"]'}).status, 1,
         'pr-base bash step refuses unauthorized release_base PR');
 }
+
+// ── The guide lint receives the caller's skip list whole, or the step fails before it runs ──────
+{
+    const guidesRun = (stepSource(jobSource(source, 'pr-baseline'), 'Guides').match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '').replace(/^ {10}/gm, ''),
+          stubRoot  = mkdtempSync(join(tmpdir(), 'neo-baseline-guides-')),
+          argsFile  = join(stubRoot, 'args'),
+          runWith   = skip => {
+              rmSync(argsFile, {force: true});
+
+              const {status} = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', guidesRun],
+                  {encoding: 'utf8', env: {...process.env, GUIDES_SKIP: skip, SKILLS_ROOT: stubRoot}});
+
+              return {status, args: existsSync(argsFile) ? readFileSync(argsFile, 'utf8') : null}
+          };
+
+    // A stand-in lint that records its arguments, one per line
+    mkdirSync(join(stubRoot, 'node_modules', '.bin'), {recursive: true});
+    writeFileSync(join(stubRoot, 'node_modules', '.bin', 'neo-agent-skills-guides'),
+        `#!/bin/sh\nfor a in "$@"; do printf '%s\\n' "$a"; done > "${argsFile}"\n`, {mode: 0o755});
+
+    assert.ok(guidesRun, 'the Guides step has a run block');
+    assert.deepEqual(runWith('[]'), {status: 0, args: ''}, 'no skip list passes no --skip');
+    assert.deepEqual(runWith('["dead-script-ref"]'), {status: 0, args: '--skip\ndead-script-ref\n'}, 'one rule');
+    assert.deepEqual(runWith('["dead-script-ref","no-mermaid"]'), {status: 0, args: '--skip\ndead-script-ref,no-mermaid\n'},
+        'two rules reach the lint as one argument');
+
+    for (const bad of ['{}', '[1]', '"dead-script-ref"', 'not json', '']) {
+        assert.deepEqual(runWith(bad).args, null, `a malformed skip list never reaches the lint: ${JSON.stringify(bad)}`);
+        assert.notEqual(runWith(bad).status, 0, `and fails the step: ${JSON.stringify(bad)}`)
+    }
+
+    rmSync(stubRoot, {recursive: true, force: true})
+}
+
+expectMutationFailure('the guide lint pointed at another root', source,
+    inStep('Guides', '-guides" "${args[@]}"', '-guides" --root docs "${args[@]}"'),
+    'guides lint pointed away from the caller checkout');
+expectMutationFailure('the skip list spliced into the shell', source,
+    inStep('Guides', '<<< "${GUIDES_SKIP}"', "<<< '${{ inputs.guides_skip }}'"),
+    'guides skip list interpolated into run:');
+expectMutationFailure('the guide lint turned on for every caller', source,
+    inStep('Guides', '        if: ${{ !cancelled() && inputs.guides }}\n', '        if: ${{ !cancelled() }}\n'),
+    'a PR-baseline step stops at an earlier red: name: Guides');
 
 expectMutationFailure('trigger', source,
     value => value.replace('  workflow_call:', '  pull_request:'),
