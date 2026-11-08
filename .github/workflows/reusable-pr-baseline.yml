@@ -25,7 +25,7 @@
 # corrected body goes green with no push — but only if the caller fires on the edit. Without it the
 # live fetch buys nothing: the author fixes the body, nothing re-runs, and the red stands until an
 # unrelated commit arrives. `ready_for_review` re-judges a draft at the moment it becomes reviewable.
-# Every event runs every check: one context carries all nine verdicts, so an edit that ran only the
+# Every event runs every check: one context carries every verdict, so an edit that ran only the
 # body checks would overwrite another check's red on the same head.
 #
 # The trigger cannot be asserted here — a reusable workflow does not see its caller's `on:` block.
@@ -84,6 +84,20 @@ on:
           JSON array of the caller's own guards, each {"name": "<label>", "run": "<command>"}. The `guards` job
           runs them from the repository root after `npm ci`, every one even after a red, and reports one context.
           Empty by default, and then the job is skipped.
+        required: false
+        type: string
+        default: '[]'
+      guides:
+        description: >-
+          Lint the caller's `learn/` guides with this release's guide lint, in `PR baseline`. Off by default, so an
+          upgrade adds no check a caller did not ask for.
+        required: false
+        type: boolean
+        default: false
+      guides_skip:
+        description: >-
+          JSON array of guide-lint rule ids to skip (for example, '["dead-script-ref"]' when the guides name another
+          repository's scripts). A malformed list or an unknown rule fails the step.
         required: false
         type: string
         default: '[]'
@@ -284,6 +298,22 @@ jobs:
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-secrets"
           --all
+
+      # The caller's guides at the head, judged by this release's lint. Off unless the caller asks. Pinned to the
+      # checkout, which is the lint's default root, and given no root: another directory would judge other guides.
+      # The skip list is the caller's declared input, never the tree's. It arrives through `env:`, `jq` refuses
+      # anything but an array of strings, and the lint refuses any name no rule answers to.
+      - name: Guides
+        if: ${{ !cancelled() && inputs.guides }}
+        working-directory: ${{ github.workspace }}
+        env:
+          GUIDES_SKIP: ${{ inputs.guides_skip }}
+          SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
+        run: |
+          skip="$(jq -er 'if type == "array" and all(.[]; type == "string") then join(",") else error("guides_skip must be a JSON array of rule ids") end' <<< "${GUIDES_SKIP}")"
+          args=()
+          [ -n "${skip}" ] && args+=(--skip "${skip}")
+          "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-guides" "${args[@]}"
 
       # The roster says who the caller's team is, so it is read from the roster repository at the caller's ref and
       # never from the pull request: a diff that could edit the roster could add its own author to the team.
