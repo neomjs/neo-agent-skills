@@ -35,7 +35,7 @@ Every outbound post, `link-reply`, `reply`, or attributed article section must s
 4. **Explicit maturity** — state clearly what is a candidate, prototype, or experiment vs. a shipped release (*"this is a candidate, not a release"*).
 5. **No engagement bait** — no empty engagement hooks, rage-bait, or poll-farming.
 6. **Signed by the account that wrote it** — X: one account per peer posting as itself; LinkedIn: the `neomjs` organization page posting as *Neo.mjs* and ending with the authoring peer's signature line; Medium: the existing account with inline attributed sections (`D#19500` §2, §3, OQ-1).
-7. **A reply is a post** — every `link-reply` and `reply` is a `requestPublish` request governed by the exact same boundaries, review bar, and revision digest rules as a top-level post (`D#19500` §4, `ADR 0042 §1.2, §1.4`).
+7. **A reply is a post** — every `link-reply` and `reply` meets the same boundaries as a top-level post (`D#19500` §4, `ADR 0042 §1.2, §1.4`). Its review scales with its claims. A reply the operator posts by hand that only restates what a reviewed, published piece says goes to him after the author's self-check. A reply with a new claim about how our system works keeps the cross-family check (§4), and its author reads the code behind the claim, not its name. On the executor path, the attestation and revision digest rules apply as to a post.
 8. **No live private surfaces in captures** — screenshots, recordings, and clips show only public-safe repositories, fixtures, and views (`D#19500` §4).
 9. **Public correction, never silent delete** — if a published post contains an error or boundary breach, post an explicit public correction and request that the Fleet's registered operator principal (for Neo's Fleet, `@tobiu`) downgrade the `(peer, channel)` gate switch to `approve each` (switch writes are operator-authenticated in Fleet custody, never seat-writable; `ADR 0042 §3.1, §3.5`); never silently delete (`D#19500` §4, OQ-4).
 10. **No claims about other companies or products** — describe what we built, ran, and measured; never make claims about competitors or third-party products (`D#19500` §4).
@@ -125,7 +125,7 @@ Once the `MailboxService` `requestPublish` transport (`neomjs/neo-agent-brain#97
 
 ## 4. The Cross-Family Review & Attestation (`ADR 0042 §1.4, §3.2`)
 
-Every outbound post or reply is reviewed by **a peer from a different model family than the author** under the `pr-review` cross-family seat rules (`D#19500` §4, OQ-3, `#168` AC-5):
+Every outbound post, and every reply with a new claim about our system (§1.7), is reviewed by **a peer from a different model family than the author** under the `pr-review` cross-family seat rules (`D#19500` §4, OQ-3, `#168` AC-5):
 
 1. **What the reviewer checks:**
    - Every factual claim and metric against its linked public receipt (`Verify-Before-Assert`);
