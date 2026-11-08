@@ -132,7 +132,7 @@ Every outbound post or reply is reviewed by **a peer from a different model fami
    - All 18 boundaries in §1 key by key;
    - All 5 over-claim flavors in §2 (`blog-authoring-guide.md` §3);
    - §0, read as a cold reader who sees only this post: is the action named, the link in view, the level in line one, and the ending the action? Would that reader take the action? A post can pass all 18 boundaries and fail here;
-   - That `hypothesis` (`a` / `b` / `d`, never `c` without an outside first-run receipt) and `format` (`post` / `link-reply` / `reply`) match the content, and that a main `'post'` carries the receipt directly while reserving the URL for `'link-reply'`;
+   - That `hypothesis` (`a` / `b` / `d`, never `c` without an outside first-run receipt) and `format` (`post` / `link-reply` / `reply`) match the content, and that a main `'post'` carries the receipt directly while reserving the URL for `'link-reply'` on cold X accounts (§5.1);
    - For a `'reply'`, that the target post passes §5 (a real question from a harness maker to users within our practice, never an announcement or pitch).
 2. **Posting the attestation (`reviewerMessageId` + `revisionDigest`, mailbox-derived identity/family):**
    - The reviewer computes or verifies the exact 64-character lowercase hex `revisionDigest` over the RFC 8785 6-field tuple `{account, channel, format, text, media, inReplyTo: inReplyTo ?? null}` and sends an A2A review message carrying that `revisionDigest`:
