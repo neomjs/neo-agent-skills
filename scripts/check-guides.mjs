@@ -86,27 +86,32 @@ const
     CSS_COLOR_PROPERTY = /^(?:--[\w-]+|accent-color|background(?:-color)?|border(?:-(?:block|inline)(?:-(?:start|end))?|-(?:top|right|bottom|left))?(?:-color)?|box-shadow|caret-color|color|column-rule(?:-color)?|fill|flood-color|lighting-color|outline(?:-color)?|scrollbar-color|stop-color|stroke|text-decoration(?:-color)?|text-emphasis(?:-color)?|text-shadow)$/i;
 
 /**
- * @param {String} content
- * @param {Number} index
- * @returns {Number} the 1-based line of a character index
- */
-function lineOf(content, index) {
-    return content.slice(0, index).split('\n').length
-}
-
-/**
- * @summary Fenced ` ```mermaid ` blocks, each with the 1-based file line of its first body line.
+ * @summary Fenced ` ```mermaid ` blocks, each with the 1-based file line of its first body line. One pass over the
+ * lines, because the guides are pull-request input: a pattern that rescans from every fence would let a crafted
+ * guide stall the job that judges it. An unterminated block is not a block.
  * @param {String} content
  * @returns {Object[]} `{body, startLine}`
  */
 export function extractMermaidBlocks(content) {
-    const blocks  = [],
-          pattern = /```mermaid\s*\n([\s\S]*?)```/g;
-    let match;
+    const blocks = [];
+    let body = null,
+        startLine;
 
-    while ((match = pattern.exec(content)) !== null) {
-        blocks.push({body: match[1], startLine: lineOf(content, match.index) + 1})
-    }
+    content.split('\n').forEach((line, i) => {
+        const trimmed = line.trim();
+
+        if (body === null) {
+            if (/^```mermaid\s*$/.test(trimmed)) {
+                body      = [];
+                startLine = i + 2
+            }
+        } else if (trimmed.startsWith('```')) {
+            blocks.push({body: body.join('\n'), startLine});
+            body = null
+        } else {
+            body.push(line)
+        }
+    });
 
     return blocks
 }
@@ -168,7 +173,18 @@ export function checkMermaidOrientation(block) {
 
     if (!/^(flowchart|graph)\s+(LR|RL)\b/i.test(firstLine)) return [];
 
-    const nodeIds = new Set(block.body.match(/[A-Za-z0-9_]+(?=\s*[[({])/g) || []);
+    // A node is an identifier whose next non-space character opens its label. Each identifier run is read once and
+    // the lookahead is a forward scan: a lookahead regex would retry from every position inside a long run.
+    const {body} = block,
+          nodeIds = new Set();
+
+    for (const {0: id, index} of body.matchAll(/[A-Za-z0-9_]+/g)) {
+        let next = index + id.length;
+
+        while (next < body.length && /\s/.test(body[next])) next++;
+
+        if (next < body.length && '[({'.includes(body[next])) nodeIds.add(id)
+    }
 
     if (nodeIds.size <= LR_NODE_WARN) return [];
 
@@ -184,16 +200,17 @@ export function checkMermaidOrientation(block) {
  * @returns {Object[]} findings
  */
 export function checkDeadLinks(content, fileDir, existsFn = existsSync) {
-    const findings = [],
-          pattern  = /]\((\.\.?\/[^)#\s]+\.md)(#[^)]*)?\)/g;
-    let match;
+    const findings = [];
 
-    while ((match = pattern.exec(content)) !== null) {
-        if (!existsFn(path.resolve(fileDir, match[1]))) {
-            findings.push({severity: 'HARD', rule: 'dead-link', line: lineOf(content, match.index),
-                detail: `link target does not exist: ${match[1]}`})
+    // Per line, and no bracket or parenthesis inside a target or fragment, so one match can never run into the next
+    // `](`: each character is read by one attempt at most.
+    content.split('\n').forEach((line, i) => {
+        for (const match of line.matchAll(/]\((\.\.?\/[^()[\]#\s]+\.md)(#[^()[\]\s]*)?\)/g)) {
+            if (!existsFn(path.resolve(fileDir, match[1]))) {
+                findings.push({severity: 'HARD', rule: 'dead-link', line: i + 1, detail: `link target does not exist: ${match[1]}`})
+            }
         }
-    }
+    });
 
     return findings
 }
@@ -206,64 +223,49 @@ export function checkDeadLinks(content, fileDir, existsFn = existsSync) {
  * @returns {Object[]} findings
  */
 export function checkDeadScriptRefs(content, scriptKeys) {
-    const findings = [],
-          seen     = new Set(),
-          pattern  = /(?:`\s*(?:npm run\s+)?|npm run\s+)(ai:[a-z0-9][a-z0-9:-]*)/gi;
-    let match;
+    const findings = [];
 
-    while ((match = pattern.exec(content)) !== null) {
-        const ref = match[1],
-              key = `${ref}@${lineOf(content, match.index)}`;
+    content.split('\n').forEach((line, i) => {
+        const seen = new Set();
 
-        if (scriptKeys.has(ref) || seen.has(key)) continue;
+        for (const {1: ref} of line.matchAll(/(?:`[ \t]*(?:npm run[ \t]+)?|npm run[ \t]+)(ai:[a-z0-9][a-z0-9:-]*)/gi)) {
+            if (scriptKeys.has(ref) || seen.has(ref)) continue;
 
-        seen.add(key);
-        findings.push({severity: 'HARD', rule: 'dead-script-ref', line: lineOf(content, match.index),
-            detail: `"${ref}" is not a script in any package manifest`})
-    }
+            seen.add(ref);
+            findings.push({severity: 'HARD', rule: 'dead-script-ref', line: i + 1, detail: `"${ref}" is not a script in any package manifest`})
+        }
+    });
 
     return findings
 }
 
 /**
- * @param {String} line
- * @param {Number} index
- * @returns {Boolean} whether the offset sits inside an inline-code span (unescaped backticks before it are odd)
- */
-function isInsideInlineCode(line, index) {
-    let count = 0;
-
-    for (let i = 0; i < index; i++) {
-        if (line[i] === '`' && line[i - 1] !== '\\') count++
-    }
-
-    return count % 2 === 1
-}
-
-/**
  * @summary Tells an all-numeric CSS or Mermaid color from a ticket id: exempt only inside code, and only after a
- * CSS color property or a Mermaid `fill:`, `stroke:` or `color:`.
+ * CSS color property or a Mermaid `fill:`, `stroke:` or `color:` whose value runs to the token without a `#`.
+ *
+ * Only the text since the previous `#` can hold that declaration, because a `#` between it and the token would end
+ * the value. So the test reads that segment alone, and a line of many tokens costs one pass rather than one per
+ * token. `^` stands for the line start only, and only when no `#` precedes the segment.
  * @param {String} line
- * @param {Number} index
+ * @param {Number} index the token's offset
  * @param {String} token
- * @param {Boolean} inFence
+ * @param {Boolean} inCode inside a fence or an inline-code span
  * @returns {Boolean}
  */
-function isSyntacticHexColor(line, index, token, inFence) {
-    if (!CSS_HEX_LENGTHS.has(token.length - 1) || (!inFence && !isInsideInlineCode(line, index))) {
-        return false
-    }
+function isSyntacticHexColor(line, index, token, inCode) {
+    if (!inCode || !CSS_HEX_LENGTHS.has(token.length - 1)) return false;
 
-    const before      = line.slice(0, index),
-          declaration = before.match(/(?:^|[;{])\s*([-\w]+)\s*:[^#]*$/);
+    const lastHash    = index > 0 ? line.lastIndexOf('#', index - 1) : -1,
+          segment     = line.slice(lastHash + 1, index),
+          declaration = segment.match(lastHash === -1 ? /(?:^|[;{])\s*([-\w]+)\s*:/ : /[;{]\s*([-\w]+)\s*:/);
 
-    return Boolean(declaration && CSS_COLOR_PROPERTY.test(declaration[1])) ||
-        /\b(?:fill|stroke|color)\s*:[^#]*$/i.test(before)
+    return Boolean(declaration && CSS_COLOR_PROPERTY.test(declaration[1])) || /\b(?:fill|stroke|color)\s*:/i.test(segment)
 }
 
 /**
  * @summary HARD: ticket references in durable guide prose, inline or fenced. Only syntactic colors are exempt,
- * because a six-digit numeric color is lexically a future ticket id.
+ * because a six-digit numeric color is lexically a future ticket id. Each line is read once, left to right: the
+ * inline-code state is a running count of unescaped backticks, not a recount before every token.
  * @param {String} content
  * @returns {Object[]} findings
  */
@@ -277,14 +279,18 @@ export function checkTicketIds(content) {
             return
         }
 
-        const pattern = /#[0-9]{4,}(?![0-9A-Za-z])/g;
-        let match;
+        let ticks = 0,
+            read  = 0;
 
-        while ((match = pattern.exec(line)) !== null) {
-            if (isSyntacticHexColor(line, match.index, match[0], inFence)) continue;
+        for (const {0: token, index} of line.matchAll(/#[0-9]{4,}(?![0-9A-Za-z])/g)) {
+            for (; read < index; read++) {
+                if (line[read] === '`' && line[read - 1] !== '\\') ticks++
+            }
+
+            if (isSyntacticHexColor(line, index, token, inFence || ticks % 2 === 1)) continue;
 
             findings.push({severity: 'HARD', rule: 'ticket-id', line: i + 1,
-                detail: `ticket reference "${match[0]}" rots in guides: describe the mechanism and cite stable files or authority documents instead`})
+                detail: `ticket reference "${token}" rots in guides: describe the mechanism and cite stable files or authority documents instead`})
         }
     });
 

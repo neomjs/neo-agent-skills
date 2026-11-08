@@ -9,7 +9,7 @@ import assert                                          from 'node:assert/strict'
 import {spawnSync}                                     from 'node:child_process';
 import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                        from 'node:os';
-import {dirname, join, relative}                       from 'node:path';
+import {dirname, join}                                 from 'node:path';
 import {fileURLToPath}                                 from 'node:url';
 import {
     RULES, checkDeadLinks, checkDeadScriptRefs, checkMermaidBlock, checkMermaidOrientation, checkOpenApiToolParity,
@@ -92,6 +92,12 @@ const guide = lines => lines.join('\n');
 
     assert.equal(block.startLine, 4, 'a block starts on its first body line');
     assert.equal(extractMermaidBlocks('# Prose only').length, 0);
+    assert.equal(extractMermaidBlocks('```mermaid\nflowchart TD\n  A --> B\n').length, 0, 'an unterminated block is no block');
+
+    // A blank line after the fence is part of the body, so a finding below it still names its own line
+    const [spaced] = extractMermaidBlocks(guide(['# Title', '```mermaid', '', 'flowchart TD', '  A --> A', '```']));
+
+    assert.deepEqual(checkMermaidBlock(spaced).map(f => [f.rule, f.line]), [['mermaid-self-loop', 5]])
 
     assert.deepEqual(checkMermaidBlock({body: 'flowchart TD\n  A["x"] --> B["y"]\n  B --> C["z"]', startLine: 1}), [], 'a clean diagram');
     assert.deepEqual(checkMermaidBlock({body: 'flowchart TD\n  A --> B\n  classDef graph fill:#fff', startLine: 1}).map(f => f.rule),
@@ -211,7 +217,31 @@ const guide = lines => lines.join('\n');
 
     assert.equal(cwdRun.status, 1, 'the working directory is the default root');
     assert.match(cwdRun.stdout, /\[ticket-id\] line 3/);
-    assert.match(cwdRun.stdout, new RegExp(relative(root, join(root, 'learn/guides/series/Step.md')).replace(/[/.]/g, '\\$&')))
+    assert.ok(cwdRun.stdout.includes(join('learn', 'guides', 'series', 'Step.md')), 'the finding names its file')
+}
+
+// ── A crafted guide cannot stall the job that judges it ─────────────────────────────────────────
+//
+// The guides are pull-request input. Each input below made the pre-port code rescan from every position: a fence or
+// a link pattern retrying from every repetition, a line number counted from the top of the file per finding, a
+// declaration searched for in the whole prefix of every token. At these sizes that took 4 to 17 seconds, and it
+// grew with the square of the input. One linear pass takes milliseconds, so a second is a wide margin either way.
+{
+    const fast = (label, fn) => {
+        const start = performance.now();
+
+        fn();
+        assert.ok(performance.now() - start < 1000, `${label} takes under a second`)
+    };
+
+    fast('an unterminated fence', () => extractMermaidBlocks('```mermaid\n' + '\n '.repeat(200000)));
+    fast('a long identifier run', () => checkMermaidOrientation({body: 'flowchart LR\n' + '0'.repeat(100000), startLine: 1}));
+    fast('repeated link openers', () => checkDeadLinks('](./'.repeat(50000), '/repo', () => true));
+    fast('repeated fragment openers', () => checkDeadLinks('](./!.md#'.repeat(50000), '/repo', () => true));
+    fast('many dead links', () => checkDeadLinks('[x](./a.md)\n'.repeat(30000), '/repo', () => false));
+    fast('many dead script refs', () => checkDeadScriptRefs('`ai:x`\n'.repeat(30000), new Set()));
+    fast('many tokens on one line', () => checkTicketIds('```\n' + '#1234 '.repeat(100000) + '\n```'));
+    fast('many color declarations on one line', () => checkTicketIds('```\n' + 'color: #1234; '.repeat(30000) + '\n```'))
 }
 
 // ── It ships, or consumers cannot invoke it ────────────────────────────────────────────────────
