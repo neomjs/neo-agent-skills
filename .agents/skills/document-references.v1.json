@@ -305,6 +305,7 @@
             "canonicalOwner": "neomjs/neo",
             "resolution": "https://github.com/neomjs/neo/blob/dev/learn/benefits/Introduction.md",
             "referencingSkills": [
+                "blog-post",
                 "pr-review"
             ],
             "kinds": [

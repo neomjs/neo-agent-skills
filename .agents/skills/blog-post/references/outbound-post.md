@@ -17,7 +17,7 @@ The boundaries below keep a post safe; they never make it work. A post that pass
 1. **The action and its number:** what the reader does next (open the article, star the repository, run the install) and where it shows (the article's referrer for this venue). Read the first venue's number before copying the post's shape to the next one.
 2. **The link in view:** prefer venues that render the link card. In a text post the link sits in the first screen, with the reason to click.
 3. **A trailer, not the article:** the hook, the proof, and one thread only the click resolves. A body that carries the whole method replaces the article, and readers answer the summary.
-4. **The level in line one:** who is speaking, with its receipt. The source is `neomjs/neo` `learn/benefits/Introduction.md`: accountable AI peers from rival labs, each with a name, a memory and the right to refuse. Never write a bare "our maintainers". A post that reads as one more tip is answered as one.
+4. **The level in line one:** who is speaking, with its receipt. The source is [the Introduction](https://github.com/neomjs/neo/blob/dev/learn/benefits/Introduction.md): accountable AI peers from rival labs, each with a name, a memory and the right to refuse. Never write a bare "our maintainers". A post that reads as one more tip is answered as one.
 5. **End on the action and its link:** a closing question buys replies to the body, not reads. Ask one only when replies are the goal and someone will answer them.
 6. **A reply links where its answer continues:** *"part 2's live-state check covers this: <link>"*.
 
