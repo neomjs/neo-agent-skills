@@ -250,6 +250,20 @@ The manifest governs **projection**: a skill declaring `claudeSymlinkRequired: f
 opt-out and is correctly absent from the façade. Per-skill links rather than one directory link,
 because a skill cannot be opted out of a directory symlink.
 
+## Versioning
+
+The package follows semantic versioning from 1.0.0. Its public contract is whatever a consumer relies on:
+- the skill names, their `.agents/skills/<name>/` paths, and the projection the manifest declares;
+- the bins and their flags (`neo-agent-skills-materialize`, `neo-agent-skills-agents-md`, the `check-*` guards);
+- the reusable workflows and their inputs, called at `@vX.Y.Z`.
+
+A maintainer pull request picks its bump by what changes for a consumer:
+- **major:** it removes or renames a skill, bin, flag, workflow input or projected path, or a guard newly fails a consumer that passed before;
+- **minor:** it adds or changes a rule, section, skill, check or option that consumers pick up without changing anything;
+- **patch:** it corrects text or code without changing what any rule or check decides, such as a typo, a broken link or a wrong path.
+
+`scripts/check-version-bump.mjs` checks that the version is new. The pull request body names which part it bumps, and why.
+
 ## Authority
 
 Skills are authored on `dev`:
