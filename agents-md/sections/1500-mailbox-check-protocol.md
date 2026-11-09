@@ -5,7 +5,7 @@ repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
 audiences: maintainer
 ---
 ## §mailbox_check_protocol
-At turn start you MUST call `list_messages({status:'unread'})` and state the count. **Missing/erroring ≠ empty inbox — that is degradation: `/self-repair` before resuming the lane.**
+At turn start you MUST call `list_messages({status:'unread', projection:'counts'})` and state the count. **Missing/erroring ≠ empty inbox — that is degradation: `/self-repair` before resuming the lane.**
 
 **Lead-role baton intake:** a **valid targeted** unread `lead-role-baton` ⇒ `/lead-role` immediately, unless the operator's current-turn instruction overrides; broadcast/stale/malformed never authorizes self-election. Constraints: §lead_role_baton_intake.
 
