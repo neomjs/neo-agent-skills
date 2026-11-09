@@ -141,8 +141,13 @@ function walk(dir, base = dir) {
 }
 
 const
-    dirs      = readdirSync(SKILLS, {withFileTypes: true}).filter(e => e.isDirectory()).map(e => e.name).sort(),
-    declared  = Object.keys(manifest.skills).sort();
+    dirs         = readdirSync(SKILLS, {withFileTypes: true}).filter(e => e.isDirectory()).map(e => e.name).sort(),
+    declared     = Object.keys(manifest.skills).sort(),
+    appSkills    = new Set(declared.filter(s => manifest.skills[s].audiences?.includes('app'))),
+    nonAppSkills = declared.filter(s => !appSkills.has(s)).map(s => ({
+        name: s,
+        re  : new RegExp(`(?:\`${s}\`|(?:^|[\\s("\`])/${s}\\b|\\.agents/skills/${s}\\b)`)
+    }));
 
 // ── 0b. canonical document-reference census ────────────────────────────────────────────────────
 //
@@ -552,13 +557,17 @@ for (const name of declared) {
         }
     }
 
-    // ── 3. reference integrity ──────────────────────────────────────────────────────────────────
+    // ── 3. reference integrity & audience closure ───────────────────────────────────────────────
+    const isAppSkill = appSkills.has(name);
+
     for (const file of ['SKILL.md', ...walk(refs).map(r => join('references', r))]) {
         const full = join(SKILLS, name, file);
 
         if (!/\.md$/.test(full)) continue;
 
-        for (const [, link] of readFileSync(full, 'utf8').matchAll(/\]\((\.\.?\/[^)\s#]+)/g)) {
+        const fileSrc = readFileSync(full, 'utf8');
+
+        for (const [, link] of fileSrc.matchAll(/\]\((\.\.?\/[^)\s#]+)/g)) {
             const target = resolve(dirname(full), link);
 
             // A link leaving the skill tree is outside this lint's jurisdiction: the package does not
@@ -571,7 +580,30 @@ for (const name of declared) {
             if (!target.startsWith(SKILLS)) continue;
 
             if (!existsSync(target)) {
-                errors.push(`${name}/${file} links ${link}, which does not resolve — a router pointing at nothing is worse than one pointing nowhere.`)
+                errors.push(`${name}/${file} links ${link}, which does not resolve — a router pointing at nothing is worse than one pointing nowhere.`);
+                continue
+            }
+
+            if (isAppSkill) {
+                const targetSkill = relative(SKILLS, target).split(/[/\\]/)[0];
+
+                if (targetSkill && !appSkills.has(targetSkill)) {
+                    errors.push(`${name}/${file} links ${link} into non-app skill "${targetSkill}" — --audience app only materializes app skills.`)
+                }
+            }
+        }
+
+        if (isAppSkill) {
+            const units = fileSrc.replace(/^```[\s\S]*?^```/gm, '').split(/\n\s*\n|\n(?=\s*(?:[-*+]|\d+[.)])\s)/);
+
+            for (const unit of units) {
+                if (/\b(Agent OS|maintainer)\b/i.test(unit)) continue;
+
+                for (const {name: nonAppName, re} of nonAppSkills) {
+                    if (re.test(unit)) {
+                        errors.push(`${name}/${file} references non-app skill "${nonAppName}" without an Agent OS / maintainer scope qualifier.`)
+                    }
+                }
             }
         }
     }

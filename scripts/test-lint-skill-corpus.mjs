@@ -296,6 +296,27 @@ const cases = [
         writeFileSync(router, next)
     }, 'an outside workspace runs the harness its developer chose; a router naming one harness\'s tool sends the rest to a tool they lack'],
 
+    ['an app-audience skill linking into a non-app skill directory fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/neural-link/references/neural-link-guide.md'),
+            '\nSee [PR Review Guide](../../pr-review/references/pr-review-guide.md).\n'
+        )
+    }, '--audience app only materializes app skills, so a relative link into a maintainer-only skill dangles in every app workspace'],
+
+    ['an app-audience skill naming a non-app skill without an Agent OS / maintainer qualifier fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/neural-link/references/neural-link-guide.md'),
+            '\nBefore starting work, run `memory-mining` and `/post-review-pickup`.\n'
+        )
+    }, 'an unqualified reference to a maintainer-only skill sends app workspaces to a skill they never received'],
+
+    ['an app-audience skill naming a non-app skill WITH an Agent OS / maintainer qualifier passes', 0, w => {
+        appendFileSync(
+            join(w, '.agents/skills/neural-link/references/neural-link-guide.md'),
+            '\nIn Agent OS maintainer workspaces, run `memory-mining` and `/post-review-pickup`; in standalone app workspaces, inspect `git log`.\n'
+        )
+    }, 'shared payloads may document Agent OS maintainer routes when explicitly scoped'],
+
     ['pair OVER the limit fails', 1, w => padTo(w, LIMIT + 500),
         'the drift that went unnoticed: two individually legal files breaching a loaded surface'],
 
