@@ -23,7 +23,7 @@ const
     roots     = [],
     // The v1 app set, named rather than derived, so a row that silently joins or leaves the
     // audience fails here instead of shipping into every app workspace.
-    APP       = ['neo-app-authoring', 'neural-link'],
+    APP       = ['context-recovery', 'neo-app-authoring', 'neural-link'],
     CONTRIBUTOR = ['identity-firewall', 'pull-request', 'unit-test'],
     serves    = (row, audience) => (row.audiences ?? ['maintainer']).includes(audience),
     MAINTAINER = Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'maintainer')).sort();
@@ -51,10 +51,10 @@ function materialize(root, ...flags) {
 
 const entries = dir => readdirSync(dir).filter(name => !name.startsWith('.')).sort();
 
-// ── The manifest declares the app audience on exactly the v1 set ────────────────────────────────
+// ── The manifest declares the app audience on exactly the app set ───────────────────────────────
 assert.deepEqual(
     Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'app')).sort(), APP,
-    'the app audience is exactly neo-app-authoring and neural-link'
+    'the app audience is exactly context-recovery, neo-app-authoring, and neural-link'
 );
 assert.ok(!MAINTAINER.includes('neo-app-authoring'), 'and the app-only skill is no maintainer skill');
 assert.deepEqual(Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'contributor')).sort(), CONTRIBUTOR);

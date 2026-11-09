@@ -63,12 +63,33 @@ message already redirects it.
 5. **Live substrate check:** if the recovered lane names a GitHub issue, PR,
    review, branch, or CI state, verify the current live state before acting.
    Summaries are recovery hints; GitHub and current source remain the work gate.
+   When the `github-workflow` MCP is available, pass every PR the summary or
+   handover believes open to `list_pull_requests({repo, believedOpen: [...]})`
+   and act on `belief.falsified`; otherwise run `gh pr view <n> --json state,mergedAt`.
 
 5a. **Direction check:** if the recovered lane's target repository (including a
    sibling checkout such as `../neo-stage` when the session is rooted in
    `neomjs/neo`) carries a `VISION.md`, `ROADMAP.md`, or repo-local
    `AGENTS.md`, read them before asserting lane state; a lane that contradicts
    them is not resumed, it is re-planned against the roadmap.
+
+### 3a. Substrate Mapping & Standalone Customization
+
+When `neo-mjs-memory-core` is not mounted (for example in an `--audience app` or
+standalone repository), run the **Standalone** column below instead of failing
+closed, and record the local source (`git` / `gh` / `.agents/handover.md`) in
+the `context-recovery:` ledger. Repositories can customize their local handover
+file path, issue tracker, or direction documents in their repo-local `AGENTS.md`.
+
+| Check | Agent OS (`neo-mjs-memory-core` + `github-workflow` MCP) | Standalone (`git` / `gh` / local workspace) |
+|---|---|---|
+| **1. Mailbox / inbound changes** | `list_messages({status: 'unread'})` | `git fetch` + `gh pr view` / `gh issue view --comments` on active threads since the last turn/commit timestamp |
+| **1a. What you sent (handover + outbox)** | `get_message` latest self-DM (`from == to == @me`) + `list_messages({box: 'outbox'})` | Read the local handover file (e.g. `.agents/handover.md`) in full + own recent PR/issue comments |
+| **2. Chronological recency** | `query_recent_turns({agentIdentity: '@me', detail: 'summary', limit: 20})` | `git status -sb`, `git log -n 10 --oneline`, `git diff --stat`, or the tail of the local harness transcript |
+| **3. Semantic recall** | `query_raw_memories` with 2-4 sharp anchors from Step 2 | `git log -S "<anchor>"` / `gh issue list --search "<anchor>"` using exact symbols or IDs from Step 2 |
+| **4. Session rollup** | `query_summaries`, `pre_brief_session`, or `resume_session` when needed | Local session notes or linked parent issue/epic body |
+| **5. Live substrate check** | `list_pull_requests({repo, believedOpen: [...]})` (`belief.falsified`) + `get_conversation` | `gh pr view <n> --json state,mergedAt` + `gh pr checks <n>` / `gh issue view <n>` |
+| **5a. Direction check** | Read target repo `VISION.md`, `ROADMAP.md`, and `AGENTS.md` | Read repo `VISION.md`, `ROADMAP.md`, and `AGENTS.md` |
 
 Use `detail: 'full'` only when summaries are insufficient to identify the next
 action. Summary detail is the cheap graph-first path; full detail joins Chroma

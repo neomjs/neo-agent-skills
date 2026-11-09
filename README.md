@@ -32,7 +32,7 @@ this package exists to make unnecessary.
 
 **A workspace that is not ours projects one audience.** `neo-agent-skills-materialize --audience app`
 (and `--check --audience app`) links only the skills whose manifest row lists `app` — today
-`neo-app-authoring` and `neural-link` — and both surfaces become per-skill links, because a directory
+`context-recovery`, `neo-app-authoring`, and `neural-link` — and both surfaces become per-skill links, because a directory
 link would expose the maintainer corpus. `neo-app` passes the flag from the workspaces it creates; the
 audience is declared by the caller, never inferred. A row without `audiences` serves maintainers, so the
 projection without the flag is unchanged. The matching instruction file comes from
