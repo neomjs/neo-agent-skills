@@ -1,8 +1,10 @@
 # Context Recovery Workflow
 
-This payload is the canonical post-compaction recovery runbook. It reconstructs
-"what just happened, in order" before the agent resumes work, claims a lane, or
-asks the operator to restate context.
+> **Standalone / `--audience app` workspaces (no `neo-mjs-memory-core`):** stop reading this file and read [`standalone-context-recovery.md`](./standalone-context-recovery.md) instead.
+
+This payload is the canonical post-compaction recovery runbook for Agent OS
+maintainer workspaces. It reconstructs "what just happened, in order" before the
+agent resumes work, claims a lane, or asks the operator to restate context.
 
 ## 1. Trigger
 
@@ -13,11 +15,8 @@ Use this workflow when any of these are true:
   lossy summary rather than live session context.
 - A peer or operator says the agent re-derived state across a compaction.
 
-Do not use this skill for ordinary historical research. In Agent OS maintainer
-workspaces, use `memory-mining` for pre-task semantic retrospectives and
-`session-sunset` for intentional handover; in standalone or `--audience app`
-workspaces, use `git log` / `gh issue list` for historical lookup and your
-local handover file (e.g. `.agents/handover.md`) for session handovers.
+Do not use this skill for ordinary historical research. Use `memory-mining` for
+pre-task semantic retrospectives and `session-sunset` for intentional handover.
 
 ## 2. Authority And Safety
 
@@ -66,33 +65,14 @@ message already redirects it.
 5. **Live substrate check:** if the recovered lane names a GitHub issue, PR,
    review, branch, or CI state, verify the current live state before acting.
    Summaries are recovery hints; GitHub and current source remain the work gate.
-   When the `github-workflow` MCP is available, pass every PR the summary or
-   handover believes open to `list_pull_requests({repo, believedOpen: [...]})`
-   and act on `belief.falsified`; otherwise run `gh pr view <n> --json state,mergedAt`.
+   Pass every PR the summary or handover believes open to
+   `list_pull_requests({repo, believedOpen: [...]})` and act on `belief.falsified`.
 
 5a. **Direction check:** if the recovered lane's target repository (including a
    sibling checkout such as `../neo-stage` when the session is rooted in
    `neomjs/neo`) carries a `VISION.md`, `ROADMAP.md`, or repo-local
    `AGENTS.md`, read them before asserting lane state; a lane that contradicts
    them is not resumed, it is re-planned against the roadmap.
-
-### 3a. Substrate Mapping & Standalone Customization
-
-When `neo-mjs-memory-core` is not mounted (for example in an `--audience app` or
-standalone repository), run the **Standalone** column below instead of failing
-closed, and record the local source (`git` / `gh` / `.agents/handover.md`) in
-the `context-recovery:` ledger. Repositories can customize their local handover
-file path, issue tracker, or direction documents in their repo-local `AGENTS.md`.
-
-| Check | Agent OS (`neo-mjs-memory-core` + `github-workflow` MCP) | Standalone (`git` / `gh` / local workspace) |
-|---|---|---|
-| **1. Mailbox / inbound changes** | `list_messages({status: 'unread'})` | `git fetch` + `gh pr view` / `gh issue view --comments` on active threads since the last turn/commit timestamp |
-| **1a. What you sent (handover + outbox)** | `get_message` latest self-DM (`from == to == @me`) + `list_messages({box: 'outbox'})` | Read the local handover file (e.g. `.agents/handover.md`) in full + own recent PR/issue comments |
-| **2. Chronological recency** | `query_recent_turns({agentIdentity: '@me', detail: 'summary', limit: 20})` | `git status -sb`, `git log -n 10 --oneline`, `git diff --stat`, or the tail of the local harness transcript |
-| **3. Semantic recall** | `query_raw_memories` with 2-4 sharp anchors from Step 2 | `git log -S "<anchor>"` / `gh issue list --search "<anchor>"` using exact symbols or IDs from Step 2 |
-| **4. Session rollup** | `query_summaries`, `pre_brief_session`, or `resume_session` when needed | Local session notes or linked parent issue/epic body |
-| **5. Live substrate check** | `list_pull_requests({repo, believedOpen: [...]})` (`belief.falsified`) + `get_conversation` | `gh pr view <n> --json state,mergedAt` + `gh pr checks <n>` / `gh issue view <n>` |
-| **5a. Direction check** | Read target repo `VISION.md`, `ROADMAP.md`, and `AGENTS.md` | Read repo `VISION.md`, `ROADMAP.md`, and `AGENTS.md` |
 
 Use `detail: 'full'` only when summaries are insufficient to identify the next
 action. Summary detail is the cheap graph-first path; full detail joins Chroma
@@ -102,7 +82,7 @@ for prompt/response content and should be targeted.
 evidence about the index, not the store; a failed or truncated read is not a read
 that found nothing. Read the primary artifact before asserting any absence.
 
-6. **Identity quarantine (post-compaction prior, Agent OS seats with a generated memory layer only — skip in standalone or `--audience app` workspaces):** the self-story is the
+6. **Identity quarantine (post-compaction prior):** the self-story is the
    context most silently reconstructed after compaction — nothing fails loudly
    when it is wrong. **Load-proof check first, per harness** — a seat with a
    generated memory layer re-loads it mechanically, but the proof differs by
@@ -126,7 +106,7 @@ that found nothing. Read the primary artifact before asserting any absence.
    rule does the blocking: any identity fact about a named agent (self OR peer)
    carries that bearer's record citation — mine your own trail for self-claims;
    cite the peer's record or drop the name for peer-claims. Introspection is
-   not citation. (Agent OS maintainer discipline + fixture set:
+   not citation. (The full discipline + fixture set:
    `.agents/skills/pr-review/audits/identity-claim-audit.md`.)
 
 ## 4. Lane Reconstruction
@@ -154,17 +134,12 @@ ambiguous; name the missing surface and the next falsifying probe.
 
 - If an own PR needs an author response, route there before new work.
 - If a designated review request is current and no own author lane is higher
-  priority, review that PR (`pr-review` in Agent OS maintainer workspaces).
+  priority, enter `pr-review`.
 - If a ticket or branch is recovered as the active implementation lane, resume
   only after confirming ownership and collision state.
-- If no lane survives recovery:
-  - **Agent OS maintainer workspaces:** run `post-review-pickup` and choose
-    another named lane. A lossy summary alone is not evidence to stop; per
-    `§no_hold_state`, recovery failure is a routing input, not a hold terminal.
-  - **Standalone / `--audience app` workspaces:** report the `context-recovery:`
-    ledger to the user, name what was recovered and what was not, and ask which
-    task or issue to resume next (or continue with `neo-app-authoring` /
-    `neural-link` when an active app task is already clear).
+- If no lane survives recovery, run `post-review-pickup` and choose another
+  named lane. A lossy summary alone is not evidence to stop; per
+  `§no_hold_state`, recovery failure is a routing input, not a hold terminal.
 
 Only ask the operator to restate context after the mailbox, recency, semantic,
 session-rollup, and live-state probes have failed to identify a safe next action.

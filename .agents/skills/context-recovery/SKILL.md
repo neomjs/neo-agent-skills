@@ -5,4 +5,6 @@ description: "Post-compaction runbook for reconstructing active lane state; use 
 
 # Context Recovery Skill
 
-If you are recovering after context compaction/compression or a summarized-session resume, you MUST immediately read and strictly adhere to `.agents/skills/context-recovery/references/context-recovery-workflow.md` to reconstruct active lane state from Memory Core recency, semantic recall, session rollups, and A2A (or standalone git/GitHub fallbacks) before asserting lane state or asking the operator to re-explain.
+If you are recovering after context compaction/compression or a summarized-session resume, immediately read the runbook matching your workspace before asserting lane state or asking the user to re-explain:
+- **Agent OS maintainer workspaces (`neo-mjs-memory-core` mounted):** read `.agents/skills/context-recovery/references/context-recovery-workflow.md`.
+- **Standalone / `--audience app` workspaces (no `neo-mjs-memory-core`):** read `.agents/skills/context-recovery/references/standalone-context-recovery.md`.
