@@ -593,15 +593,26 @@ for (const name of declared) {
             }
         }
 
+        // Three named prose forms are checked outside code fences: backticked `<name>`,
+        // slash-invoked `/<name>`, and path-prefixed `.agents/skills/<name>`. Only an explicit
+        // `Agent OS` scope (either per paragraph/list-item unit or in a reference file's intro
+        // callout when a skill splits its Agent OS and standalone references) exempts a match.
         if (isAppSkill) {
-            const units = fileSrc.replace(/^```[\s\S]*?^```/gm, '').split(/\n\s*\n|\n(?=\s*(?:[-*+]|\d+[.)])\s)/);
+            const
+                withoutFences = fileSrc.replace(/^```[\s\S]*?^```/gm, ''),
+                intro         = withoutFences.split(/\n##\s/)[0] || '',
+                fileScoped    = file !== 'SKILL.md' && /\bAgent OS\b/i.test(intro) && /\]\(\.\/[^)\s#]+\.md\)/.test(intro);
 
-            for (const unit of units) {
-                if (/\b(Agent OS|maintainer)\b/i.test(unit)) continue;
+            if (!fileScoped) {
+                const units = withoutFences.split(/\n\s*\n|\n(?=\s*(?:[-*+]|\d+[.)])\s)/);
 
-                for (const {name: nonAppName, re} of nonAppSkills) {
-                    if (re.test(unit)) {
-                        errors.push(`${name}/${file} references non-app skill "${nonAppName}" without an Agent OS / maintainer scope qualifier.`)
+                for (const unit of units) {
+                    if (/\bAgent OS\b/i.test(unit)) continue;
+
+                    for (const {name: nonAppName, re} of nonAppSkills) {
+                        if (re.test(unit)) {
+                            errors.push(`${name}/${file} references non-app skill "${nonAppName}" without an Agent OS scope qualifier.`)
+                        }
                     }
                 }
             }

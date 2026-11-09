@@ -298,24 +298,45 @@ const cases = [
 
     ['an app-audience skill linking into a non-app skill directory fails', 1, w => {
         appendFileSync(
-            join(w, '.agents/skills/neural-link/references/neural-link-guide.md'),
+            join(w, '.agents/skills/neural-link/references/operational-handbook.md'),
             '\nSee [PR Review Guide](../../pr-review/references/pr-review-guide.md).\n'
         )
     }, '--audience app only materializes app skills, so a relative link into a maintainer-only skill dangles in every app workspace'],
 
-    ['an app-audience skill naming a non-app skill without an Agent OS / maintainer qualifier fails', 1, w => {
+    ['an app-audience skill naming a non-app skill in backtick form (`<name>`) without Agent OS scope fails', 1, w => {
         appendFileSync(
-            join(w, '.agents/skills/neural-link/references/neural-link-guide.md'),
-            '\nBefore starting work, run `memory-mining` and `/post-review-pickup`.\n'
+            join(w, '.agents/skills/neural-link/references/operational-handbook.md'),
+            '\nBefore starting work, run `memory-mining`.\n'
         )
-    }, 'an unqualified reference to a maintainer-only skill sends app workspaces to a skill they never received'],
+    }, 'backticked non-app skill references must fail on their own when unqualified'],
 
-    ['an app-audience skill naming a non-app skill WITH an Agent OS / maintainer qualifier passes', 0, w => {
+    ['an app-audience skill naming a non-app skill in slash form (/<name>) without Agent OS scope fails', 1, w => {
         appendFileSync(
-            join(w, '.agents/skills/neural-link/references/neural-link-guide.md'),
-            '\nIn Agent OS maintainer workspaces, run `memory-mining` and `/post-review-pickup`; in standalone app workspaces, inspect `git log`.\n'
+            join(w, '.agents/skills/neural-link/references/operational-handbook.md'),
+            '\nAfter finishing the check, invoke /post-review-pickup.\n'
         )
-    }, 'shared payloads may document Agent OS maintainer routes when explicitly scoped'],
+    }, 'slash-invoked non-app skill references must fail on their own when unqualified'],
+
+    ['an app-audience skill naming a non-app skill in path form (.agents/skills/<name>) without Agent OS scope fails', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/neural-link/references/operational-handbook.md'),
+            '\nConsult .agents/skills/pr-review/audits/identity-claim-audit.md before proceeding.\n'
+        )
+    }, 'path-prefixed non-app skill references must fail on their own when unqualified'],
+
+    ['the bare word "maintainer" does not exempt a non-app skill reference in an app-audience skill', 1, w => {
+        appendFileSync(
+            join(w, '.agents/skills/neural-link/references/operational-handbook.md'),
+            '\nAsk a maintainer, then run `pull-request`.\n'
+        )
+    }, 'in an app workspace "maintainer" can mean the app\'s own maintainer, so only an explicit Agent OS scope exempts'],
+
+    ['an app-audience skill naming a non-app skill WITH an Agent OS qualifier passes', 0, w => {
+        appendFileSync(
+            join(w, '.agents/skills/neural-link/references/operational-handbook.md'),
+            '\nIn Agent OS workspaces, run `memory-mining` and `/post-review-pickup`; in standalone app workspaces, inspect `git log`.\n'
+        )
+    }, 'shared payloads may document Agent OS routes when explicitly scoped'],
 
     ['pair OVER the limit fails', 1, w => padTo(w, LIMIT + 500),
         'the drift that went unnoticed: two individually legal files breaching a loaded surface'],
