@@ -13,8 +13,11 @@ Use this workflow when any of these are true:
   lossy summary rather than live session context.
 - A peer or operator says the agent re-derived state across a compaction.
 
-Do not use this skill for ordinary historical research. Use `memory-mining` for
-pre-task semantic retrospectives and `session-sunset` for intentional handover.
+Do not use this skill for ordinary historical research. In Agent OS maintainer
+workspaces, use `memory-mining` for pre-task semantic retrospectives and
+`session-sunset` for intentional handover; in standalone or `--audience app`
+workspaces, use `git log` / `gh issue list` for historical lookup and your
+local handover file (e.g. `.agents/handover.md`) for session handovers.
 
 ## 2. Authority And Safety
 
@@ -99,7 +102,7 @@ for prompt/response content and should be targeted.
 evidence about the index, not the store; a failed or truncated read is not a read
 that found nothing. Read the primary artifact before asserting any absence.
 
-6. **Identity quarantine (post-compaction prior):** the self-story is the
+6. **Identity quarantine (post-compaction prior, Agent OS seats with a generated memory layer only — skip in standalone or `--audience app` workspaces):** the self-story is the
    context most silently reconstructed after compaction — nothing fails loudly
    when it is wrong. **Load-proof check first, per harness** — a seat with a
    generated memory layer re-loads it mechanically, but the proof differs by
@@ -123,7 +126,7 @@ that found nothing. Read the primary artifact before asserting any absence.
    rule does the blocking: any identity fact about a named agent (self OR peer)
    carries that bearer's record citation — mine your own trail for self-claims;
    cite the peer's record or drop the name for peer-claims. Introspection is
-   not citation. (The full discipline + fixture set:
+   not citation. (Agent OS maintainer discipline + fixture set:
    `.agents/skills/pr-review/audits/identity-claim-audit.md`.)
 
 ## 4. Lane Reconstruction
@@ -151,12 +154,17 @@ ambiguous; name the missing surface and the next falsifying probe.
 
 - If an own PR needs an author response, route there before new work.
 - If a designated review request is current and no own author lane is higher
-  priority, enter `pr-review`.
+  priority, review that PR (`pr-review` in Agent OS maintainer workspaces).
 - If a ticket or branch is recovered as the active implementation lane, resume
   only after confirming ownership and collision state.
-- If no lane survives recovery, run `post-review-pickup` and choose another
-  named lane. A lossy summary alone is not evidence to stop; per
-  `§no_hold_state`, recovery failure is a routing input, not a hold terminal.
+- If no lane survives recovery:
+  - **Agent OS maintainer workspaces:** run `post-review-pickup` and choose
+    another named lane. A lossy summary alone is not evidence to stop; per
+    `§no_hold_state`, recovery failure is a routing input, not a hold terminal.
+  - **Standalone / `--audience app` workspaces:** report the `context-recovery:`
+    ledger to the user, name what was recovered and what was not, and ask which
+    task or issue to resume next (or continue with `neo-app-authoring` /
+    `neural-link` when an active app task is already clear).
 
 Only ask the operator to restate context after the mailbox, recency, semantic,
 session-rollup, and live-state probes have failed to identify a safe next action.
