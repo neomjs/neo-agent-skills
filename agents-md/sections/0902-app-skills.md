@@ -5,13 +5,15 @@ repos: neo-app-workspace
 audiences: app
 ---
 ## §skills
-Two skills ship with this workspace, in `.agents/skills/` and `.claude/skills/`:
+Three skills ship with this workspace, in `.agents/skills/` and `.claude/skills/`:
 - **`neo-app-authoring`** — read it before writing or changing anything under `apps/`. It covers
   the class shape, reactive configs, stores and models, state providers and styles.
 - **`neural-link`** — use it to inspect and verify the running app. The Neural Link is already
   configured for this workspace (`.mcp.json` for Claude Code, `.codex/config.toml` for Codex): start
   your harness in this folder and approve the server once. The app connects in development
   (`useAiClient` in `neo-config.json`).
+- **`context-recovery`** — read it immediately after context compaction or a summarized-session
+  resume to reconstruct active state from local `git`, `gh`, and handover files before continuing.
 
 **"No active App Worker sessions found"** means the page loaded before the Neural Link started. The
 app stops dialing after five tries (about 15 seconds) and dials again only when its window is focused

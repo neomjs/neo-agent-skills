@@ -1,8 +1,10 @@
 # Context Recovery Workflow
 
-This payload is the canonical post-compaction recovery runbook. It reconstructs
-"what just happened, in order" before the agent resumes work, claims a lane, or
-asks the operator to restate context.
+> **Standalone / `--audience app` workspaces (no `neo-mjs-memory-core`):** stop reading this file and read [`standalone-context-recovery.md`](./standalone-context-recovery.md) instead.
+
+This payload is the canonical post-compaction recovery runbook for Agent OS
+maintainer workspaces. It reconstructs "what just happened, in order" before the
+agent resumes work, claims a lane, or asks the operator to restate context.
 
 ## 1. Trigger
 
@@ -63,6 +65,8 @@ message already redirects it.
 5. **Live substrate check:** if the recovered lane names a GitHub issue, PR,
    review, branch, or CI state, verify the current live state before acting.
    Summaries are recovery hints; GitHub and current source remain the work gate.
+   Pass every PR the summary or handover believes open to
+   `list_pull_requests({repo, believedOpen: [...]})` and act on `belief.falsified`.
 
 5a. **Direction check:** if the recovered lane's target repository (including a
    sibling checkout such as `../neo-stage` when the session is rooted in

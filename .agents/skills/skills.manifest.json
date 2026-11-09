@@ -36,7 +36,8 @@
     },
     "context-recovery": {
       "name": "context-recovery",
-      "description": "Post-compaction runbook for reconstructing active lane state; use immediately after context compaction/compression, resuming a summarized session, or detecting a lossy summary."
+      "description": "Post-compaction runbook for reconstructing active lane state; use immediately after context compaction/compression, resuming a summarized session, or detecting a lossy summary.",
+      "audiences": ["maintainer", "app"]
     },
     "create-skill": {
       "name": "create-skill",
