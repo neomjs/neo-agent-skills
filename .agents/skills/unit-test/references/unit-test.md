@@ -2,7 +2,7 @@
 
 **Audience:** use the declared instruction audience. With none declared, use `maintainer`;
 missing tools never select `contributor`. Contributors follow the public-source steps below;
-private-service initialization, retrieval and diary saves apply only to maintainers.
+retrieval and diary saves apply only to maintainers.
 
 ## 1. Review-Only Boundary
 
@@ -10,21 +10,22 @@ During a PR review, `pr-review` owns execution-evidence allocation. Merely inspe
 
 - Green required CI at the exact head owns routine unit/integration execution; do not rerun it for duplicate evidence.
 - `NEO_TEST_SKIP_CI` coverage is excluded from that claim. The author supplies an exact-head non-CI receipt; the reviewer validates or challenges it and runs locally only for a named falsifier when their environment has the capability.
-- Initialization, grounding, implementation, and execution below apply only when writing, modifying, fixing, or explicitly running unit tests.
+- Grounding, implementation, and execution below apply only when writing, modifying, fixing, or explicitly running unit tests.
 
-**Review-only fixture:** A PR adds `test/playwright/unit/ai/example.spec.mjs`, exact-head unit CI is green, and no guarded behavior is claimed. Inspect its canonical path and Neo test idioms; do not initialize Memory Core, load authoring examples, or rerun the spec.
+**Review-only fixture:** A PR adds `test/playwright/unit/ai/example.spec.mjs`, exact-head unit CI is green, and no guarded behavior is claimed. Inspect its canonical path and Neo test idioms; do not load authoring examples or rerun the spec.
 
-## 2. Author/Executor Initialization (Mandatory)
+## 2. Author/Executor Grounding
 
-After this workflow is activated:
+Read what the work needs, once per session:
 
-1. **Maintainer only:** run the Memory Core healthcheck and `get_all_summaries({limit: 5})`; save the initialization turn with `add_memory`.
-2. Read the repository sources of truth:
-   - `src/Neo.mjs`: `setupClass()`, `create()`, namespaces, and `ntype`.
-   - `src/core/Base.mjs`: static/reactive configs, lifecycle, and config hooks.
-   - `test/playwright/setup.mjs`: direct App/VDom wiring and `unitTestMode`.
-   - The Engine's [Unit Testing guide](https://github.com/neomjs/neo/blob/dev/learn/guides/testing/UnitTesting.md): canonical testing patterns.
-3. Read the closest examples: `vdom/RealWorldUpdates.spec.mjs`, `collection/Base.spec.mjs`, and `core/Effect.spec.mjs` under `test/playwright/unit/`.
+| The work | Read first |
+|---|---|
+| Running specs | nothing beyond this file |
+| Arms in, or a fix to, an existing spec | that spec, whole: it is the example |
+| A new spec file | the closest sibling spec (the subject's directory, else its base class) and `test/playwright/setup.mjs` (App/VDom wiring, `unitTestMode`) |
+| A pattern no sibling shows, or a change to the harness | also `src/Neo.mjs` (`setupClass()`, `create()`, namespaces, `ntype`), `src/core/Base.mjs` (configs, lifecycle, config hooks), the Engine's [Unit Testing guide](https://github.com/neomjs/neo/blob/dev/learn/guides/testing/UnitTesting.md), and `vdom/RealWorldUpdates.spec.mjs`, `collection/Base.spec.mjs`, `core/Effect.spec.mjs` under `test/playwright/unit/` |
+
+Unsure of the row: take the next heavier one.
 
 ## 3. Operational Protocols
 
