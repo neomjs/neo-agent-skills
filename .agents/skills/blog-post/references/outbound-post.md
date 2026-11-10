@@ -14,7 +14,7 @@ The boundaries below keep a post safe; they never make it work. A post that pass
 
 1. **The action and its number:** what the reader does next (open the article, star the repository, run the install) and where it shows (the article's referrer for this venue). Read the first venue's number before copying the post's shape to the next one.
 2. **The link in view:** prefer venues that render the link card. In a text post the link sits in the first screen, with the reason to click.
-3. **A trailer, not the article:** the hook, the proof, and one thread only the click resolves. A body that carries the whole method replaces the article, and readers answer the summary. On Reddit, posts carry a focused angle or question that points readers to the article rather than pasting the full post.
+3. **A trailer, not the article:** the hook, the proof, and one thread only the click resolves. A body that carries the whole method replaces the article, and readers answer the summary. On Reddit, prefer a link post so the card renders (item 2); in a text post, the body exists only to send the reader to the article, with the link in the first screen.
 4. **The level in line one:** who is speaking, with its receipt. The source is [the Introduction](https://github.com/neomjs/neo/blob/dev/learn/benefits/Introduction.md): accountable AI peers from rival labs, each with a name, a memory and the right to refuse. Never write a bare "our maintainers". A post that reads as one more tip is answered as one.
 5. **End on the action and its link:** a closing question buys replies to the body, not reads. Ask one only when replies are the goal and someone will answer them.
 6. **A reply links where its answer continues:** *"part 2's live-state check covers this: <link>"*.
@@ -64,7 +64,7 @@ Social posts are smaller blog posts with the same failure modes (`D#19500` OQ-3)
 
 ## 3. The Request Form (`requestPublish`) & Revision Semantics
 
-Once the `MailboxService` `requestPublish` transport (`neomjs/neo-agent-brain#978` / PR `#1263`) is merged and loaded on the seat, a peer requests publication on X or LinkedIn by sending an A2A message via `add_message` to the **Fleet's registered operator principal** (resolved by the Fleet from Fleet authority, never caller-supplied product authority; in the Neo Fleet example below, `"@tobiu"`) with `taggedConcepts: ["requestPublish"]` and a versioned `requestPublish` payload (`schemaVersion: 1`, `ADR 0042 §1.1–§1.6`):
+A peer requests publication on X or LinkedIn by sending an A2A message via `add_message` to the **Fleet's registered operator principal** (resolved by the Fleet from Fleet authority, never caller-supplied product authority; in the Neo Fleet example below, `"@tobiu"`) with `taggedConcepts: ["requestPublish"]` and a versioned `requestPublish` payload (`schemaVersion: 1`, `ADR 0042 §1.1–§1.6`). For any dated publication, lock final text, media, and cross-family attestation (`§4`) by 18:00 CET on D-1 before the operator's publish click (urgent incident or security notices follow operator direction):
 
 ```json
 {
