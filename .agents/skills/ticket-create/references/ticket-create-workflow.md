@@ -37,7 +37,7 @@ Record both on the same attestation line in the ticket body, e.g. `Live latest-o
 **(ii) A2A in-flight claim sweep (mandatory) — catches IN-FLIGHT duplicates not yet on GitHub:** in a thundering herd a peer's intent first exists only as an A2A `[lane-claim]`/`[lane-intent]` invisible to `(i)`. Immediately before `create_issue`, scan the mailbox for recent claims on the same scope:
 
 ```js
-list_messages({ status: 'all', limit: 30 })  // ALL read-states — recency is the bound, not read-status
+list_messages({ status: 'all', projection: 'compact', limit: 30 })  // ALL read-states
 ```
 
 **Filter by recency + scope, NOT read-status.** A `[lane-claim]` already marked read during turn-start mailbox triage is still an active claim — `status: 'unread'` hides it and causes duplicate filing (read-status tracks consumption, not relevance). Keep messages whose `sentAt` falls in the herd window (~last 30–60 min) **and** whose `[lane-claim]`/`[lane-intent]` subject overlaps your scope (`taggedConcepts: ['lane-claim']` is optional; subject-scan stays primary).
