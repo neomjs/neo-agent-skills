@@ -46,19 +46,19 @@ de-confliction, and a reconstructed lane is stale if a new message redirects it.
      `mark_read` and read-projection rollbacks hide it from `unread` scoping).
      None → `sunset-body: none-found`.
    - **Outbox:** `list_messages({box: 'outbox', projection: 'compact', limit: 10})`,
-     newest first; page on only while rows are newer than the handover's `sentAt`.
-     The test is whether the outbox is a commitment's ONLY durable holder (a
-     relayed ruling, lane claim, verdict, measurement, or negative result absent
-     from inbox, turn memories, and GitHub); a row with `readAt: null` still
-     costs silent re-derivation and a second, contradicting answer beside the
-     first. None → `outbox: none-in-window`.
+     newest first; page on only while rows are newer than the handover's `sentAt`
+     (or within the current window when no handover exists). The test is whether
+     the outbox is a commitment's ONLY durable holder (a relayed ruling, lane
+     claim, verdict, measurement, or negative result absent from inbox, turn
+     memories, and GitHub); a row with `readAt: null` still costs silent
+     re-derivation and a contradicting answer. None → `outbox: none-in-window`.
 
 **Currency rule:** when step 1a finds a handover and no own outbox row is newer
 than its `sentAt`, step 2 runs with `limit: 3`, and steps 3 and 4 are skipped
 unless one of those three turns names something the handover lacks. **Fallback:**
 without a handover, or after a compaction, steps 2–4 run as today.
 **Falsifier:** a recovery on the short path that later re-derives a fact the
-long path would have surfaced; record the specimen on `neomjs/neo-agent-skills#326`.
+long path would have surfaced; record the specimen as a `defect-note` or on `neomjs/neo-agent-skills#326`.
 
 2. **Recency feed:** call `query_recent_turns({agentIdentity: '@me', detail:
    'summary', limit: 20})` first (`limit: 3` under the currency rule): identify
@@ -92,8 +92,10 @@ that found nothing. Read the primary artifact before asserting any absence.
    first, per harness:**
    - **Kimi:** `<seat-memory-layer source="…" trigger="session-boot|post-compact-reload">` plus `MEMORY.md` / `identity.md` in context.
    - **OpenCode:** `MEMORY.md` / `identity.md` content (e.g. the hot-index cap header) via `opencode.jsonc → instructions`.
-   Proof present: the layer is loaded; the quarantine below covers only facts
-   outside it. Proof absent: read [`./seat-memory-loader-diagnostics.md`](./seat-memory-loader-diagnostics.md).
+   Never read `turnPresence.fresh` as load proof — it belongs to the sibling
+   presence hook (`#15658`-class wiring) and can be green while the anchor
+   loader is broken. Proof present: the layer is loaded; the quarantine below
+   covers only facts outside it. Proof absent: read [`./seat-memory-loader-diagnostics.md`](./seat-memory-loader-diagnostics.md).
    Before writing ANYTHING identity-bearing (memory files, biography prose,
    self-description in posts or PRs), re-hydrate identity from own
    origin/identity memories + the recency feed. Any identity fact about a named
