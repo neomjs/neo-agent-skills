@@ -1,7 +1,7 @@
 {
   "name": "neo-agent-skills",
-  "version": "1.4.5",
-  "description": "Install the workflow substrate a cross-model AI team actually runs on: ticket intake, PR review gates, lane coordination and guards, versioned as a package. The skills Neo.mjs maintainers load every session — materialized into your repo, not copied.",
+  "version": "1.4.6",
+  "description": "The working rules (skills) the cross-model Neo.mjs agent team loads every session: ticket intake, PR review gates, lane coordination and guards, versioned as one package. For apps built on Neo.mjs, for contributors, and for anyone who wants to read them.",
   "type": "module",
   "license": "MIT",
   "repository": {
