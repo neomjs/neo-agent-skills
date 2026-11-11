@@ -32,6 +32,13 @@ function write(root, file, body) {
     return join(root, file)
 }
 
+/** @summary Runs git in a fixture tree and fails the arm when git does. */
+function git(root, ...args) {
+    const result = spawnSync('git', args, {cwd: root, encoding: 'utf8'});
+
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`)
+}
+
 /** @summary Collects a run's stdout/stderr without printing it. */
 function capture(argv, cwd, targets) {
     const lines = [];
@@ -140,6 +147,69 @@ function capture(argv, cwd, targets) {
 
     assert.equal(code, 1, 'a target that exists and cannot be measured is a failure');
     assert.match(text, /could not be measured/);
+}
+
+// ── A link into a git-ignored file the tree has not generated is N/A, never an error ───────────
+// A consumer that generates AGENTS.md at install tracks the harness entry and ignores the file it
+// names, so a CI tree that never installed holds exactly this link. The generator refuses an
+// over-budget variant when it writes the file; until then the tree has nothing to measure.
+{
+    const root = fixture();
+
+    git(root, 'init', '--quiet');
+    write(root, '.gitignore', '/AGENTS.md\n');
+    mkdirSync(join(root, '.claude'), {recursive: true});
+    symlinkSync('../AGENTS.md', join(root, '.claude/CLAUDE.md'));
+
+    const row = collectReport({root}).find(entry => entry.file === '.claude/CLAUDE.md');
+
+    assert.equal(row.applicable, false, 'an unbuilt projection is not applicable');
+    assert.equal(row.projection, 'AGENTS.md', 'and the row names the file it links to');
+    assert.equal(row.error, null, 'and it is no error');
+
+    const {code, text} = capture([], root);
+
+    assert.equal(code, 0);
+    assert.match(text, /links to AGENTS\.md, a git-ignored projection this tree has not generated/);
+
+    write(root, 'AGENTS.md', 'a'.repeat(PER_FILE_LIMIT_BYTES + 1));
+
+    const built = collectReport({root}).find(entry => entry.file === '.claude/CLAUDE.md');
+
+    assert.equal(built.projection, null, 'once generated, the link is measured through as before');
+    assert.equal(built.over, true, 'and an over-budget file still breaches through it');
+    assert.equal(capture([], root).code, 1)
+}
+
+// ── A dangling link to a path git does not ignore stays an error, inside a repository too ──────
+{
+    const root = fixture();
+
+    git(root, 'init', '--quiet');
+    mkdirSync(join(root, '.claude'), {recursive: true});
+    symlinkSync('../AGENTS.md', join(root, '.claude/CLAUDE.md'));
+
+    const row = collectReport({root}).find(entry => entry.file === '.claude/CLAUDE.md');
+
+    assert.equal(row.projection, null, 'a target git does not ignore is no projection');
+    assert.ok(row.error, 'so the dangling link fails closed');
+    assert.equal(capture([], root).code, 1)
+}
+
+// ── Git is asked only about a dangling link inside the tree ────────────────────────────────────
+{
+    const root  = fixture(),
+          asked = [];
+
+    mkdirSync(join(root, '.claude'), {recursive: true});
+    symlinkSync('../../outside.md', join(root, '.claude/CLAUDE.md'));
+
+    const row = collectReport({root, isIgnored: (tree, path) => asked.push(path) > 0})
+        .find(entry => entry.file === '.claude/CLAUDE.md');
+
+    assert.equal(row.projection, null, 'a link out of the tree is never a projection of it');
+    assert.deepEqual(asked, [], 'so git is not asked about it');
+    assert.ok(row.error, 'and the link still fails closed')
 }
 
 // ── Whole-line @-imports are summed as one loaded unit ─────────────────────────────────────────

@@ -12,11 +12,12 @@
  * caller workspace before invoking it.
  */
 
-import {lstatSync, readFileSync, realpathSync}       from 'node:fs';
-import {dirname, isAbsolute, join, relative, resolve} from 'node:path';
-import process                                       from 'node:process';
-import {parseArgs}                                   from 'node:util';
-import {fileURLToPath}                               from 'node:url';
+import {spawnSync}                                               from 'node:child_process';
+import {existsSync, lstatSync, readFileSync, readlinkSync, realpathSync} from 'node:fs';
+import {dirname, isAbsolute, join, relative, resolve}           from 'node:path';
+import process                                                 from 'node:process';
+import {parseArgs}                                             from 'node:util';
+import {fileURLToPath}                                         from 'node:url';
 
 /**
  * Per-file budget, in bytes — Antigravity's empirical `<RULE[/abs/path]>` content limit.
@@ -132,6 +133,42 @@ export function resolveLoadedSize(file, {root = process.cwd(), seen = new Set()}
 }
 
 /**
+ * @summary Does git ignore this root-relative path? Only an exit of 0 means yes, so a tracked path,
+ * a tree outside any repository and a missing `git` all answer no.
+ * @param {String} root
+ * @param {String} relativePath
+ * @returns {Boolean}
+ */
+export function gitIgnores(root, relativePath) {
+    return spawnSync('git', ['check-ignore', '--quiet', '--', relativePath], {cwd: root}).status === 0
+}
+
+/**
+ * @summary The target of an entry-point link that names a generated file this tree has not built.
+ *
+ * A consumer that generates its rules at install keeps the harness entry tracked and the file it
+ * names git-ignored. A CI tree that never installed then holds a link to nothing, and that is not a
+ * seat whose rules resolve to nothing: the generator refuses an over-budget variant when it writes
+ * the file. The link qualifies only when its target is absent, inside the tree, and ignored.
+ * @param {String}   root
+ * @param {String}   file Root-relative entry point, known to be a symlink.
+ * @param {Function} isIgnored `(root, relativePath) => Boolean`
+ * @returns {String|null} The root-relative target, or `null` for any other link.
+ */
+export function unbuiltProjection(root, file, isIgnored) {
+    const
+        full   = join(root, file),
+        target = resolve(dirname(full), readlinkSync(full)),
+        inTree = relative(root, target);
+
+    if (existsSync(target) || inTree.startsWith('..') || isAbsolute(inTree)) {
+        return null
+    }
+
+    return isIgnored(root, inTree) ? inTree : null
+}
+
+/**
  * @summary Measures every target and returns one row per entry point — the pure half of the guard.
  *
  * Returned rather than printed so the arms that matter can be asserted without spawning a process:
@@ -143,23 +180,27 @@ export function resolveLoadedSize(file, {root = process.cwd(), seen = new Set()}
  * participate in, so an absent target is `applicable: false` and never fails. But `existsSync`
  * FOLLOWS symlinks, so a dangling entry point would answer "absent" and be skipped — the guard would
  * go quiet on a seat whose rules resolve to nothing. Presence is therefore decided by `lstat`, which
- * sees the entry itself: present-but-unresolvable is an error, not a skip.
+ * sees the entry itself: present-but-unresolvable is an error, not a skip. The one exception is a
+ * link into a git-ignored file the tree has not generated ({@link unbuiltProjection}), which is N/A.
  *
  * @param {Object}   [options={}]
  * @param {String}   [options.root=process.cwd()] Tree to measure.
  * @param {Object[]} [options.targets=TARGET_FILES]
  * @param {Number}   [options.limit=PER_FILE_LIMIT_BYTES] Test seam only; no caller passes this.
- * @returns {Object[]} Rows: `{file, harness, limitConfirmed, note, applicable, bytes, members, over, headroom, error}`.
+ * @param {Function} [options.isIgnored=gitIgnores] Test seam only; no caller passes this.
+ * @returns {Object[]} Rows: `{file, harness, limitConfirmed, note, applicable, projection, bytes, members, over, headroom, error}`.
  */
-export function collectReport({root = process.cwd(), targets = TARGET_FILES, limit = PER_FILE_LIMIT_BYTES} = {}) {
+export function collectReport({root = process.cwd(), targets = TARGET_FILES, limit = PER_FILE_LIMIT_BYTES, isIgnored = gitIgnores} = {}) {
     return targets.map(({path: file, harness, limitConfirmed, note = null}) => {
         const row = {
             file, harness, limitConfirmed, note,
-            applicable: true, bytes: null, members: [], over: false, headroom: null, error: null
+            applicable: true, projection: null, bytes: null, members: [], over: false, headroom: null, error: null
         };
 
+        let entry;
+
         try {
-            lstatSync(join(root, file))
+            entry = lstatSync(join(root, file))
         } catch (cause) {
             // ENOENT ONLY. A bare catch made "not applicable" absorb every filesystem failure — a
             // permission denial, an unreadable mount, a malformed root whose parent component is not
@@ -177,6 +218,13 @@ export function collectReport({root = process.cwd(), targets = TARGET_FILES, lim
             row.error = `${file}: cannot observe the entry (${cause.code || 'unknown'}) — refusing ` +
                 `to score an unreadable target as absent. ${cause.message}`;
 
+            return row
+        }
+
+        row.projection = entry.isSymbolicLink() ? unbuiltProjection(root, file, isIgnored) : null;
+
+        if (row.projection) {
+            row.applicable = false;
             return row
         }
 
@@ -254,13 +302,15 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
         quiet = parsed.values.quiet,
         rows  = collectReport({root, targets});
 
-    rows.forEach(({file, harness, limitConfirmed, note, applicable, bytes, members, over, headroom, error: rowError}) => {
+    rows.forEach(({file, harness, limitConfirmed, note, applicable, projection, bytes, members, over, headroom, error: rowError}) => {
         if (quiet) {
             return
         }
 
         if (!applicable) {
-            out(`➖ ${file.padEnd(30)} : not present — N/A for this repository`);
+            out(`➖ ${file.padEnd(30)} : ${projection
+                ? `links to ${projection}, a git-ignored projection this tree has not generated — N/A here`
+                : 'not present — N/A for this repository'}`);
             return
         }
 
