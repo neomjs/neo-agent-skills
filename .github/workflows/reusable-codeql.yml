@@ -1,0 +1,80 @@
+name: Reusable CodeQL
+
+# The shared CodeQL lane of the neomjs repositories. A consumer calls this file at the Skills release tag
+# it depends on and grants the permissions the jobs below declare.
+#
+# Each language uploads under `/language:<language>`, the category GitHub's Default Setup wrote, so a
+# repository's alert history carries over. GitHub refuses Advanced-Setup uploads while Default Setup is
+# on in the calling repository, so switching it off there comes before a consumer's first merge.
+on:
+  workflow_call:
+    inputs:
+      languages:
+        description: JSON array of CodeQL languages, each analysed with `build-mode: none`.
+        required: true
+        type: string
+      node_version:
+        description: Node.js version for the extraction guard.
+        required: false
+        type: string
+        default: '24'
+
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read          # CodeQL reads its own run in a private repository
+      contents: read
+      security-events: write # upload the analysis
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(inputs.languages) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
+
+  # A file CodeQL cannot parse emits no alerts and clears the alert gate: "unparseable" and "clean" look
+  # the same there. This job reads every completed Analyze log and fails naming each dropped file. The
+  # guard is fetched at this workflow's own commit and runs from runner.temp, never from the caller's
+  # checkout, where a pull request could relax the gate it is judged by.
+  extraction-guard:
+    name: CodeQL extraction guard
+    needs: analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read  # read the Analyze jobs' logs
+      contents: read # read the guard at this workflow's commit
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Fetch the guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_REPO: ${{ job.workflow_repository }}
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: >-
+          gh api -H 'Accept: application/vnd.github.raw+json'
+          "repos/${WORKFLOW_REPO}/contents/scripts/check-codeql-extraction.mjs?ref=${WORKFLOW_SHA}"
+          > "${RUNNER_TEMP}/check-codeql-extraction.mjs"
+
+      - name: Fail on CodeQL extraction errors
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node "${RUNNER_TEMP}/check-codeql-extraction.mjs"
