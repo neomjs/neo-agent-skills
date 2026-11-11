@@ -297,12 +297,30 @@ duplicate numbered rules and output over **23,800 bytes**, before emitting or re
 The bin writes `--out`, or stdout. The
 import writes nothing: Fleet puts the text into each seat's harness home with its own safe write.
 
+A consumer that keeps `AGENTS.md` as a pointer in git adds `--pointer`:
+
+```bash
+npx --no-install neo-agent-skills-agents-md --repo devindex --out AGENTS.md --pointer
+```
+
+Git then holds the three-line pointer, and the working copy holds the rules. The consumer's `.gitattributes`
+routes the file through the filter (`/AGENTS.md filter=neo-agents-md`). `--pointer` registers that filter
+(a clean command, a `cat` smudge, required) before it writes, and lets the index re-read the file afterwards,
+so `git status` stays clean. The pointer names the first repository of `--repo`. Required means a clean
+command that cannot run makes git refuse the file, never store the rules. A tool that needs to tell the
+pointer from the rules imports its marker:
+
+```js
+import {POINTER_MARKER, pointerFor} from 'neo-agent-skills/agents-md/pointer';
+```
+
 ## What is in the package
 
 | path | what |
 |---|---|
 | `.agents/skills/` | the substrate — skills plus `skills.manifest.json` and its schema |
 | `scripts/materialize-harness-skills.mjs` | the postinstall linker and its `--check` arm |
+| `scripts/agents-md-pointer.mjs` | the `AGENTS.md` pointer and its git filter (`./agents-md/pointer`) |
 | `scripts/check-ticket-archaeology.mjs` | the portable comment/JSDoc archaeology guard |
 | `scripts/check-npm-overrides.mjs` | the portable stale-`overrides` guard |
 | `scripts/check-substrate-size.mjs` | the portable per-turn substrate byte-budget guard |
