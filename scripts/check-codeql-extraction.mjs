@@ -37,10 +37,11 @@ export const PER_FILE_PARSE_ERROR = /\*\s+([^\s#:]+)\S*\s+A parse error occurred
 
 /**
  * An Analyze leg by job name: `Analyze (<language>)` directly, or `<caller job> / Analyze (<language>)`
- * when the lane runs as a called workflow. The guard's own job never matches.
+ * when the lane runs as a called workflow. Anchored to the last segment, so the guard's own job never
+ * matches, whatever its caller job is named.
  * @type {RegExp}
  */
-export const ANALYZE_JOB = /(?:^|\/ )Analyze \(/;
+export const ANALYZE_JOB = /(?:^|\/ )Analyze \([^/]+\)$/;
 
 /**
  * @summary Decides from one Analyze log whether CodeQL dropped a file, and names the files it named.

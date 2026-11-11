@@ -95,7 +95,7 @@ test('a drop in any language leg is a drop', () => {
 
 test('matches direct and called Analyze legs, never the guard job', () => {
     ['Analyze (actions)', 'CodeQL / Analyze (javascript-typescript)'].forEach(name => assert.match(name, ANALYZE_JOB));
-    ['CodeQL / CodeQL extraction guard', 'Reanalyze (actions)', 'Analyze'].forEach(name => assert.doesNotMatch(name, ANALYZE_JOB))
+    ['CodeQL / CodeQL extraction guard', 'Analyze (CodeQL) / CodeQL extraction guard', 'Reanalyze (actions)', 'Analyze'].forEach(name => assert.doesNotMatch(name, ANALYZE_JOB))
 });
 
 test('reads only the Analyze legs of a called run, re-reading one the jobs view still reports running', async () => {
