@@ -24,8 +24,9 @@
 
 import {parseArgs}                     from 'node:util';
 import {readdirSync, readFileSync, realpathSync, writeFileSync} from 'node:fs';
-import {dirname, join}                 from 'node:path';
+import {dirname, join, resolve}        from 'node:path';
 import {fileURLToPath}                 from 'node:url';
+import {ensureFilter, refresh}         from './agents-md-pointer.mjs';
 
 const
     here        = dirname(fileURLToPath(import.meta.url)),
@@ -271,7 +272,9 @@ export function generate({audience, repos, root = sourceRoot}) {
 }
 
 /**
- * @summary CLI entry.
+ * @summary CLI entry. With `--pointer`, `--out` is a consumer's `AGENTS.md` that git keeps as a pointer
+ * (`agents-md-pointer.mjs`): the filter is registered before the rules are written, and the index re-reads the file
+ * afterwards, so `git status` stays clean. The pointer names the first repository of `--repo`.
  * @param {String[]} [argv]
  * @param {Object} [options={}]
  * @param {Function} [options.out=console.log] Status lines, for a human.
@@ -298,6 +301,7 @@ export function run(argv = process.argv.slice(2), {
             options         : {
                 audience: {type: 'string', default: 'maintainer'},
                 out     : {type: 'string'},
+                pointer : {type: 'boolean', default: false},
                 repo    : {type: 'string'}
             }
         })
@@ -306,11 +310,16 @@ export function run(argv = process.argv.slice(2), {
         return 1
     }
 
-    const {audience, out: target, repo} = parsed.values,
+    const {audience, out: target, pointer, repo} = parsed.values,
           repos = [...new Set((repo ?? '').split(',').map(value => value.trim()).filter(Boolean))];
 
     if (!repos.length) {
         error('generate-agents-md: --repo is required (the repository, or comma-separated repositories, the variant is emitted FOR).');
+        return 1
+    }
+
+    if (pointer && !target) {
+        error('generate-agents-md: --pointer needs --out, the AGENTS.md git keeps as a pointer.');
         return 1
     }
 
@@ -324,7 +333,17 @@ export function run(argv = process.argv.slice(2), {
     }
 
     if (target) {
-        writeFileSync(target, result.text);
+        const top = dirname(resolve(target));
+
+        try {
+            pointer && ensureFilter({root: top, repo: repos[0]});
+            writeFileSync(target, result.text);
+            pointer && refresh({root: top})
+        } catch (cause) {
+            error(`generate-agents-md: ${cause.message}`);
+            return 1
+        }
+
         out(`✅ ${repos.join(',')}/${audience} → ${target} (${result.bytes} B, ${PER_FILE_LIMIT_BYTES - result.bytes} B headroom)`)
     } else {
         write(result.text)
