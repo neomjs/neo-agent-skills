@@ -22,6 +22,16 @@ const
         'IMPORTANT: this file is generated. `npm install` writes the agent rules here and materializes the agent skills into `.agents/skills/`.\n' +
         'Contributing from a fork without installing? `npx -p neo-agent-skills neo-agent-skills-agents-md --repo neo --audience contributor` prints the rules you follow.\n';
 
+// A git hook exports GIT_DIR and GIT_INDEX_FILE, which would send these checkouts' commits into the repository the
+// hook runs in, and a host's global config can sign commits or carry its own filter. Every git this file starts, the
+// module's included, inherits this process's environment, so the environment is isolated once, here.
+const isolated = mkdtempSync(join(tmpdir(), 'agents-md-pointer-env-'));
+
+roots.push(isolated);
+Object.keys(process.env).filter(key => key.startsWith('GIT_')).forEach(key => delete process.env[key]);
+Object.assign(process.env, {GIT_CONFIG_GLOBAL: join(isolated, 'global.gitconfig'), GIT_CONFIG_NOSYSTEM: '1'});
+writeFileSync(process.env.GIT_CONFIG_GLOBAL, '');
+
 /**
  * @summary A consumer checkout holding the committed pointer, the `.gitattributes` line and this package under
  * `node_modules`, where the clean command finds it. No filter is registered yet.
@@ -37,7 +47,7 @@ function checkout() {
     writeFileSync(join(root, '.gitignore'), 'node_modules/\n');
     writeFileSync(join(root, 'AGENTS.md'), pointerFor('neo'));
 
-    git(root, 'init', '--quiet');
+    git(root, 'init', '--quiet', '-b', 'dev');
     git(root, 'add', '.');
     git(root, '-c', 'user.name=spec', '-c', 'user.email=spec@example.com', 'commit', '--quiet', '-m', 'pointer');
 
