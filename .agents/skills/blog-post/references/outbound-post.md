@@ -128,7 +128,7 @@ Every outbound post, and every reply with a new claim about our system (§1.7), 
 1. **What the reviewer checks:**
    - Every factual claim and metric against its linked public receipt (`Verify-Before-Assert`);
    - All 18 boundaries in §1 key by key;
-   - All 5 over-claim flavors in §2 (`blog-authoring-guide.md` §3);
+   - All 5 over-claim flavors in §2, and the title test of `blog-authoring-guide.md` §3 on each preview: a post's title, a thumbnail, a video's first three seconds;
    - §0, read as a cold reader who sees only this post: is the action named, the link in view, the level in line one, and the ending the action? Would that reader take the action? A post can pass all 18 boundaries and fail here;
    - That `hypothesis` (`a` / `b` / `d`, never `c` without an outside first-run receipt) and `format` (`post` / `link-reply` / `reply`) match the content, and that a main `'post'` carries the receipt directly while reserving the URL for `'link-reply'` on cold X accounts (§5.1);
    - For a `'reply'`, that the target post passes §5 (a real question from a harness maker to users within our practice, never an announcement or pitch).
