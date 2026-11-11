@@ -37,7 +37,7 @@ Every outbound post, `link-reply`, `reply`, or attributed article section must s
 8. **No live private surfaces in captures** — screenshots, recordings, and clips show only public-safe repositories, fixtures, and views (`D#19500` §4).
 9. **Public correction, never silent delete** — if a published post contains an error or boundary breach, post an explicit public correction and request that the Fleet's registered operator principal (for Neo's Fleet, `@tobiu`) downgrade the `(peer, channel)` gate switch to `approve each` (switch writes are operator-authenticated in Fleet custody, never seat-writable; `ADR 0042 §3.1, §3.5`); never silently delete (`D#19500` §4, OQ-4).
 10. **No claims about other companies or products** — describe what we built, ran, and measured; never make claims about competitors or third-party products (`D#19500` §4).
-11. **The blog guide's over-claim flavors apply** — all five over-claim flavors in [blog-authoring-guide.md](./blog-authoring-guide.md) §3 apply equally to social posts and replies (`D#19500` §4; see §2 below).
+11. **The blog guide's flavors apply** — every over-claim and traction flavor in [blog-authoring-guide.md](./blog-authoring-guide.md) §3 applies equally to social posts and replies (`D#19500` §4; see §2 below).
 12. **The film's three rules (`neomjs/neo#15252`)** — (a) every claim needs the receipt it links, (b) no cropping or narration over a known defect, and (c) publication is the operator's press (`D#19500` §2, §4).
 13. **No duplicative text across accounts** — per-peer X accounts carry distinct work, voice, and receipts, never syndicated or duplicated promotional text across accounts (`D#19500` §2, §3, §4; X automation rules).
 14. **No automated replies & every X peer account labeled automated** — every peer X account carries X's automated-account label; unapproved automated replies are forbidden, and the Fleet executor's `reply` format stays disabled (`refused: reply-classification-unresolved`) until X's classification of operator-approved API replies is verified (`D#19500` §2, §4; `ADR 0042 §4.4`).
@@ -53,7 +53,7 @@ Every outbound post, `link-reply`, `reply`, or attributed article section must s
 Social posts are smaller blog posts with the same failure modes (`D#19500` OQ-3). Apply [blog-authoring-guide.md](./blog-authoring-guide.md) §2–§3 in full:
 
 - **Source every external claim (§2):** Any statement about the outside world requires a verified primary source. An operator lead (*"probably the only team worldwide"*, `D#19500` §1) is a hypothesis pointer, never a publishable superlative — state what our team does, attach the public receipt, and let the reader rank it.
-- **Kill all five over-claim flavors (§3):**
+- **Kill every flavor in §3:** the traction flavors as §3 writes them, on each preview; the over-claim flavors as follows:
   1. **Unsourced superlative** (*"first / only / fastest"*) — cut or replace with the measured receipt.
   2. **Universal quantifier** (*"all N are X"*) — state the actual enforced rule or measured sample window.
   3. **Misleading fraction / framing** — never cite a lifetime count as a week-zero baseline or imply full completion of a mid-journey arc (`D#19500` §3, §5a).
@@ -128,7 +128,7 @@ Every outbound post, and every reply with a new claim about our system (§1.7), 
 1. **What the reviewer checks:**
    - Every factual claim and metric against its linked public receipt (`Verify-Before-Assert`);
    - All 18 boundaries in §1 key by key;
-   - All 5 over-claim flavors in §2, and the title test of `blog-authoring-guide.md` §3 on each preview: a post's title, a thumbnail, a video's first three seconds;
+   - Every flavor in §2, and the title test of `blog-authoring-guide.md` §3 on each preview: a post's title, a thumbnail, a video's first three seconds;
    - §0, read as a cold reader who sees only this post: is the action named, the link in view, the level in line one, and the ending the action? Would that reader take the action? A post can pass all 18 boundaries and fail here;
    - That `hypothesis` (`a` / `b` / `d`, never `c` without an outside first-run receipt) and `format` (`post` / `link-reply` / `reply`) match the content, and that a main `'post'` carries the receipt directly while reserving the URL for `'link-reply'` on cold X accounts (§5.1);
    - For a `'reply'`, that the target post passes §5 (a real question from a harness maker to users within our practice, never an announcement or pitch).
