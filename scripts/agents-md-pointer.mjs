@@ -79,12 +79,13 @@ export function cleanCommand(repo) {
 
 /**
  * @summary Runs git in `root` and answers its exit status and trimmed stdout. A git that cannot be launched answers
- * status `null`.
+ * status `null`. Module-private: every caller names its own subcommand, so no argument from outside chooses one.
  * @param {String} root
  * @param {String[]} args
  * @returns {{status: Number|null, stdout: String}}
+ * @private
  */
-export function runGit(root, args) {
+function runGit(root, args) {
     const {error, status, stdout} = spawnSync('git', args, {cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']});
 
     return {status: error ? null : status, stdout: (stdout ?? '').trim()}
