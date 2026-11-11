@@ -41,7 +41,7 @@
  * neo-agent-skills-materialize --audience app --check  # assert that projection
  */
 
-import {existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, lstatSync, realpathSync, rmSync, symlinkSync, statSync} from 'node:fs';
+import {existsSync, mkdirSync, readdirSync, readFileSync, lstatSync, realpathSync, rmSync, symlinkSync} from 'node:fs';
 import {execFileSync}                                                                                                            from 'node:child_process';
 import {dirname, join, relative, resolve}                                                                                        from 'node:path';
 import {fileURLToPath}                                                                                                           from 'node:url';
@@ -181,6 +181,8 @@ const
     targetIn   = dir => name => relative(dir, join(skillsIn, name)),
     targetFor  = targetIn(facadeDir);
 
+const linkDirectory = (target, path) => symlinkSync(target, path, process.platform === 'win32' ? 'junction' : 'dir');
+
 // A filter that matches nothing is a typo, not an empty projection: refuse before touching a link.
 if (audience && !agentNames.length) {
     const declared = [...new Set(Object.values(manifest.skills).flatMap(audiencesOf))].sort();
@@ -220,9 +222,9 @@ function checkLinks(dir, label, expected, targetOf) {
             continue
         }
         if (!existsSync(link)) failures.push(`${label}/${name} is a dangling link; its node_modules target is gone.`);
-        else if (readlinkSync(link) !== targetOf(name)) {
+        else if (realpathSync(link) !== realpathSync(resolve(dirname(link), targetOf(name)))) {
             failures.push(
-                `${label}/${name} points at ${readlinkSync(link)}, expected ${targetOf(name)}. ` +
+                `${label}/${name} resolves to ${realpathSync(link)}, expected ${resolve(dirname(link), targetOf(name))}. ` +
                 `Checking that a link exists and resolves says nothing about WHERE it resolves.`
             )
         }
@@ -261,9 +263,9 @@ if (args.check) {
                 `without it a Codex/Antigravity-style fork sees no skills at all, however healthy the ` +
                 `Claude façade looks.`
             )
-        } else if (readlinkSync(agentsDir) !== agentsTarget) {
+        } else if (realpathSync(agentsDir) !== realpathSync(resolve(dirname(agentsDir), agentsTarget))) {
             failures.push(
-                `${AGENTS} points at ${readlinkSync(agentsDir)}, expected ${agentsTarget}. A link that ` +
+                `${AGENTS} resolves to ${realpathSync(agentsDir)}, expected ${resolve(dirname(agentsDir), agentsTarget)}. A link that ` +
                 `resolves to the wrong tree resolves — existence is not correctness.`
             )
         }
@@ -329,10 +331,10 @@ rmSync(agentsDir, {recursive: true, force: true});
 
 if (agentNames) {
     mkdirSync(agentsDir, {recursive: true});
-    for (const name of agentNames) symlinkSync(targetIn(agentsDir)(name), join(agentsDir, name))
+    for (const name of agentNames) linkDirectory(targetIn(agentsDir)(name), join(agentsDir, name))
 } else {
     mkdirSync(dirname(agentsDir), {recursive: true});
-    symlinkSync(relative(dirname(agentsDir), skillsIn), agentsDir)
+    linkDirectory(relative(dirname(agentsDir), skillsIn), agentsDir)
 }
 
 // Claude façade: per-skill links, manifest-projected.
@@ -340,7 +342,7 @@ refuseIfTracked(facadeDir, FACADE);
 rmSync(facadeDir, {recursive: true, force: true});
 mkdirSync(facadeDir, {recursive: true});
 
-for (const name of names) symlinkSync(targetFor(name), join(facadeDir, name));
+for (const name of names) linkDirectory(targetFor(name), join(facadeDir, name));
 
 const omitted = Object.keys(manifest.skills).filter(n => !names.includes(n));
 

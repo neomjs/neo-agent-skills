@@ -33,6 +33,17 @@ Object.assign(process.env, {GIT_CONFIG_GLOBAL: join(isolated, 'global.gitconfig'
 writeFileSync(process.env.GIT_CONFIG_GLOBAL, '');
 
 /**
+ * @summary Installs the package in a fixture's `node_modules`.
+ * @param {String} root
+ */
+function installPointerModule(root) {
+    const modules = join(root, 'node_modules');
+
+    mkdirSync(modules);
+    symlinkSync(dirname(here), join(modules, 'neo-agent-skills'), process.platform === 'win32' ? 'junction' : 'dir')
+}
+
+/**
  * @summary A consumer checkout holding the committed pointer, the `.gitattributes` line and this package under
  * `node_modules`, where the clean command finds it. No filter is registered yet.
  * @returns {String}
@@ -41,8 +52,7 @@ function checkout() {
     const root = mkdtempSync(join(tmpdir(), 'agents-md-pointer-'));
 
     roots.push(root);
-    mkdirSync(join(root, 'node_modules'));
-    symlinkSync(dirname(here), join(root, 'node_modules', 'neo-agent-skills'), 'dir');
+    installPointerModule(root);
     writeFileSync(join(root, '.gitattributes'), '/AGENTS.md filter=neo-agents-md\n');
     writeFileSync(join(root, '.gitignore'), 'node_modules/\n');
     writeFileSync(join(root, 'AGENTS.md'), pointerFor('neo'));
@@ -140,10 +150,21 @@ const indexHoldsPointer = root => git(root, 'show', ':AGENTS.md') === pointerFor
     assert.equal(readFileSync(join(trees, 'with-smudge', 'AGENTS.md'), 'utf8'), pointerFor('neo'));
 
     // A worktree gets no node_modules; give it the package, so its status can run the clean command
-    mkdirSync(join(trees, 'with-smudge', 'node_modules'));
-    symlinkSync(dirname(here), join(trees, 'with-smudge', 'node_modules', 'neo-agent-skills'), 'dir');
+    installPointerModule(join(trees, 'with-smudge'));
 
     assert.equal(git(join(trees, 'with-smudge'), 'status', '--porcelain'), '', 'the new worktree is clean');
+
+    // The filter config is shared by worktrees, but a worktree may not have installed the package
+    const withoutModule = join(trees, 'without-module');
+
+    git(root, 'worktree', 'add', '--quiet', '--detach', withoutModule, 'HEAD');
+    assert.ok(!existsSync(join(withoutModule, 'node_modules', 'neo-agent-skills', 'scripts', 'agents-md-pointer.mjs')));
+
+    writeFileSync(join(withoutModule, 'AGENTS.md'), rules);
+    git(withoutModule, 'status', '--porcelain');
+    git(withoutModule, 'add', 'AGENTS.md');
+    assert.equal(git(withoutModule, 'diff', '--cached'), '', 'add stages nothing');
+    assert.equal(git(withoutModule, 'cat-file', 'blob', ':AGENTS.md'), pointerFor('neo'), 'add keeps the pointer in the index');
 
     // The control: required, with no smudge, fails every write of the file into a working tree
     git(root, 'config', '--local', '--unset', 'filter.neo-agents-md.smudge');

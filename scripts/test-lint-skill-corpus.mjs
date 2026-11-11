@@ -13,7 +13,7 @@
 
 import {execFileSync} from 'node:child_process';
 import {
-    appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync,
+    appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync,
     writeFileSync
 } from 'node:fs';
 import {tmpdir}                  from 'node:os';
@@ -78,7 +78,8 @@ function run(mutate, {commitMessage = null} = {}) {
 }
 
 /** @summary Current byte sum of the budgeted surface. */
-const surfaceBytes = () => SURFACE.reduce((sum, rel) => sum + statSync(join(repoRoot, rel)).size, 0);
+const fileBytes = path => Buffer.byteLength(readFileSync(path, 'utf8').replace(/\r\n/g, '\n'), 'utf8');
+const surfaceBytes = () => SURFACE.reduce((sum, rel) => sum + fileBytes(join(repoRoot, rel)), 0);
 
 /** @summary Apply a mutation to the copied manifest, preserving its on-disk shape. */
 function editManifest(work, mutate) {
@@ -225,7 +226,7 @@ function runConsumerDocumentReferences({mutate = false, viaSymlink = false} = {}
 
     try {
         mkdirSync(consumer, {recursive: true});
-        viaSymlink && symlinkSync(consumer, root);
+        viaSymlink && symlinkSync(consumer, root, process.platform === 'win32' ? 'junction' : 'dir');
         writeFileSync(join(consumer, 'package.json'), packageJson);
         execFileSync('git', ['init', '-q'], {cwd: consumer});
         execFileSync('git', ['config', 'user.email', 'ci@local'], {cwd: consumer});
@@ -276,8 +277,8 @@ function growCorpus(work) {
 function padTo(work, total) {
     const
         target = join(work, SURFACE[1]),
-        other  = statSync(join(work, SURFACE[0])).size,
-        need   = total - other - statSync(target).size;
+        other  = fileBytes(join(work, SURFACE[0])),
+        need   = total - other - fileBytes(target);
 
     if (need > 0) appendFileSync(target, '#'.repeat(need));
     else if (need < 0) writeFileSync(target, readFileSync(target, 'utf8').slice(0, need))

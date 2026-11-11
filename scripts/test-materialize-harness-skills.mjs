@@ -10,7 +10,7 @@
 
 import assert                                                               from 'node:assert/strict';
 import {spawnSync}                                                          from 'node:child_process';
-import {existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, unlinkSync} from 'node:fs';
+import {existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, unlinkSync} from 'node:fs';
 import {tmpdir}                                                             from 'node:os';
 import {dirname, join, relative, resolve}                                   from 'node:path';
 import {fileURLToPath}                                                      from 'node:url';
@@ -67,7 +67,7 @@ assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor mem
 
     assert.equal(run.status, 0, `the default projection materializes: ${run.stderr}`);
     assert.ok(lstatSync(join(root, '.agents/skills')).isSymbolicLink(), '.agents/skills stays ONE directory link');
-    assert.equal(readlinkSync(join(root, '.agents/skills')), relative(join(root, '.agents'), skillsIn), 'at the package tree');
+    assert.equal(realpathSync(join(root, '.agents/skills')), realpathSync(skillsIn), 'at the package tree');
     assert.deepEqual(entries(join(root, '.claude/skills')), MAINTAINER, '.claude/skills holds the maintainer skills');
     assert.equal(materialize(root, '--check').status, 0, 'and its check passes');
     assert.equal(materialize(root, '--check', '--audience', 'app').status, 1,
@@ -94,7 +94,7 @@ assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor mem
     assert.equal(materialize(root, '--check').status, 1, 'and the maintainer check refuses it');
 
     // Mutation: the check must see an invented entry and a missing one, on the neutral surface too.
-    symlinkSync(relative(agents, join(skillsIn, 'pr-review')), join(agents, 'pr-review'));
+    symlinkSync(relative(agents, join(skillsIn, 'pr-review')), join(agents, 'pr-review'), process.platform === 'win32' ? 'junction' : 'dir');
     assert.equal(materialize(root, '--check', '--audience', 'app').status, 1, 'an extra maintainer skill in .agents/skills fails the check');
     unlinkSync(join(agents, 'pr-review'));
     unlinkSync(join(agents, 'neural-link'));
@@ -130,7 +130,7 @@ assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor mem
     assert.equal(materialize(root, '--check', '--audience', 'contributor').status, 0);
     assert.equal(materialize(root, '--check').status, 1);
     assert.equal(materialize(root, '--check', '--audience', 'app').status, 1);
-    symlinkSync(relative(agents, join(skillsIn, 'pr-review')), join(agents, 'pr-review'));
+    symlinkSync(relative(agents, join(skillsIn, 'pr-review')), join(agents, 'pr-review'), process.platform === 'win32' ? 'junction' : 'dir');
     assert.equal(materialize(root, '--check', '--audience', 'contributor').status, 1, 'extra institutional review skill fails');
     unlinkSync(join(agents, 'pr-review'));
     unlinkSync(join(claude, 'unit-test'));
