@@ -7,21 +7,28 @@ import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                           from 'node:os';
 import {delimiter, join}                                  from 'node:path';
 import {fileURLToPath}                                    from 'node:url';
-import {isDependabot, releaseOrigin, run}                 from './release-origin.mjs';
+import {originOf, releaseOrigin, run}                     from './release-origin.mjs';
 
 const sha = 'a'.repeat(40), repository = 'neomjs/neo-agent-skills',
       context = {sha, repository},
       receipt = {number: 7, state: 'closed', merged_at: '2026-10-09T00:00:00Z', merge_commit_sha: sha,
-          base: {ref: 'dev', repo: {full_name: repository}}, user: {login: 'neo-gpt', type: 'User'}},
-      bot = {...receipt, user: {login: 'dependabot[bot]', type: 'Bot'}, merged_by: {login: 'tobiu', type: 'User'}};
+          base: {ref: 'dev', repo: {full_name: repository}}, head: {ref: 'neo-gpt/7-change', repo: {full_name: repository}},
+          user: {login: 'neo-gpt', type: 'User'}},
+      bot  = {...receipt, user: {login: 'dependabot[bot]', type: 'Bot'}, merged_by: {login: 'tobiu', type: 'User'}},
+      fork = {...receipt, head: {ref: 'patch-1', repo: {full_name: 'contributor/neo-agent-skills'}}, user: {login: 'contributor', type: 'User'}};
 
-assert.equal(isDependabot(bot), true);
-assert.equal(isDependabot({...receipt, user: {login: 'other[bot]', type: 'Bot'}}), false, 'no exception for other bots');
-assert.throws(() => isDependabot({...bot, user: {...bot.user, type: 'User'}}), /inconsistent/);
-assert.throws(() => isDependabot({...receipt, user: null}), /unavailable/);
+assert.equal(originOf(receipt), 'maintainer', 'a branch in this repository is a maintainer\'s');
+assert.equal(originOf(bot), 'dependabot');
+assert.equal(originOf(fork), 'fork');
+assert.equal(originOf({...fork, head: {ref: 'patch-1', repo: null}}), 'fork', 'a deleted fork is still a fork');
+assert.equal(originOf({...receipt, user: {login: 'other[bot]', type: 'Bot'}}), 'maintainer', 'no exception for other bots');
+assert.throws(() => originOf({...bot, user: {...bot.user, type: 'User'}}), /inconsistent/);
+assert.throws(() => originOf({...receipt, user: null}), /unavailable/);
+assert.throws(() => originOf({...receipt, base: {ref: 'dev'}}), /base repository is unavailable/, 'no base, no origin');
 assert.deepEqual(releaseOrigin([receipt], context), {publish: true, prNumber: 7});
 assert.deepEqual(releaseOrigin([bot], context), {publish: false, prNumber: 7}, 'a human merging Dependabot never grants release');
-assert.deepEqual(releaseOrigin([{...receipt, head: {ref: 'dependabot/lookalike'}, title: 'Dependabot update'}], context),
+assert.deepEqual(releaseOrigin([fork], context), {publish: false, prNumber: 7}, 'a fork\'s merge publishes nothing');
+assert.deepEqual(releaseOrigin([{...receipt, head: {...receipt.head, ref: 'dependabot/lookalike'}, title: 'Dependabot update'}], context),
     {publish: true, prNumber: 7}, 'branch names and titles cannot grant the exception');
 
 for (const candidate of [
@@ -106,9 +113,10 @@ process.stdout.write(reads > Number(process.env.STUB_EMPTY_READS) ? process.env.
     assert.deepEqual(origin(0), {code: 0, output: 'publish=true\n', reads: 1}, 'an indexed receipt publishes at once');
     assert.deepEqual(origin(2), {code: 0, output: 'publish=true\n', reads: 3}, 'a receipt that appears on the third read still publishes');
     assert.deepEqual(origin(Infinity), {code: 1, output: '', reads: 6}, 'a receipt that never appears fails closed after six reads');
-    assert.deepEqual(origin(1, bot), {code: 0, output: 'publish=false\n', reads: 2}, 'a late Dependabot receipt still grants no release')
+    assert.deepEqual(origin(1, bot), {code: 0, output: 'publish=false\n', reads: 2}, 'a late Dependabot receipt still grants no release');
+    assert.deepEqual(origin(0, fork), {code: 0, output: 'publish=false\n', reads: 1}, 'a fork\'s merge ends the run without a release')
 } finally {
     rmSync(stubDir, {recursive: true, force: true})
 }
 
-console.log('release-origin: author, exact merge provenance, failure, workflow boundaries and the late-receipt retry passed');
+console.log('release-origin: the three origins, exact merge provenance, failure, workflow boundaries and the late-receipt retry passed');

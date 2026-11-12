@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 /**
- * @summary Checks release versions by PR author: Dependabot retains the base version; other PRs carry a new release.
+ * @summary Checks release versions by PR origin (`originOf`): Dependabot and forks retain the base version; a
+ * maintainer PR carries a new release.
  *
- * Maintainer merges to `dev` publish (`.github/workflows/publish.yml`); Dependabot merges validate only.
+ * Maintainer merges to `dev` publish (`.github/workflows/publish.yml`); Dependabot and fork merges publish nothing,
+ * and the next maintainer release carries them. A fork's author cannot see our merges coming, so the number it holds
+ * would go stale with each of them; it keeps the base version instead, which no merge can outdate.
  * `package.json` is the one place a version is written:
  * - a pull request without a bump would merge a change npm never receives;
  * - a pull request naming a version npm already has would fail the publish after the merge, where no review
@@ -19,24 +22,32 @@ import {join}                       from 'node:path';
 import {fileURLToPath}              from 'node:url';
 import {parseArgs}                  from 'node:util';
 import semver                       from 'semver';
-import {isDependabot}               from './release-origin.mjs';
+import {originOf}                   from './release-origin.mjs';
 
 // A plain release. The baseline's `version` job accepts only this shape, so a prerelease could publish and
 // then never be callable.
 const RELEASE = /^\d+\.\d+\.\d+$/;
 
 /**
- * @summary The reasons a head version is not a new release. Empty when it is one.
- * @param {{head: String, lock: String, base: String, published: Boolean, dependabot?: Boolean}} versions
+ * @summary The reasons a head version is not the one its origin owes. Empty when it is.
+ * @param {{head: String, lock: String, base: String, published: Boolean, origin?: String}} versions `origin` is
+ *     an `originOf` answer; omitted, it is a maintainer's.
  * @returns {String[]}
  */
-export function judgeVersionBump({head, lock, base, published, dependabot = false}) {
+export function judgeVersionBump({head, lock, base, published, origin = 'maintainer'}) {
     if (!RELEASE.test(head ?? '')) return [`package.json names no release version ('${head}')`];
 
-    if (dependabot) return [
+    if (origin === 'dependabot') return [
         lock !== head && `package-lock.json says ${lock} where package.json says ${head}`,
         (!RELEASE.test(base ?? '') || head !== base) &&
             `Dependabot must retain the base package version ${base}, not release ${head}`
+    ].filter(Boolean);
+
+    // Written for the contributor, who has nothing to do but restore the version
+    if (origin === 'fork') return [
+        lock !== head && `package-lock.json says ${lock} where package.json says ${head}`,
+        (!RELEASE.test(base ?? '') || head !== base) &&
+            `This pull request changes the package version to ${head}. Restore ${base} in package.json and package-lock.json: a pull request from a fork keeps the version, and the next maintainer release carries your change.`
     ].filter(Boolean);
 
     return [
@@ -96,16 +107,16 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
     let versions;
 
     try {
-        const read = file => JSON.parse(readFileSync(join(cwd, file), 'utf8')).version,
-              head = read('package.json'),
-              dependabot = parsed.values.event ? isDependabot(JSON.parse(readFileSync(parsed.values.event, 'utf8')).pull_request) : false;
+        const read   = file => JSON.parse(readFileSync(join(cwd, file), 'utf8')).version,
+              head   = read('package.json'),
+              origin = parsed.values.event ? originOf(JSON.parse(readFileSync(parsed.values.event, 'utf8')).pull_request) : 'maintainer';
 
         versions = {
             head,
             lock     : read('package-lock.json'),
             base     : JSON.parse(execFileSync('git', ['show', `${parsed.values.base}:package.json`], {cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']})).version,
-            dependabot,
-            published: !dependabot && RELEASE.test(head ?? '') && published(head)
+            origin,
+            published: origin === 'maintainer' && RELEASE.test(head ?? '') && published(head)
         }
     } catch (cause) {
         error(`check-version-bump: ${cause.message}`);
@@ -119,8 +130,10 @@ export function run(argv = process.argv.slice(2), {cwd = process.cwd(), out = co
         return 1
     }
 
-    out(versions.dependabot ? `check-version-bump: Dependabot retains ${versions.base}; validation only.` :
-        `check-version-bump: ${versions.base} → ${versions.head}, a version npm does not have yet.`);
+    out({
+        dependabot: `check-version-bump: Dependabot retains ${versions.base}; validation only.`,
+        fork      : `check-version-bump: a fork keeps ${versions.base}; the next maintainer release publishes its change.`
+    }[versions.origin] ?? `check-version-bump: ${versions.base} → ${versions.head}, a version npm does not have yet.`);
     return 0
 }
 

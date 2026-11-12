@@ -1,22 +1,29 @@
 #!/usr/bin/env node
-/** @summary Identifies Dependabot PRs and grants publication only from an exact merged PR receipt. */
+/** @summary Classifies a PR's release origin and grants publication only from an exact merged PR receipt. */
 
 import {readFileSync, realpathSync} from 'node:fs';
 import {fileURLToPath}              from 'node:url';
 import {parseArgs}                  from 'node:util';
 
 /**
- * @summary Classifies the PR author, independent of the actor merging or rerunning it.
+ * @summary A PR's release origin, read from its receipt and independent of the actor merging or rerunning it:
+ * - `dependabot`: the canonical Dependabot bot. It keeps the base version, and its merge only validates.
+ * - `fork`: a head repository other than the base's, or a deleted one. It keeps the base version, and its merge
+ *   publishes nothing, because an account without write access never picks a release number.
+ * - `maintainer`: a branch in this repository, which only write access can push. It carries a new release.
  * @param {Object} pullRequest GitHub's PR receipt.
- * @returns {Boolean} Whether the author is the canonical Dependabot bot.
+ * @returns {'dependabot'|'fork'|'maintainer'}
  */
-export function isDependabot(pullRequest) {
-    const user = pullRequest?.user;
+export function originOf(pullRequest) {
+    const user = pullRequest?.user,
+          base = pullRequest?.base?.repo?.full_name;
 
     if (!user?.login || !['User', 'Bot'].includes(user.type)) throw new Error('PR author is unavailable');
     if (user.login === 'dependabot[bot]' && user.type !== 'Bot') throw new Error('Dependabot author type is inconsistent');
+    if (!base) throw new Error('PR base repository is unavailable');
+    if (user.login === 'dependabot[bot]') return 'dependabot';
 
-    return user.login === 'dependabot[bot]' && user.type === 'Bot'
+    return pullRequest.head?.repo?.full_name === base ? 'maintainer' : 'fork'
 }
 
 /**
@@ -37,7 +44,7 @@ export function releaseOrigin(pullRequests, {sha, repository, base = 'dev'}) {
 
     const pr = matches[0];
 
-    return {publish: !isDependabot(pr), prNumber: pr.number}
+    return {publish: originOf(pr) === 'maintainer', prNumber: pr.number}
 }
 
 /**
