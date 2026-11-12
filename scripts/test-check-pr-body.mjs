@@ -290,13 +290,16 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     // Controls for the same entry point: the canonical line alone passes, and references GitHub does not act on
     // never count as a second target.
     assert.equal(cli(['--close-target-only'], 'Resolves #1').code, 0, 'one canonical line passes');
-    ['Refs #2', 'Related: #2', 'see #2', 'Fixed a bug where #2 misrendered'].forEach(line => {
+    // GitHub closes on a trailing period too, as an outside author's tool writes it; a comma list stays two tickets
+    assert.equal(cli(['--close-target-only'], 'Resolves #349.').code, 0, 'a trailing period is one close target');
+    assert.equal(cli(['--close-target-only'], 'Resolves #1, #2.').code, 1, 'a comma list with a period still names two tickets');
+    ['Refs #2','Related: #2', 'see #2', 'Fixed a bug where #2 misrendered'].forEach(line => {
         assert.equal(cli(['--close-target-only'], `Resolves #1\n${line}`).code, 0, `"${line}" is not a closing reference`);
         assert.deepEqual(findBodyViolations({body: `${line}\n${goodBody()}`}).visible, [], `"${line}" keeps the agent scope green`)
     })
 }
 
-// ── raw.githubusercontent.com image embeds 404 on private repos (#271) ─────────────────────────
+// ── raw.githubusercontent.com image embeds 404 on private repos ────────────────────────────────
 {
     const
         rawBefore  = 'https://raw.githubusercontent.com/neomjs/neo-stage/13db9fc/docs/before.png',
