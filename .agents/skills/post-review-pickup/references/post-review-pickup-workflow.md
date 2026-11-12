@@ -167,8 +167,8 @@ it.
 
 - `pr-review-guide.md §11` — reviewer-side map pointer into this skill.
 - `pull-request-workflow.md §6.3` — author-side map pointer.
-- `review-response-protocol.md §14` — author-side commentId handoff SSOT.
-- `pr-review-guide.md §10` — reviewer-side commentId handoff SSOT.
+- `review-response-protocol.md §14` — author-side handback SSOT.
+- `pr-review-guide.md §10` — reviewer-side hand-off SSOT.
 
 ## 11. Anti-patterns
 
