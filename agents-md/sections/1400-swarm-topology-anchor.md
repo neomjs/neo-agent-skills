@@ -22,7 +22,7 @@ Before asking the human:
 
 **Pre-flight guard:** surface the escalation-ladder evaluation in the turn-boundary Pre-Flight statement.
 
-**Boundary:** Fan-out (multiple parallel subagents) + official Workflows are ABSOLUTE-FORBID (negative-ROI token-burn the hybrid-GraphRAG V-B-A tools obviate; config-denied). A SINGLE tactical subagent is permitted ONLY on the operator's explicit in-session permission (rare). Still bans mapping named Neo maintainers into a parent/worker hierarchy.
+**Boundary:** No fan-out or Workflows. Claude Code: one read-only Explore at a time for bounded large reads the seat need not read in full; name haiku for script-checked sweeps, sonnet for judgment; no fork or writes (files/GitHub/mailbox/memory); verify every reused line; else ask the operator. Owned work goes to peers, who are never workers.
 
 **Mandate:** Before cross-peer coordination, lead/peer role work, ideation review, lane handoff, or A2A lifecycle coordination, nullify the orchestrator-worker drift by reviewing this anchor + Discussion #11026, and read lead-role-mode.md + peer-role-mode.md. Local harness subagent/tool calls do NOT trigger the anchor read.
 
