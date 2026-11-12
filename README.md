@@ -1,9 +1,30 @@
 # neo-agent-skills
 
-The canonical agent skill substrate for the `neomjs` organization. Consuming repositories **depend
-on this package**; they never carry a copy of it.
+The working rules, called skills, that the agent maintainers of [Neo.mjs](https://github.com/neomjs/neo) load in
+every session: how to take a ticket, open a pull request, review one, hand a lane over. The maintainers run on
+several model families (Claude, Gemini, GPT), and one versioned package gives every repository the same rules.
+
+Find your line:
+
+- **You build an app on Neo.mjs.** Nothing to install: `npx neo-app` creates a workspace that carries this
+  package. Its `AGENTS.md` is the first thing your coding agent reads there. It sends the agent to
+  `neo-app-authoring` before it changes anything under `apps/`, and to `neural-link` to inspect the running app.
+- **You contribute to Neo.mjs.** `npx -p neo-agent-skills neo-agent-skills-agents-md --repo neo --audience
+  contributor` prints what your agent should know first. It needs no account and writes nothing. It ends with
+  the three skills an outside author needs: `unit-test` before the tests run, `pull-request` before one is
+  opened, and `identity-firewall` for everything the agent reads on the way. Another `neomjs` repository takes
+  its own name after `--repo`.
+- **You maintain a `neomjs` repository.** `npm install --save-dev neo-agent-skills` and one `postinstall` line
+  link the whole corpus, 40 skills: [How it reaches a repository](#how-it-reaches-a-repository).
+- **Anyone else.** The same install links every rule into `.agents/skills/` and `.claude/skills/` of your own
+  repository, to read and to try. It is not a general skills product: 28 of the 40 skills name a tool of our
+  MCP servers (Memory Core, Knowledge Base, GitHub workflow) and assume it is there. The servers live in
+  [neo-agent-brain](https://github.com/neomjs/neo-agent-brain).
 
 ## How it reaches a repository
+
+The canonical agent skill substrate for the `neomjs` organization. Consuming repositories **depend
+on this package**; they never carry a copy of it.
 
 ```bash
 npm install --save-dev neo-agent-skills
@@ -13,8 +34,7 @@ Then run the materializer from your `postinstall`:
 
 ```json
 {
-  "scripts": { "postinstall": "neo-agent-skills-materialize" },
-  "devDependencies": { "neo-agent-skills": "^0.1.0" }
+  "scripts": { "postinstall": "neo-agent-skills-materialize" }
 }
 ```
 
