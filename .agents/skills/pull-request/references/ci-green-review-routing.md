@@ -7,7 +7,7 @@ This payload governs author-side review requests after a PR is opened or after t
 - `pull-request-workflow.md §6.2` owns author-side review routing.
 - `pr-review/audits/ci-security-audit.md` owns reviewer-side CI hold / fail-fast behavior.
 - `AGENTS.md §0` still requires lifecycle A2A notification when the PR opens.
-- The Fleet's open-work wakes (`neomjs/neo-agent-brain#759`) carry each handoff to its holder, once per head; no seat DMs one.
+- The Fleet's open-work wakes (`neomjs/neo-agent-brain#759`) carry the handoffs their selector routes, once per head; no seat DMs those (keep list: `pull-request-workflow.md` §6.2).
 
 The goal is to preserve lifecycle visibility without waking a reviewer into work they must immediately hold.
 
@@ -76,7 +76,7 @@ CI status: failing on current head <sha-or-short-sha>
 
 ### No Checks Returned
 
-If no checks, proceed only without a controller. Otherwise a missing context holds the seat until the next base event or `workflow_dispatch`; park that recheck and drive another lane.
+If no checks, proceed only without a controller, and A2A the reviewer too: no `review` wake fires without CI. Otherwise a missing context holds the seat until the next base event or `workflow_dispatch`; park that recheck and drive another lane.
 
 ## 4. Re-Review Requests
 

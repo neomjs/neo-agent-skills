@@ -230,9 +230,11 @@ approval.
 
 Core members in canonical `neomjs/neo` send lifecycle A2A after PR open.
 PR-native `reviewRequests` owns the one ordinary full-review seat; the Fleet's
-open-work wakes carry each handoff, so no seat DMs one. A2A stays for what GitHub
-state cannot carry: escalations, tie-breakers, declines, operator-only asks,
-GitLab, and outside-contributor PRs until `neomjs/neo-agent-brain#807`.
+open-work wakes carry the handoffs its selector routes (`openWorkHolder.mjs`), so
+no seat DMs those. A2A stays where it routes none: a handback with no new commit
+(a change request on the head keeps the author the holder), a repository without
+CI (`review` needs green), escalations, tie-breakers, declines, operator-only
+asks, GitLab, and outside-contributor PRs until `neomjs/neo-agent-brain#807`.
 
 <!-- trigger: maintainer author-side review/re-review request -> read ./ci-green-review-routing.md before reviewer assignment -->
 

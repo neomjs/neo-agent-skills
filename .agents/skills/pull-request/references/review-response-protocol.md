@@ -166,7 +166,9 @@ When performing self-reviews or responding to feedback across multiple rounds, y
 
 Author-side mirror of `pr-review §10`: once CI is green on the response head,
 re-request the reviewer on GitHub (`manage_pr_reviewers` add); the Fleet's
-`review` wake reaches them, so no commentId DM.
+`review` wake reaches them, so no commentId DM. A handback with no new commit, or
+on a repository without CI, re-requests AND A2As the response `commentId`: no
+wake carries it (`pull-request-workflow.md` §6.2).
 
 **Pre-Flight:** after the response comment, state that the reviewer was or will
 be re-requested at green.
