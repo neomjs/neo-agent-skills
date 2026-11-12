@@ -44,8 +44,9 @@ projection without the flag is unchanged. The matching instruction file comes fr
 guidance with `neo-agent-skills-agents-md --repo neo --audience contributor`; stdout configures
 nothing and is not a tracked contributor instruction variant.
 
-**Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests
-retain the package version and run validation without publishing or tagging** (see *Authority*).
+**Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests and pull
+requests from forks retain the package version and run validation without publishing or tagging; the next maintainer
+release carries them** (see *Authority*).
 Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
 no bespoke lag gate anywhere in this contract.
@@ -342,14 +343,16 @@ A maintainer pull request picks its bump by what changes for a consumer:
 - **minor:** it adds or changes a rule, section, skill, check or option that consumers pick up without changing anything;
 - **patch:** it corrects text or code without changing what any rule or check decides, such as a typo, a broken link or a wrong path.
 
-`scripts/check-version-bump.mjs` checks that the version is new. The pull request body names which part it bumps, and why.
+A release carries every commit merged since the last tag, Dependabot's and forks' included, so its bump covers all of them.
+
+`scripts/check-version-bump.mjs` checks that a maintainer's version is new and that Dependabot and forks keep the base version. The pull request body names which part it bumps, and why.
 
 ## Authority
 
 Skills are authored on `dev`:
-- maintainer pull requests bump `package.json`; Dependabot keeps the base version (`scripts/check-version-bump.mjs`);
-- both run validation; `.github/workflows/publish.yml` classifies the exact merged PR's author, so a human merging Dependabot cannot turn it into a release;
-- maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot merges do neither;
+- maintainer pull requests bump `package.json`; Dependabot and forks keep the base version (`scripts/check-version-bump.mjs`);
+- all three run validation; `.github/workflows/publish.yml` classifies the exact merged PR's origin (`originOf` in `scripts/release-origin.mjs`: `dependabot`, `fork` or `maintainer`), so a human merging Dependabot or a fork cannot turn it into a release;
+- maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot and fork merges do neither;
 - Dependabot brings it to each consumer.
 
 **A repository's Dependabot pull requests merge themselves.** Its caller of `reusable-dependabot-automerge.yml` hands

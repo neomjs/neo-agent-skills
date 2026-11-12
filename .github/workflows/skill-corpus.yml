@@ -69,6 +69,12 @@ jobs:
       - name: Reusable Dependabot auto-merge contract and decision
         run: node scripts/test-reusable-dependabot-automerge.mjs
 
+      - name: Reusable CodeQL lane contract
+        run: node scripts/test-reusable-codeql.mjs
+
+      - name: CodeQL extraction guard contract
+        run: node scripts/test-check-codeql-extraction.mjs
+
       - name: Ticket archaeology contract and packed CLI
         run: node scripts/test-ticket-archaeology.mjs
 
@@ -151,7 +157,7 @@ jobs:
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-guides.mjs' \
             || { echo "guide lint CLI missing from the tarball"; exit 1; }
 
-          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-check-ticket-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/test-check-discussion-fidelity.mjs' 'package/scripts/test-check-guides.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs'; do
+          for unwanted in 'package/.github/' 'package/scripts/lint-skill-corpus.mjs' 'package/scripts/test-reusable-pr-baseline.mjs' 'package/scripts/test-ticket-archaeology.mjs' 'package/scripts/test-substrate-size.mjs' 'package/scripts/test-check-pr-body.mjs' 'package/scripts/test-check-ticket-body.mjs' 'package/scripts/test-workflow-concurrency.mjs' 'package/scripts/test-npm-overrides.mjs' 'package/scripts/test-secrets.mjs' 'package/scripts/test-commit-authorship.mjs' 'package/scripts/test-check-discussion-fidelity.mjs' 'package/scripts/test-check-guides.mjs' 'package/scripts/tag-release.mjs' 'package/scripts/test-tag-release.mjs' 'package/scripts/check-version-bump.mjs' 'package/scripts/test-check-version-bump.mjs' 'package/scripts/check-codeql-extraction.mjs' 'package/scripts/test-check-codeql-extraction.mjs' 'package/scripts/test-reusable-codeql.mjs'; do
             tar tzf "$TARBALL" | grep -q "$unwanted" \
               && { echo "$unwanted ships to consumers and should not"; exit 1; }
           done
