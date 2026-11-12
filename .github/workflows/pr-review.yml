@@ -18,4 +18,4 @@ permissions:
 
 jobs:
   review:
-    uses: neomjs/neo-agent-skills/.github/workflows/reusable-pr-review.yml@v1.2.0
+    uses: neomjs/neo-agent-skills/.github/workflows/reusable-pr-review.yml@v1.3.1
