@@ -32,6 +32,8 @@ Object.keys(process.env).filter(key => key.startsWith('GIT_')).forEach(key => de
 Object.assign(process.env, {GIT_CONFIG_GLOBAL: join(isolated, 'global.gitconfig'), GIT_CONFIG_NOSYSTEM: '1'});
 writeFileSync(process.env.GIT_CONFIG_GLOBAL, '');
 
+const dirSymlink = process.platform === 'win32' ? 'junction' : 'dir';
+
 /**
  * @summary A consumer checkout holding the committed pointer, the `.gitattributes` line and this package under
  * `node_modules`, where the clean command finds it. No filter is registered yet.
@@ -42,7 +44,7 @@ function checkout() {
 
     roots.push(root);
     mkdirSync(join(root, 'node_modules'));
-    symlinkSync(dirname(here), join(root, 'node_modules', 'neo-agent-skills'), 'dir');
+    symlinkSync(dirname(here), join(root, 'node_modules', 'neo-agent-skills'), dirSymlink);
     writeFileSync(join(root, '.gitattributes'), '/AGENTS.md filter=neo-agents-md\n');
     writeFileSync(join(root, '.gitignore'), 'node_modules/\n');
     writeFileSync(join(root, 'AGENTS.md'), pointerFor('neo'));
@@ -141,7 +143,7 @@ const indexHoldsPointer = root => git(root, 'show', ':AGENTS.md') === pointerFor
 
     // A worktree gets no node_modules; give it the package, so its status can run the clean command
     mkdirSync(join(trees, 'with-smudge', 'node_modules'));
-    symlinkSync(dirname(here), join(trees, 'with-smudge', 'node_modules', 'neo-agent-skills'), 'dir');
+    symlinkSync(dirname(here), join(trees, 'with-smudge', 'node_modules', 'neo-agent-skills'), dirSymlink);
 
     assert.equal(git(join(trees, 'with-smudge'), 'status', '--porcelain'), '', 'the new worktree is clean');
 
@@ -150,6 +152,24 @@ const indexHoldsPointer = root => git(root, 'show', ':AGENTS.md') === pointerFor
 
     assert.notEqual(tryGit(root, 'worktree', 'add', '--detach', join(trees, 'without-smudge'), 'HEAD'), 0);
     assert.ok(!existsSync(join(trees, 'without-smudge', 'AGENTS.md')))
+}
+
+// ── Without the module, a worktree falls back to the index's pointer ───────────────────────────────
+{
+    const root  = checkout(),
+          trees = mkdtempSync(join(tmpdir(), 'agents-md-worktree-'));
+
+    roots.push(trees);
+    ensureFilter({root, repo: 'neo'});
+
+    const tree = join(trees, 'without-module');
+    git(root, 'worktree', 'add', '--quiet', '--detach', tree, 'HEAD');
+    writeFileSync(join(tree, 'AGENTS.md'), rules);
+
+    assert.equal(tryGit(tree, 'status'), 0, 'git status exits 0 when the module is absent');
+    assert.equal(tryGit(tree, 'add', 'AGENTS.md'), 0, 'git add exits 0 when the module is absent');
+    assert.equal(git(tree, 'cat-file', 'blob', ':AGENTS.md'), pointerFor('neo'), 'the stored blob stays the pointer');
+    assert.equal(git(tree, 'diff', '--cached'), '', 'nothing is staged')
 }
 
 roots.forEach(root => rmSync(root, {force: true, recursive: true}));

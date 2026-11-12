@@ -4,10 +4,11 @@
  *
  * A consumer writes its generated rules into `AGENTS.md`, the path every coding agent reads, with
  * `neo-agent-skills-agents-md --pointer`. Git keeps only a pointer: `.gitattributes` routes `/AGENTS.md` through the
- * {@link AGENTS_MD_FILTER} filter, whose clean command is this module's CLI and answers any working copy with the
- * pointer. The filter is required, so a clean command that cannot run makes git refuse to store the file, never store
- * it raw. Required binds the checkout direction too, so its smudge writes the stored pointer unchanged. A clone that
- * never installed shows the pointer, which tells its reader where the rules come from: Git LFS's pattern.
+ * {@link AGENTS_MD_FILTER} filter, whose clean command runs this module's CLI when present (or answers the index's
+ * pointer when the package is not installed) and answers any working copy with the pointer. The filter is required, so
+ * a clean command that cannot run makes git refuse to store the file, never store it raw. Required binds the checkout
+ * direction too, so its smudge writes the stored pointer unchanged. A clone that never installed shows the pointer,
+ * which tells its reader where the rules come from: Git LFS's pattern.
  */
 
 import {spawnSync}                from 'node:child_process';
@@ -69,12 +70,13 @@ export function pointerFor(repo) {
 
 /**
  * @summary The filter's `clean` command. Git runs it from the top of the working tree, where `node_modules/.bin` is
- * not on its path, so it names this module by path.
+ * not on its path, so it names this module by path when present, or drains stdin and answers the pointer the index
+ * already holds when the module is absent.
  * @param {String} repo
  * @returns {String}
  */
 export function cleanCommand(repo) {
-    return `node node_modules/neo-agent-skills/scripts/agents-md-pointer.mjs --repo ${checkRepo(repo)}`
+    return `if [ -f node_modules/neo-agent-skills/scripts/agents-md-pointer.mjs ]; then node node_modules/neo-agent-skills/scripts/agents-md-pointer.mjs --repo ${checkRepo(repo)}; else cat >/dev/null; git cat-file blob :AGENTS.md; fi`
 }
 
 /**
