@@ -1,4 +1,4 @@
-# Maintainer merges to `dev` release; Dependabot merges validate without publishing or tagging.
+# Maintainer merges to `dev` release; Dependabot and fork merges validate without publishing or tagging.
 #
 # The maintainer pull request carried a new version, checked by `check-version-bump.mjs`.
 # This job publishes it, and `postpublish` (`scripts/tag-release.mjs`) pushes `v<version>` at the merge
