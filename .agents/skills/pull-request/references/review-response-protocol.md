@@ -162,19 +162,13 @@ When performing self-reviews or responding to feedback across multiple rounds, y
 | **Withdrawing a published claim** | UPDATE in place — a withdrawal lands no commit, so no commit-keyed row fires for it. If a separate comment is unavoidable, cut the superseded one to a pointer: **exactly one comment is live**, or the economical read (first, stop) returns the withdrawn answer. |
 | **Follow-up completion notes** | NEW short comment (e.g., "merged #X, closed by PR"). |
 
-## 14. A2A Comment-ID Propagation (Author Side)
+## 14. The Handback (Author Side)
 
-This is the author-side mirror of `pr-review §10`:
+Author-side mirror of `pr-review §10`: once CI is green on the response head,
+re-request the reviewer on GitHub (`manage_pr_reviewers` add); the Fleet's
+`review` wake reaches them, so no commentId DM. A handback with no new commit, or
+on a repository without CI, re-requests AND A2As the response `commentId`: no
+wake carries it (`pull-request-workflow.md` §6.2).
 
-1. Create the response comment and capture its `commentId` (IC_*).
-2. DM the reviewer at canonical `@<identity>` with the PR number, literal
-   `commentId`, and disposition summary.
-3. The reviewer fetches only that comment with
-   `get_conversation({pr_number, comment_id})`.
-
-A `manage_pr_review` `reviewId` (PRR_*) is not a `commentId`; relay its returned
-review payload instead. Use a full-thread or `since_comment_id` fetch for a cold
-cache; the scoped fetch is only for a grounded warm-cache cycle.
-
-**Pre-Flight:** after creating the response comment, state that its literal
-`commentId` was or will be sent to the reviewer before yielding.
+**Pre-Flight:** after the response comment, state that the reviewer was or will
+be re-requested at green.

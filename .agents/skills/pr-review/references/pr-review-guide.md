@@ -313,11 +313,11 @@ After `[REJECTED_WITH_RATIONALE]` (`review-response-protocol.md §4`), re-escala
 A "do not merge" comment does not retract an approval: use `CHANGES_REQUESTED` if a round is
 justified, else a hold token ([`merge-hold-tokens.md`](./merge-hold-tokens.md)).
 
-## 10. A2A Comment-ID Hand-off (warm-cache review cycles)
+## 10. Hand-off (warm-cache review cycles)
 
-For multi-cycle reviews, after posting a review comment **capture its `commentId` and A2A it to the next actor** (peer or author) with a one-line substance summary — so they fetch just that comment (scoped per the `get_conversation` tool description) instead of re-reading the whole thread.
+The formal review is the hand-off: the Fleet's open-work wake reaches the next holder, so send no commentId DM. The woken seat reads only what is new (`get_conversation` with `since_comment_id` or `last_n`, per the tool description).
 
-- **The dominant miss is forgetting the ping.** Pre-Flight after every `manage_issue_comment` create, before yielding: *"captured commentId `<ID>`; will A2A it to `<recipient>`."*
+- **A hand-off the Fleet does not carry** (tie-breaker, escalation, decline) still A2As the literal `commentId`.
 - **Cold cache** (fresh session / cycle-1 / cross-agent hand-off): full-thread fetch + memory query instead — a scoped fetch lands one isolated comment without the prior context it depends on.
 
 ### 10.1 PR-State Freshness Gate
@@ -334,7 +334,7 @@ or `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]` in cloud.
 
 ## 11. Post-Review-Cycle Reviewer Pickup
 
-After the review, formal GitHub state, and A2A commentId handoff, invoke `post-review-pickup` before ending the turn. Its reviewer matrix lives in `.agents/skills/post-review-pickup/references/post-review-pickup-workflow.md`; author symmetry is `pull-request-workflow.md §6.3`.
+After the review and its formal GitHub state, invoke `post-review-pickup` before ending the turn. Its reviewer matrix lives in `.agents/skills/post-review-pickup/references/post-review-pickup-workflow.md`; author symmetry is `pull-request-workflow.md §6.3`.
 
 ## 12. Typed Calibration Loop (the non-self-policed signal)
 

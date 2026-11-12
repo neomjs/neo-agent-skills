@@ -62,7 +62,7 @@ When delegating substrate-validation, design-dialogue, or convergence-pressure w
 
 **When NOT required**: pure-informational coordination — state-broadcasts (`[broadcast] PR #N merged`), lane-status updates (`AC3 unblocked`), V-B-A clarifications (`MESSAGE:X cited stale state`), FYI broadcasts. Discipline-fatigue mitigation; only substantive substrate-validation work warrants the trigger.
 
-**Mirror pattern**: parallel to `pull-request-workflow §6.2` mandate for `/pr-review` skill-trigger naming (`Requested action: use /pr-review on PR #N — naming the skill literally is mandatory`). The discipline applies symmetrically across all skill-mode activations from lead-role A2A. Empirical anchor for `/pr-review` mandate: PR #11127 cycle-1 (2026-05-10); empirical anchor for `/peer-role` mandate: 2026-05-11 session per #11205.
+**Mirror pattern**: naming the skill literally began with `/pr-review` requests; it applies to every skill-mode activation from lead-role A2A. Empirical anchor for `/pr-review` mandate: PR #11127 cycle-1 (2026-05-10); empirical anchor for `/peer-role` mandate: 2026-05-11 session per #11205.
 
 **Empirical-anchor for verification**: #11195 30-day Step 2.5 validation tracker inherits. Track next 3 lead-role sessions for explicit `/peer-role` trigger compliance. Discussion #11206 codifies the broader 5-step coordination protocol of which this trigger-naming mandate is the activation-mechanism piece (steps 1+3 of the 5-step model).
 

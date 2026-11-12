@@ -66,8 +66,8 @@ Fixup commits alone do NOT discharge it (#14735):
 
 1. an author-response comment ON the PR — each RA addressed or contested, exact
    head hash;
-2. an A2A re-review request to the reviewer, **waking-required** (RC-class must
-   wake);
+2. the handback (`review-response-protocol.md` §14): GitHub's re-request at
+   green, or the A2A that §14 names where no Fleet wake carries it;
 3. only then is the lane free to move.
 
 ## 5. PR-state freshness gate
@@ -167,8 +167,8 @@ it.
 
 - `pr-review-guide.md §11` — reviewer-side map pointer into this skill.
 - `pull-request-workflow.md §6.3` — author-side map pointer.
-- `review-response-protocol.md §14` — author-side commentId handoff SSOT.
-- `pr-review-guide.md §10` — reviewer-side commentId handoff SSOT.
+- `review-response-protocol.md §14` — author-side handback SSOT.
+- `pr-review-guide.md §10` — reviewer-side hand-off SSOT.
 
 ## 11. Anti-patterns
 
@@ -176,6 +176,6 @@ it.
 |---|---|
 | Naming a PR's merge state from a wake, a prior summary, or your own earlier sentence | Wakes and recollection are stale by construction; this is how false merge-ready claims reach the operator |
 | Claiming a review you were not assigned | Collides with the assigned reviewer and distorts cross-family seat accounting |
-| Fixup commits without the author-response comment + waking A2A | Leaves the reviewer unaware; the RC cycle silently stalls |
+| Fixup commits without the author-response comment + the handback | Leaves the reviewer unaware; the RC cycle silently stalls |
 | Treating operator-suppressed broadcast as work-stop | Confuses coordination visibility with implementation authority |
 | Duplicating this content into the PR lifecycle maps | Violates the Map vs Atlas split and raises routine context load |

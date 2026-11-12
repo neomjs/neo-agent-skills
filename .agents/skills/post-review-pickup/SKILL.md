@@ -1,6 +1,6 @@
 ---
 name: post-review-pickup
-description: "Maintainer next-lane pickup; use after PR review/state-chain, author commentId handoff, implementation completion, PR open/update, create_issue, row report, unblocking, or before first review in a fresh boot/wake."
+description: "Maintainer next-lane pickup; use after PR review/state-chain, author handback, implementation completion, PR open/update, create_issue, row report, unblocking, or before first review in a fresh boot/wake."
 ---
 
 # Post-Review Pickup Skill

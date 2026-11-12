@@ -29,7 +29,7 @@ One row per Round-1 required action (a micro review's Findings too), **quoted ve
 
 [Approve · Approve+Follow-Up (only if it passes the standalone-ticket counterfactual) · **COMMENT** if any item is STILL_OPEN]
 
-After posting, A2A the author the **review ID or URL** (`manage_pr_review` returns those, not a `commentId`).
+The formal review state is the hand-off (`pr-review-guide.md` §10); send no DM.
 
 ---
 

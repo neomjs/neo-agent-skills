@@ -175,7 +175,8 @@ PR, and answer actionable feedback through the contributor path in `review-respo
 
 **Maintainers:** done means the PR is open and §6.2's handoff state is set. In headless mode call
 `signal_state_transition(state: 'PR_OPENED', target: "[pr-number]")`; with a human present, report
-readiness for cross-model review and await it. No self-review unless explicitly instructed or the
+readiness for cross-model review and await it. CI waits on the Fleet's wake
+(`ci-green-review-routing.md` §3). No self-review unless explicitly instructed or the
 7-day fallback applies.
 
 **Human-only merge:** no agent invokes `gh pr merge`, regardless of CI/approval. Handoff ends at
@@ -228,8 +229,12 @@ approval.
 ### 6.2 The Core Swarm A2A Notification Mandate (Review Routing Protocol)
 
 Core members in canonical `neomjs/neo` send lifecycle A2A after PR open.
-PR-native `reviewRequests` owns the one ordinary full-review seat; A2A only
-points to the PR.
+PR-native `reviewRequests` owns the one ordinary full-review seat; the Fleet's
+open-work wakes carry the handoffs its selector routes (`openWorkHolder.mjs`), so
+no seat DMs those. A2A stays where it routes none: a handback with no new commit
+(a change request on the head keeps the author the holder), a repository without
+CI (`review` needs green), escalations, tie-breakers, declines, operator-only
+asks, GitLab, and outside-contributor PRs until `neomjs/neo-agent-brain#807`.
 
 <!-- trigger: maintainer author-side review/re-review request -> read ./ci-green-review-routing.md before reviewer assignment -->
 
@@ -241,8 +246,7 @@ tests and any code only it uses. Link it as `Related: #N`.
 Use role-routing, not naked multi-peer pings:
 
 1. **Default:** after current-head CI is green, request exactly one
-   `primary-reviewer` in GitHub and send one matching wake:
-   `Review role: primary-reviewer`; `Requested action: use /pr-review on PR #N`.
+   `primary-reviewer` in GitHub; the Fleet's `review` wake reaches them.
    Use round-robin unless subsystem familiarity justifies an override.
 2. **Eligibility / 1h fallback:** at review-start, pass the Review-Seat Gate
    (`post-review-pickup/references/pre-review-intake-lane-gate.md`); re-read
@@ -270,7 +274,7 @@ Edge-case rotation (operator-direction / author-yield only) with a 5-signal trac
 
 ### 6.3 Post-Review-Cycle Author Pickup
 
-After an author posts a review-response comment with fixup commits and the author-side A2A commentId handoff (`review-response-protocol.md §14`), the author MUST invoke the `post-review-pickup` skill before ending the turn. The author-side matrix, legitimate halt states, and targeted-blocker rule live in `post-review-pickup-workflow.md` (the Atlas entry; this section is only the map pointer). Reviewer-side symmetry: `pr-review-guide.md §11`.
+After an author posts a review-response comment with fixup commits and re-requests the reviewer on GitHub (`review-response-protocol.md §14`), the author MUST invoke the `post-review-pickup` skill before ending the turn. The author-side matrix, legitimate halt states, and targeted-blocker rule live in `post-review-pickup-workflow.md` (the Atlas entry; this section is only the map pointer). Reviewer-side symmetry: `pr-review-guide.md §11`.
 
 ### 6.3.1 Post-Review Follow-up Surfacing
 

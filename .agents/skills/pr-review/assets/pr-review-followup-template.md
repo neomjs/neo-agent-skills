@@ -120,6 +120,6 @@ No required actions — eligible for human merge.
 
 ---
 
-### 📨 A2A Hand-Off
+### 📨 Hand-Off
 
-After posting this follow-up review, capture the new `commentId` and send it via A2A to the next actor so they can fetch the delta directly.
+The formal review state is the hand-off (`pr-review-guide.md` §10).
