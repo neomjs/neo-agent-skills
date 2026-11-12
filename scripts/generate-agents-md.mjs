@@ -70,7 +70,7 @@ function trimFinalLineFeeds(text) {
  * @returns {{audiences: String[], body: String, id: String, order: Number, repos: String[], skills: String[], wrapperGroup: (String|null)}}
  */
 export function parseSection(text, name) {
-    const match = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(text);
+    const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/.exec(text);
 
     if (!match) throw new Error(`${name}: missing front-matter block`);
 

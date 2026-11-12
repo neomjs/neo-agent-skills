@@ -24,7 +24,7 @@
  */
 
 import {execFileSync}                                    from 'node:child_process';
-import {existsSync, readdirSync, readFileSync, statSync} from 'node:fs';
+import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {dirname, join, relative, resolve}                from 'node:path';
 import {fileURLToPath}                                   from 'node:url';
 
@@ -40,6 +40,9 @@ const SKILL_GROWTH_JUSTIFIED_RE = /\[skill-growth-justified:\s*[^\]\n]+\]/i;
 
 /** @summary A skill's effective budget: its own override, else the default. */
 const budget = (row, key) => (Object.hasOwn(row, key) ? row[key] : defaults[key]);
+
+/** @summary Count text bytes using the repository's canonical LF line endings. */
+const fileBytes = path => Buffer.byteLength(readFileSync(path, 'utf8').replace(/\r\n/g, '\n'), 'utf8');
 
 // ── 0. manifest schema ──────────────────────────────────────────────────────────────────────────
 // The manifest is the index every other arm reads, so a malformed one makes the rest of this lint
@@ -123,7 +126,7 @@ function treeBytes(dir) {
     for (const entry of readdirSync(dir, {withFileTypes: true})) {
         const full = join(dir, entry.name);
 
-        total += entry.isDirectory() ? treeBytes(full) : statSync(full).size
+        total += entry.isDirectory() ? treeBytes(full) : fileBytes(full)
     }
 
     return total
@@ -485,7 +488,7 @@ for (const name of declared) {
     if (!existsSync(skillMd)) { errors.push(`${name}/SKILL.md is missing — the router is what a harness reads first.`); continue }
 
     const
-        src  = readFileSync(skillMd, 'utf8'),
+        src  = readFileSync(skillMd, 'utf8').replace(/\r\n/g, '\n'),
         fm   = /^---\n([\s\S]*?)\n---/.exec(src),
         row  = manifest.skills[name];
 
@@ -549,7 +552,7 @@ for (const name of declared) {
         for (const rel of walk(refs)) {
             if (exempt.has(`${name}/references/${rel}`)) continue;
 
-            const bytes = statSync(join(refs, rel)).size;
+            const bytes = fileBytes(join(refs, rel));
 
             if (bytes > perFile) {
                 errors.push(`${name}/references/${rel} has ${bytes} bytes, exceeds perFilePayloadBudget ${perFile}. Extract edge cases behind one-line trigger pointers.`)
@@ -644,7 +647,7 @@ for (const {label, limitBytes, files} of COMBINED_BUDGETS) {
     for (const rel of files) {
         const full = join(SKILLS, rel);
 
-        existsSync(full) ? sum += statSync(full).size : missing.push(rel)
+        existsSync(full) ? sum += fileBytes(full) : missing.push(rel)
     }
 
     if (missing.length) {
