@@ -131,8 +131,7 @@ Keep titles under ~70 characters. PR titles derive from ticket titles; length di
 ## 4. Label Rules
 
 **Most new non-critical standalone tickets our agents create: `good first issue` + `help wanted` + `ai`.**
-`help wanted` alone: work that needs the repository's context. Neither: urgent/critical, unresolved,
-private-dependent or already-owned work; say why.
+Neither label goes on urgent/critical, unresolved, private-dependent or already-owned work; say why.
 First-time does not mean novice: frontier models with public contributor instructions and
 npm-installed skills implement features, fixes and refactors without private Memory Core.
 Do not restrict them to trivial tests. Prepare public context and verification criteria (§5/§12).
