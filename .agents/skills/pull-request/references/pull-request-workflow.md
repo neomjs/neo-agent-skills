@@ -274,7 +274,7 @@ Edge-case rotation (operator-direction / author-yield only) with a 5-signal trac
 
 ### 6.3 Post-Review-Cycle Author Pickup
 
-After an author posts a review-response comment with fixup commits and re-requests the reviewer on GitHub (`review-response-protocol.md §14`), the author MUST invoke the `post-review-pickup` skill before ending the turn. The author-side matrix, legitimate halt states, and targeted-blocker rule live in `post-review-pickup-workflow.md` (the Atlas entry; this section is only the map pointer). Reviewer-side symmetry: `pr-review-guide.md §11`.
+After a review-response comment with fixup commits and a GitHub re-request (`review-response-protocol.md §14`), the author MUST run `post-review-pickup` before ending the turn; its workflow holds the author-side matrix, halt states and targeted-blocker rule. Reviewer side: `pr-review-guide.md §11`.
 
 ### 6.3.1 Post-Review Follow-up Surfacing
 
@@ -368,9 +368,17 @@ Green anchors prove neither coverage nor consistency; reviewers still count and 
 ## 10. Authorship Respect
 
 Update your own authored artifacts in place; bodies via `update_issue_body` (or
-`gh issue edit` / `gh pr edit`). For another author's PR/ticket body, self-review, or
-ACs, respond by comment unless co-authorship is explicitly invited or salvage of an
-abandoned PR is documented first.
+`gh issue edit` / `gh pr edit`). Another author's body, self-review or ACs get a
+comment, unless co-authorship is invited, an abandoned PR's salvage is documented
+first, or an exception below applies.
+
+**Outside contributor's PR:** if it allows maintainer edits, the triager repairs
+its mechanical reds in place (the body through `update_issue_body` with
+`acknowledgedForeignBody`) and says in one comment what changed: the close line
+(`Closes`/`Fixes #N` → `Resolves #N`), the title's ticket suffix, markdown the
+author's tool stripped, `dev` merged in with `dev`'s version lines. Content stays
+the author's; two PRs on one ticket are the reviewer's choice. No maintainer
+edits: ask once, with the exact line.
 
 **Maintainer Polish Fast Path:** reviewers may patch under the PR ticket only
 when the review-loop circuit breaker is active (>= 3 formal reviews OR > 24KB

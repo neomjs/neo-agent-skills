@@ -110,9 +110,8 @@ export function markdownContentLines(body = '') {
  * **The kinds are per anchor and deliberately not uniform**, because the anchors are not one shape.
  * The four `##` anchors are headings and are line-anchored — a mention inside a sentence, a table row
  * (which opens with `|`), or a fenced snippet no longer counts. `Evidence:` and `Authored by ` are
- * not headings and stay substring, because tightening them would re-open the false-NEGATIVE half
- * already recorded as `neomjs/neo#14344`: a body legitimately carrying `- **Evidence:** …` or a
- * signature line would start failing for formatting.
+ * not headings and stay substring, because tightening them would produce false negatives: a body
+ * legitimately carrying `- **Evidence:** …` or a signature line would start failing for formatting.
  *
  * Every anchor therefore declares its kind and there is **no default** — an undeclared anchor throws
  * rather than silently picking one, since an unnamed default is how the original defect went
@@ -135,8 +134,8 @@ export function hasAnchor(body, {anchor, match}) {
     }
 
     // Substring anchors are matched against CONTENT too, not the raw body. A fenced `Evidence:`
-    // is documentation of the anchor, not the anchor. This does not re-open `neomjs/neo#14344`:
-    // that false negative was a real `- **Evidence:** …` content line, which still matches.
+    // is documentation of the anchor, not the anchor; a real `- **Evidence:** …` content line
+    // still matches.
     if (match === 'substring') return lines.join('\n').includes(anchor);
 
     // No default. An anchor whose match kind is absent is a declaration error, not a body error,
@@ -159,10 +158,11 @@ export const GITHUB_CLOSING_EXPRESSION =
  * 2026-09-23: "a PR MUST ALWAYS resolve ONE ticket. zero exceptions."). A ticket whose ACs one PR
  * cannot deliver is re-scoped; the keyword is never downgraded to `Refs`.
  *
- * Two jobs, kept apart. The DECLARATION must be one standalone canonical `Resolves #N` line — the earlier
- * raw-body search let `This PR Resolves #1234 as a side effect.`, a fenced example and a table cell satisfy a
+ * Two jobs, kept apart. The DECLARATION must be one standalone canonical `Resolves #N` line (a trailing
+ * period, which GitHub reads the same, included) — the earlier raw-body search let
+ * `This PR Resolves #N as a side effect.`, a fenced example and a table cell satisfy a
  * rule that forbids every one of them. And EXCLUSIVITY is judged over everything GitHub acts on: one canonical
- * line does not make `resolves #2`, `Resolves: #2`, `owner/repo#2`, `Resolved #2` or an inline `fixes #2`
+ * line does not make `resolves #M`, `Resolves: #M`, `owner/repo#M`, `Resolved #M` or an inline `fixes #M`
  * inert, so any such expression outside that line is a second close target.
  * @param {String} [body=''] Pull-request body.
  * @returns {String[]} Violations, most specific first; empty when the close target is valid.
@@ -170,7 +170,7 @@ export const GITHUB_CLOSING_EXPRESSION =
 export function findCloseTargetViolations(body = '') {
     const
         content        = markdownContentLines(body).map(line => line.trim()),
-        isCanonical    = line => /^Resolves #\d+$/.test(line),
+        isCanonical    = line => /^Resolves #\d+\.?$/.test(line),
         resolvesLines  = content.filter(isCanonical).length,
         forbiddenClose = content.map(line => line.match(/^(Closes|Fixes):?\s+#\d+/i)).find(Boolean),
         commaSeparated = content.some(line => /^Resolves #\d+\s*,/.test(line)),
@@ -183,7 +183,7 @@ export function findCloseTargetViolations(body = '') {
         violations.push(`\`${forbiddenClose[1]} #N\` is forbidden — use \`Resolves #N\``)
     }
 
-    // Named before the absence check: `Resolves #1, #2` and a second `Resolves` line are close targets
+    // Named before the absence check: a comma list after `Resolves` and a second `Resolves` line are close targets
     // the author wrote deliberately, and "missing" would send them looking for the wrong bug.
     if (commaSeparated || resolvesLines > 1) {
         violations.push('a PR resolves exactly ONE ticket — one standalone `Resolves #N` line, no second one and no comma list')
