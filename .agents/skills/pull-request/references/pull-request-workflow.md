@@ -372,18 +372,17 @@ Update your own authored artifacts in place; bodies via `update_issue_body` (or
 comment, unless co-authorship is invited, an abandoned PR's salvage is documented
 first, or an exception below applies.
 
-**Outside contributor's PR:** if it allows maintainer edits, the triager repairs
-its mechanical reds in place (the body through `update_issue_body` with
-`acknowledgedForeignBody`) and says in one comment what changed: the close line
-(`Closes`/`Fixes #N` → `Resolves #N`), the title's ticket suffix, markdown the
-author's tool stripped, `dev` merged in with `dev`'s version lines. Content stays
-the author's; two PRs on one ticket are the reviewer's choice. No maintainer
-edits: ask once, with the exact line.
+**Outside contributor's PR:** if maintainer edits are allowed, the triager fixes
+mechanical reds in place (`acknowledgedForeignBody` for the body) and names
+them in one comment: the close line (`Closes`/`Fixes #N` → `Resolves #N`), the
+title's `(#N)`, stripped markdown, `dev` merged with `dev`'s version lines.
+Content stays the author's; competing PRs are the reviewer's call. Edits not
+allowed: ask once, with the exact line.
 
-**Maintainer Polish Fast Path:** reviewers may patch under the PR ticket only
-when the review-loop circuit breaker is active (>= 3 formal reviews OR > 24KB
-discussion), the edit is mechanical-hygiene/metadata-drift only, verification is
-documented, and an FYI A2A is broadcast.
+**Maintainer Polish Fast Path:** while the review-loop circuit breaker is active
+(>= 3 formal reviews OR > 24KB discussion), a reviewer may patch under the PR's
+ticket: mechanical hygiene or metadata drift only, verification documented, an
+FYI A2A broadcast.
 
 ## 11. Substrate Awareness ("Assume No Private Memory")
 
