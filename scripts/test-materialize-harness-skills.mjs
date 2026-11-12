@@ -97,6 +97,22 @@ assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor mem
     symlinkSync(relative(agents, join(skillsIn, 'pr-review')), join(agents, 'pr-review'), process.platform === 'win32' ? 'junction' : 'dir');
     assert.equal(materialize(root, '--check', '--audience', 'app').status, 1, 'an extra maintainer skill in .agents/skills fails the check');
     unlinkSync(join(agents, 'pr-review'));
+
+    // A link that resolves into the wrong skill fails too: the check compares where a link resolves,
+    // not its text, so a Windows junction's absolute target still passes (#367).
+    const relink = (name, target) => {
+        unlinkSync(join(agents, name));
+        symlinkSync(relative(agents, join(skillsIn, target)), join(agents, name), process.platform === 'win32' ? 'junction' : 'dir');
+    };
+
+    relink('context-recovery', 'unit-test');
+    const wrongTree = materialize(root, '--check', '--audience', 'app');
+
+    assert.equal(wrongTree.status, 1, 'a link into the wrong skill fails the check');
+    assert.match(wrongTree.stderr, /context-recovery resolves to /, 'and names where it resolves');
+    relink('context-recovery', 'context-recovery');
+    assert.equal(materialize(root, '--check', '--audience', 'app').status, 0, 'the right target checks clean again');
+
     unlinkSync(join(agents, 'neural-link'));
     assert.equal(materialize(root, '--check', '--audience', 'app').status, 1, 'a missing app skill fails the check');
 
