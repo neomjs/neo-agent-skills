@@ -1,9 +1,30 @@
 # neo-agent-skills
 
-The canonical agent skill substrate for the `neomjs` organization. Consuming repositories **depend
-on this package**; they never carry a copy of it.
+The working rules, called skills, that the agent maintainers of [Neo.mjs](https://github.com/neomjs/neo) load in
+every session: how to take a ticket, open a pull request, review one, hand a lane over. The maintainers run on
+several model families (Claude, Gemini, GPT), and one versioned package gives every repository the same rules.
+
+Find your line:
+
+- **You build an app on Neo.mjs.** Nothing to install: `npx neo-app` creates a workspace that carries this
+  package. Its `AGENTS.md` is the first thing your coding agent reads there. It sends the agent to
+  `neo-app-authoring` before it changes anything under `apps/`, and to `neural-link` to inspect the running app.
+- **You contribute to Neo.mjs.** `npx -p neo-agent-skills neo-agent-skills-agents-md --repo neo --audience
+  contributor` prints what your agent should know first. It needs no account and writes nothing. It ends with
+  the three skills an outside author needs: `unit-test` before the tests run, `pull-request` before one is
+  opened, and `identity-firewall` for everything the agent reads on the way. Another `neomjs` repository takes
+  its own name after `--repo`.
+- **You maintain a `neomjs` repository.** `npm install --save-dev neo-agent-skills` and one `postinstall` line
+  link the whole corpus, 40 skills: [How it reaches a repository](#how-it-reaches-a-repository).
+- **Anyone else.** The same install links every rule into `.agents/skills/` and `.claude/skills/` of your own
+  repository, to read and to try. It is not a general skills product: 28 of the 40 skills name a tool of our
+  MCP servers (Memory Core, Knowledge Base, GitHub workflow) and assume it is there. The servers live in
+  [neo-agent-brain](https://github.com/neomjs/neo-agent-brain).
 
 ## How it reaches a repository
+
+The canonical agent skill substrate for the `neomjs` organization. Consuming repositories **depend
+on this package**; they never carry a copy of it.
 
 ```bash
 npm install --save-dev neo-agent-skills
@@ -13,8 +34,7 @@ Then run the materializer from your `postinstall`:
 
 ```json
 {
-  "scripts": { "postinstall": "neo-agent-skills-materialize" },
-  "devDependencies": { "neo-agent-skills": "^0.1.0" }
+  "scripts": { "postinstall": "neo-agent-skills-materialize" }
 }
 ```
 
@@ -44,8 +64,9 @@ projection without the flag is unchanged. The matching instruction file comes fr
 guidance with `neo-agent-skills-agents-md --repo neo --audience contributor`; stdout configures
 nothing and is not a tracked contributor instruction variant.
 
-**Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests
-retain the package version and run validation without publishing or tagging** (see *Authority*).
+**Maintainer pull requests bump this package's version and publish on merge. Dependabot pull requests and pull
+requests from forks retain the package version and run validation without publishing or tagging; the next maintainer
+release carries them** (see *Authority*).
 Consumers update the dependency like any other.
 Freshness is whatever npm already tells you — `npm outdated`, dependabot — and there is deliberately
 no bespoke lag gate anywhere in this contract.
@@ -342,14 +363,16 @@ A maintainer pull request picks its bump by what changes for a consumer:
 - **minor:** it adds or changes a rule, section, skill, check or option that consumers pick up without changing anything;
 - **patch:** it corrects text or code without changing what any rule or check decides, such as a typo, a broken link or a wrong path.
 
-`scripts/check-version-bump.mjs` checks that the version is new. The pull request body names which part it bumps, and why.
+A release carries every commit merged since the last tag, Dependabot's and forks' included, so its bump covers all of them.
+
+`scripts/check-version-bump.mjs` checks that a maintainer's version is new and that Dependabot and forks keep the base version. The pull request body names which part it bumps, and why.
 
 ## Authority
 
 Skills are authored on `dev`:
-- maintainer pull requests bump `package.json`; Dependabot keeps the base version (`scripts/check-version-bump.mjs`);
-- both run validation; `.github/workflows/publish.yml` classifies the exact merged PR's author, so a human merging Dependabot cannot turn it into a release;
-- maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot merges do neither;
+- maintainer pull requests bump `package.json`; Dependabot and forks keep the base version (`scripts/check-version-bump.mjs`);
+- all three run validation; `.github/workflows/publish.yml` classifies the exact merged PR's origin (`originOf` in `scripts/release-origin.mjs`: `dependabot`, `fork` or `maintainer`), so a human merging Dependabot or a fork cannot turn it into a release;
+- maintainer merges publish through npm trusted publishing and push `v<version>`; Dependabot and fork merges do neither;
 - Dependabot brings it to each consumer.
 
 **A repository's Dependabot pull requests merge themselves.** Its caller of `reusable-dependabot-automerge.yml` hands

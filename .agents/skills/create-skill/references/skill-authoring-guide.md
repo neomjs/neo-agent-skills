@@ -133,10 +133,9 @@ Map vs World Atlas applies **recursively**. A workflow file (`references/<workfl
 <!-- trigger: pr touches ai/mcp/server/*/openapi.yaml → read ./audits/mcp-tool-description-budget.md -->
 ```
 
-**Mechanical enforcement (Sub-A of Epic #11319 via `skills.manifest.json` + `lint-skill-manifest.mjs`):**
+**Mechanical enforcement (Sub-A of Epic #11319 via `skills.manifest.json` + `scripts/lint-skill-corpus.mjs`, run as `npm run lint`):**
 - `perFilePayloadBudget` (per-skill/default) fails files over cap; default 25 KB, temporary monolith overrides shrink as reductions land.
 - `maxPositiveDeltaBytes` caps net `.agents/skills/**/*.md` growth; offset additions, or for new-skill/decay-mitigated exceptions put `[skill-growth-justified: <reason>]` in a commit message and cite the PR rationale.
-- `checkSectionTriggers` flags >5 KB rare-trigger sections for extraction behind a trigger pointer.
 - Skill reference integrity catches dangling numeric refs, broken relative links, and deleted-file refs; fix them in the same PR.
 
 **Empirical precedent:**
@@ -155,18 +154,9 @@ Promote systemic lessons through the existing skill that governs the failed deci
 
 A deferred lesson retains an owner and an observable activation condition beyond its parent's closure. Record the shipped source and the consuming version's load receipt; validate the behavior on the next named triggering case. Saved, shipped, loaded and validated are different states. A recurrence reopens the correction, not another copy of the retrospective.
 
-## 4. The Claude Symlink Mandate
+## 4. The Claude Skills Projection
 
-The Neo.mjs agent swarm operates across multiple identities (e.g., Antigravity and Claude Code). While `.agents/skills/` is the canonical repository of skills, Claude Code relies on a dedicated `.claude/skills/` directory to parse its available tools at boot.
-
-**CRITICAL:** Whenever you create a *new* skill folder in `.agents/skills/`, you **MUST** immediately create a corresponding symlink in the `.claude/skills/` directory.
-
-```bash
-# Run from repository root:
-ln -sf ../../.agents/skills/my-new-skill .claude/skills/my-new-skill
-```
-
-Failure to create this symlink will result in Claude being entirely blind to the new protocol, causing severe swarm capability desyncs.
+Claude Code reads skills from `.claude/skills/`. You do not create links there by hand. Add the skill's row to `.agents/skills/skills.manifest.json`; in every consumer, the package's `postinstall` materializer projects `.claude/skills/` as untracked per-skill links from the manifest. A skill with `claudeSymlinkRequired: false` is a declared opt-out. `neo-agent-skills-materialize --check` verifies the projection. Never commit an entry under `.claude/skills/`: a tracked entry is a shadow copy (`README.md`).
 
 ## Verification
 
@@ -176,8 +166,8 @@ Before pushing your new skill, check:
 - [ ] Is the heavy instructional content stored entirely in the `references/` directory?
 - [ ] Does the `SKILL.md` body provide the explicit project-relative path to the reference file?
 - [ ] Is `.agents/skills/skills.manifest.json` updated to mirror the frontmatter and governance fields?
-- [ ] Is there a corresponding symlink for the new skill in `.claude/skills/`?
-- [ ] Does `node ai/scripts/lint/lint-skill-manifest.mjs --base origin/dev` pass locally?
+- [ ] Is nothing committed under `.claude/skills/`? (In a consumer, `neo-agent-skills-materialize --check` verifies the projection.)
+- [ ] Does `npm run lint` pass in this repository?
 
 ## PR-Open Gates for Skill Changes (create OR modify)
 

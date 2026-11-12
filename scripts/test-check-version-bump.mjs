@@ -5,6 +5,8 @@
  * - A greater, unpublished version that the lockfile agrees with passes.
  * - Each of these fails by name: an equal or lower version, a stale lockfile, a published version, a prerelease.
  * - A registry that gives no answer fails the check instead of passing it.
+ * - A fork keeps the base version: it passes however far the base moved since it branched, and a fork that changes
+ *   the version fails with a sentence written for its author.
  * - The CLI judges the files in its checkout against a real git base.
  *
  * Run: `node scripts/test-check-version-bump.mjs`
@@ -26,6 +28,15 @@ assert.deepEqual(verdict('0.1.10', '0.1.9'), [], 'versions compare as numbers, n
 assert.match(verdict('0.1.20', '0.1.19', {lock: '0.1.19'}).join(), /package-lock\.json says 0\.1\.19 where package\.json says 0\.1\.20/, 'a stale lockfile fails');
 assert.match(verdict('0.1.20', '0.1.19', {published: true}).join(), /npm already has neo-agent-skills@0\.1\.20/, 'a published version fails');
 assert.deepEqual(verdict('0.2.0-beta.1', '0.1.19'), ["package.json names no release version ('0.2.0-beta.1')"], 'a prerelease is not a release');
+
+const forkVerdict = (head, base, {lock = head} = {}) => judgeVersionBump({head, lock, base, published: false, origin: 'fork'}),
+      bumpedFork  = forkVerdict('1.4.6', '1.4.5').join();
+
+assert.deepEqual(forkVerdict('1.4.5', '1.4.5'), [], 'a fork that keeps the base version passes');
+assert.match(bumpedFork, /changes the package version to 1\.4\.6\. Restore 1\.4\.5 in package\.json and package-lock\.json/, 'a bumped fork is told what to restore');
+assert.match(bumpedFork, /the next maintainer release carries your change/);
+assert.doesNotMatch(bumpedFork, /maintainer pull requests/, 'its author reads no rule written for maintainers');
+assert.match(forkVerdict('1.4.5', '1.4.5', {lock: '1.4.4'}).join(), /package-lock\.json says 1\.4\.4 where package\.json says 1\.4\.5/, 'a fork\'s lockfile still has to agree');
 
 // The three shapes `npm view <package>@<version> version` answers with, as npm 11 prints them.
 assert.equal(classifyView({status: 0, stdout: '0.1.19\n', stderr: ''}, '0.1.19'), true, 'npm prints a version it has');
@@ -90,9 +101,10 @@ try {
     assert.equal(result.code, 1, 'an unbumped head fails');
     assert.match(result.text, /0\.1\.19 is not greater than the base's 0\.1\.19/);
 
-    const event = join(repo, 'event.json'),
-          eventOf = (login, type) => writeFileSync(event, JSON.stringify({
-              sender: {login: 'tobiu'}, pull_request: {user: {login, type}}
+    const event   = join(repo, 'event.json'),
+          home    = 'neomjs/neo-agent-skills',
+          eventOf = (login, type, head = home) => writeFileSync(event, JSON.stringify({
+              sender: {login: 'tobiu'}, pull_request: {user: {login, type}, base: {repo: {full_name: home}}, head: {repo: head && {full_name: head}}}
           }));
 
     eventOf('dependabot[bot]', 'Bot');
@@ -118,6 +130,29 @@ try {
     release('0.1.20');
     eventOf('neo-gpt', 'User');
     assert.equal(judge(['--base', base, '--event', event]).code, 0, 'human rerun actor does not exempt a maintainer PR');
+
+    // A fork branched at 0.1.19 while dev released 0.1.20 and 0.1.21. Its merge result carries dev's version.
+    release('0.1.20');
+    git('commit', '-qam', 'release 0.1.20');
+    release('0.1.21');
+    git('commit', '-qam', 'release 0.1.21');
+
+    const moved = git('rev-parse', 'HEAD');
+
+    eventOf('contributor', 'User', 'contributor/neo-agent-skills');
+    result = judge(['--base', moved, '--event', event], () => { throw new Error('a fork must not query npm') });
+    assert.equal(result.code, 0, `a fork that never touched the version passes over a base two releases ahead: ${result.text}`);
+    assert.match(result.text, /a fork keeps 0\.1\.21/);
+
+    release('0.1.22');
+    result = judge(['--base', moved, '--event', event]);
+    assert.equal(result.code, 1, 'a fork that changes the version fails');
+    assert.match(result.text, /Restore 0\.1\.21 in package\.json and package-lock\.json/);
+
+    release('0.1.21');
+    eventOf('contributor', 'User', null);
+    assert.equal(judge(['--base', moved, '--event', event]).code, 0, 'a deleted fork keeps the version too');
+
     writeFileSync(event, '{}');
     assert.equal(judge(['--base', base, '--event', event]).code, 1, 'missing PR metadata fails closed');
     assert.equal(judge(['--base', base, '--event', join(repo, 'missing.json')]).code, 1, 'unreadable event fails closed');
