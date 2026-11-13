@@ -53,7 +53,7 @@ Every factual claim in the notes carries a verifiable source (ticket, PR, commit
 
 ## §5 The quality bar — the precedent SET — `DISCIPLINE-ONLY`
 
-The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). All in the engine's `.github/RELEASE_NOTES/`:
+The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). Read them in the corpus (`neomjs/github-content-sync`, `neo/release-notes/chunk-N/`):
 
 - `v13.0.0.md` — the major: five hero chapters, institution-scale narrative.
 - `v12.1.0.md` — TL;DR with an **honest velocity qualifier in the unflattering direction** (a lower tickets/day number contextualized by scope-depth, not hidden); `> [!NOTE]` alert-block sidebars carrying verbatim human-AI moments (the "Cyborg Guardrail" recovery-prompt, quoted).
@@ -81,9 +81,9 @@ The authoring surface is **`.github/RELEASE_NOTES/v{version}.md`** in the engine
 1. **Pre-flight requires it** (`publish.mjs` §1): the release ERRORS if the file is absent. The version comes from `prepare --version <semver>`, set in the release commit.
 2. The file is **committed and iterated on dev** ahead of the cut (§1) — the v13.0 lineage precedent, formalized.
 3. `publish.mjs finish` releases the merged note (frontmatter stripped, first H1 = title) with the **atomic-changelog-hash line** in the release body, via `gh release create` on the merge commit (cascades to npm).
-4. **publish.mjs keeps the file**: the authored note is the archive, and nothing re-materializes it. The SECOND runbook command, `npm run ai:post-release-sync` (fail-closed preflight; publish prints it), uploads the Knowledge Base and writes nothing into the engine. The corpus picks the release up from GitHub Releases.
+4. **The note is kept through its own release**; the next `prepare` removes it (`dropReleasedNotes`). The SECOND runbook command, `npm run ai:post-release-sync` (fail-closed preflight; publish prints it), uploads the Knowledge Base and writes nothing into the engine. The corpus picks the release up from GitHub Releases.
 5. **Its guards:** `PublishReleaseNoteOrphan.spec.mjs` pins the authored path, the kept file and the flat layout; the release-note link scan in `Generate.spec.mjs` refuses mutable GitHub links.
-6. Known observation (epic-tracked): `buildScripts/docs/index/release.mjs` scans flat files recursively, so a committed staging note surfaces its version in `releases.json` when the docs index regenerates pre-cut.
+6. `buildScripts/docs/index/release.mjs` lists a staging note in `releases.json` without a date (no `publishedAt` means unreleased), so it renders at its Portal route before the cut (§7).
 7. **The cut's one human step is merging the release PR** (`§critical_gates`): agents run `publish.mjs prepare --version <semver> --ticket <prep leaf> --body-file <body>` to open it, then `finish`. Re-runs resume; the cut record stays open until npm and the Portal verify.
 
 ## §7 Cut-readiness checklist — `MACHINE-ENFORCEABLE-CANDIDATE`
@@ -94,6 +94,7 @@ The notes epic's final iteration passes when:
 - [ ] `Release Type` / `Stability` designations operator-confirmed (§4)
 - [ ] Scope numbers regenerated at the cut boundary (§2 re-run) and reconciled in-document
 - [ ] Every claim anchor-verified (§4); the numbers-verify sweep (the `#14327` class, "sequence LAST") has run against the final text
+- [ ] Read at `#/news/releases/<id>` beside the previous note: it renders and keeps that note's sections; a dropped one is a decision on the notes epic (13.4.0 lost `What you can try`)
 - [ ] The staging note is `.github/RELEASE_NOTES/v{version}.md` for the version passed to `--version`
 - [ ] `publish.mjs prepare --version <semver> --rehearse --ticket <prep leaf> --body-file <body>` passes
 
