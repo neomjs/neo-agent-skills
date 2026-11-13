@@ -53,7 +53,7 @@ Every factual claim in the notes carries a verifiable source (ticket, PR, commit
 
 ## §5 The quality bar — the precedent SET — `DISCIPLINE-ONLY`
 
-The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). Read them in the corpus (`neomjs/github-content-sync`, `neo/release-notes/chunk-N/`); the engine keeps only unreleased notes (§6):
+The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). Read them in the corpus (`neomjs/github-content-sync`, `neo/release-notes/chunk-N/`):
 
 - `v13.0.0.md` — the major: five hero chapters, institution-scale narrative.
 - `v12.1.0.md` — TL;DR with an **honest velocity qualifier in the unflattering direction** (a lower tickets/day number contextualized by scope-depth, not hidden); `> [!NOTE]` alert-block sidebars carrying verbatim human-AI moments (the "Cyborg Guardrail" recovery-prompt, quoted).
