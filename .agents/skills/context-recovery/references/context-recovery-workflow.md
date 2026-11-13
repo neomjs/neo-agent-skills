@@ -45,6 +45,10 @@ de-confliction, and a reconstructed lane is stale if a new message redirects it.
      self-DM (`from == to == @me`) in full, *regardless of read status* (bulk
      `mark_read` and read-projection rollbacks hide it from `unread` scoping).
      None → `sunset-body: none-found`.
+   - **Your own sunset:** if THIS transcript wrote it (its summary or context
+     says so; the session id alone can rotate) and resumes work rather than
+     staying quiet, first self-DM `[sunset rescinded]` tagged `sunset-rescinded`,
+     or neomjs/neo-agent-brain#1383 starts a second session beside you.
    - **Outbox:** `list_messages({box: 'outbox', projection: 'compact', limit: 10})`,
      newest first; page on only while rows are newer than the handover's `sentAt`
      (or within the current window when no handover exists). The test is whether
@@ -110,7 +114,7 @@ Produce a compact recovery ledger before resuming:
 ```text
 context-recovery:
 - mailbox: <count + actionable ids>
-- sunset-body: <messageId read in full | none-found>
+- sunset-body: <messageId read in full | none-found> · <successor | rescinded: messageId>
 - outbox: <commitments already published | none-in-window>
 - recency: <last ticket/PR/branch/action>
 - semantic: <memory ids or clear miss>
