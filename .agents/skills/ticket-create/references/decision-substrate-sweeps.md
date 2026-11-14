@@ -26,7 +26,7 @@ Use the operator's symptom vocabulary; searching only your proposed mechanism hi
 gh issue list --repo <r> --state open --assignee @me --json number,title
 ```
 
-Read the **bodies** of the two or three same-surface hits, including tables and deferred clauses. Old open self-assignments escape both `(i)`'s recency window and closed-state queries; incidental discoveries need this check too.
+Read the **bodies** of the two or three same-surface hits, including tables and deferred clauses. Old open self-assignments escape `(i)`'s recency window and, worded differently, its noun searches; incidental discoveries need this check too.
 
 ## (v) Epic-layer outcome-authority sweep
 

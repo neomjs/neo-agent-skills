@@ -17,20 +17,21 @@ A ticket that calls an existing behavior wrong carries its `Design authority:` l
 ### 1a. The Content Sweep (Duplicate Detection)
 Verify no equivalent ticket or closed exclusion already exists. Redundant tickets pollute the Knowledge Base.
 
-Duplicates hide in **two substrates**; sweep **both as the LAST step immediately before `create_issue`** — never at turn-start or before drafting. A pre-draft sweep goes stale while you write the Fat Ticket: in a thundering herd, a peer's ticket can land between your sweep and your `create_issue` call. The turn-start mailbox check (`§mailbox_check_protocol`) is for general coordination, **not** the dup gate.
+Duplicates hide in **two substrates**; sweep **both as the LAST step immediately before `create_issue`** — never at turn-start or before drafting. A pre-draft sweep goes stale while you write: in a thundering herd, a peer's ticket can land in between. The turn-start mailbox check (`§mailbox_check_protocol`) is for general coordination, **not** the dup gate.
 
-**(i) GitHub live freshness + closed-state sweep (mandatory) — catches already-FILED duplicates and closed rulings:** read at least the latest 20 open GitHub issues from the live tracker (issue number, title, author, labels, URL) and query closed state on the problem's nouns:
+**(i) GitHub live freshness + noun sweep (mandatory) — catches already-FILED duplicates, older open owners and closed rulings:** read at least the latest 20 open GitHub issues from the live tracker (issue number, title, author, labels, URL), then query open and closed state on the problem's nouns: an open owner older than the latest 20 is the one a fold needs.
 
 ```bash
 gh issue list --state open --limit 20 --json number,title,author,labels,url
+gh issue list --state open --search "<problem nouns>" --limit 15
 gh issue list --state closed --search "<problem nouns>" --limit 15
 ```
 
-Read the `Out of Scope` and `Avoided Traps` sections of any same-surface closed hit — a closed ticket's title rarely reveals that it governs adjacent scope, and a closed hit answers what was already decided, never whether the premise matters (`neomjs/neo#18308` zero-backwards-compatibility ruling while `#18537` still closed `not_planned`, `neomjs/neo#18399` `Out of Scope` exclusion, `neomjs/neo#16391` / PR `#16403` already-shipped `hasLandedInPlace`). An equivalent MCP call for the open page is acceptable only when live AND created-descending (`list_issues` with `sort: 'created'`); updated-descending is supplemental because it buries untouched fresh filings (`#15603`). Both runs are required even when KB and local searches return no hits.
+Read the `Out of Scope` and `Avoided Traps` sections of any same-surface closed hit — a closed ticket's title rarely reveals that it governs adjacent scope, and a closed hit answers what was already decided, never whether the premise matters (`neomjs/neo#18308` zero-backwards-compatibility ruling while `#18537` still closed `not_planned`, `neomjs/neo#18399` `Out of Scope` exclusion, `neomjs/neo#16391` / PR `#16403` already-shipped `hasLandedInPlace`). An MCP call may stand in for the open page only when live and created-descending (`list_issues`, `sort: 'created'`): updated-descending buries untouched fresh filings (`#15603`). All three runs are required even when KB and local searches return no hits.
 
 If live GitHub state cannot be fetched, retry through the approved path; if still unreachable, stop before `create_issue` and report the blocker rather than filing from stale evidence.
 
-Record both on the same attestation line in the ticket body, e.g. `Live latest-open + closed sweep: checked latest 20 open + closed search (<problem nouns>, Out of Scope / Avoided Traps read on hits) at <timestamp>; no equivalent or prior exclusion found` (or link the existing ticket instead of filing).
+Record them on one attestation line in the ticket body, e.g. `Live latest-open + closed sweep: checked latest 20 open + open and closed search (<problem nouns>, Out of Scope / Avoided Traps read on hits) at <timestamp>; no equivalent or prior exclusion found` (or link the existing ticket instead of filing).
 
 **Backlog band:** add the open-issue count to that line (under 25 green, 25–50 orange, over 50 red). Every open ticket is prior art; in orange or red, fold into an owning ticket or epic if one exists, else file the needed ticket.
 
