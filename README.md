@@ -13,7 +13,7 @@ Find your line:
   contributor` prints what your agent should know first. It needs no account and writes nothing. It ends with
   the three skills an outside author needs: `unit-test` before the tests run, `pull-request` before one is
   opened, and `identity-firewall` for everything the agent reads on the way. Another `neomjs` repository takes
-  its own name after `--repo`.
+  its own name after `--repo`; `neo-agent-skills` omits `unit-test`, which is the Playwright suite.
 - **You maintain a `neomjs` repository.** `npm install --save-dev neo-agent-skills` and one `postinstall` line
   link the whole corpus, 40 skills: [How it reaches a repository](#how-it-reaches-a-repository).
 - **Anyone else.** The same install links every rule into `.agents/skills/` and `.claude/skills/` of your own
@@ -309,7 +309,8 @@ in the set declares it. A peer working in several repositories loads that one fi
 repository's own rules.
 
 An optional comma-separated `skills:` declaration on a section drives the emitted workflow links.
-Only included sections contribute dependencies; links are deduplicated in declaration order.
+Only included sections contribute dependencies; links are deduplicated in declaration order, and a
+section with an empty body contributes its links without emitting a prose block.
 Every named skill must exist in the manifest and admit the selected audience (omitted membership
 means `maintainer`). This is section metadata, not an extra `SKILL.md` router field.
 
