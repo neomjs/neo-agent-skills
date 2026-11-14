@@ -13,7 +13,7 @@ Invoke this skill when **either** gate fires. Do not skip a gate because "I thin
 Any of the following user signals:
 - "used to work", "suddenly broken", "worked before my change", "what changed?"
 - Surprise validation failures, schema mismatches, `additionalProperties` rejections
-- Tool calls returning `{success: true}` without observable effect (see `feedback_verify_effect_not_just_success.md`)
+- Tool calls returning `{success: true}` without observable effect
 - Unexpected behavior from code you did not author or recently touch
 
 ### Gate 2 — Architectural claims
@@ -38,7 +38,8 @@ Choose the first memory surface by freshness, not by habit.
 1. **Recent / active-session investigations:** run **`query_raw_memories` (`detail: 'summary'`, plus `agentIdentity` when author-scoped) first or in parallel with `query_summaries`** when the event is same-day, active-ticket / active-PR bound, wake/A2A coordination, or likely in unsummarized turns (`add_memory()` persists raw turns before any session summary exists).
 2. **Older / stable history:** run **`query_summaries` first** (with `agentIdentity` when author-scoped) for broad conceptual exploration and older decisions.
 3. **`query_raw_memories` (`detail: 'full'`) after a summary hit:** hydrate matching turns (`projection: 'public'` on cross-seat team reads) to recover turn-level reasoning, commands, message IDs, or decision texture.
-4. **`ask_knowledge_base`** — only when the answer lives in indexed code/guides, not in session memory. If unsure, run memory first (#10646).
+4. **`query_messages`** — when the answer is what seats said to each other (a hand-off, a ruling, a lane claim): the A2A mailbox by meaning, admitted like `get_message`. The memory tools index turns, not messages.
+5. **`ask_knowledge_base`** — only when the answer lives in indexed code/guides, not in session memory. If unsure, run memory first (#10646).
 
 ### Good vs bad query shapes
 
