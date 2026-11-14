@@ -3,6 +3,7 @@ id: pre_commit_gates_contributor
 order: 501
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
 audiences: contributor
+skills: pull-request
 ---
 ## §pre_commit_gates
 Before executing `git commit`, pass the Contextual Completeness gate: apply the 'Anchor & Echo'

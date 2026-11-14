@@ -181,6 +181,24 @@ function capture(argv) {
 
     const noLinks = assemble({...options, sections: [{...section, skills: []}]});
     assert.equal(noLinks, 'Intro.\n\nBody.\n', 'an absent dependency declaration preserves prior composition');
+
+    // A dependency-only section (empty body) contributes its skill links without emitting a blank
+    // block or splitting an adjacent wrapper group.
+    const linkOnly = assemble({
+        audience: 'contributor',
+        preamble: 'Intro.',
+        repos   : ['neo'],
+        manifest,
+        sections: [
+            {audiences: ['contributor'], body: '## §a\n\nA.', id: 'a', listGroup: null, listNumber: null, order: 10, repos: ['neo'], skills: [], wrapperGroup: 'g1'},
+            {audiences: ['contributor'], body: '',            id: 'dep', listGroup: null, listNumber: null, order: 15, repos: ['neo'], skills: ['unit-test'], wrapperGroup: null},
+            {audiences: ['contributor'], body: '## §b\n\nB.', id: 'b', listGroup: null, listNumber: null, order: 20, repos: ['neo'], skills: ['pull-request'], wrapperGroup: 'g1'}
+        ]
+    });
+
+    assert.equal(linkOnly.match(/<neo_core_overrides/g).length, 1, 'an empty dependency-only section does not split an adjacent wrapper group');
+    assert.doesNotMatch(linkOnly, /\n\n\n/, 'an empty dependency-only section emits no extra blank block');
+    assert.match(linkOnly, /\[unit-test\]\(\.agents\/skills\/unit-test\/SKILL\.md\)/, 'and still contributes its declared skill');
 }
 
 // CLI and API refuse bad dependencies before creating or replacing a document.
@@ -413,6 +431,30 @@ for (const [skill, refusal] of [['missing-skill', /unknown skill/], ['constructo
     assert.match(contributor, /§verify_before_assert/, 'verify-before-assert still reaches contributors');
     assert.match(contributor, /§pre_commit_gates/,     'and so does the commit-completeness gate');
     assert.match(contributor, /JSDoc/,                 'including the documentation requirement');
+}
+
+// ── Contributor workflow links: pull-request everywhere, unit-test where Playwright unit runs ───
+{
+    const ALL_REPOS       = ['neo', 'neo-agent-skills', 'neo-agent-brain', 'neo-agent-institution', 'devindex'],
+          PLAYWRIGHT_UNIT = new Set(['neo', 'neo-agent-brain', 'neo-agent-institution', 'devindex']),
+          PULL_REQUEST    = /\[pull-request\]\(\.agents\/skills\/pull-request\/SKILL\.md\)/,
+          UNIT_TEST       = /\[unit-test\]\(\.agents\/skills\/unit-test\/SKILL\.md\)/,
+          FIREWALL        = /\[identity-firewall\]\(\.agents\/skills\/identity-firewall\/SKILL\.md\)/;
+
+    for (const repo of ALL_REPOS) {
+        const text = generate({audience: 'contributor', repos: [repo]}).text;
+
+        assert.match(text, PULL_REQUEST, `${repo}/contributor links pull-request`);
+        assert.match(text, FIREWALL,     `${repo}/contributor links identity-firewall`);
+
+        if (PLAYWRIGHT_UNIT.has(repo)) {
+            assert.match(text, UNIT_TEST, `${repo}/contributor runs playwright.config.unit.mjs and links unit-test`);
+        } else {
+            assert.doesNotMatch(text, UNIT_TEST, `${repo}/contributor has no Playwright unit suite and omits unit-test`);
+        }
+
+        assert.doesNotMatch(text, /\n\n\n/, `${repo}/contributor emits no blank block from link-only sections`);
+    }
 }
 
 // ── Contributor output states nothing that is false where it is read ────────────────────────────
