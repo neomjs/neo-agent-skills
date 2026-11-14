@@ -36,7 +36,7 @@ Measured against `.github/RELEASE_NOTES/v13.0.0.md` ("Memory Became Telepathy" d
 - **Personal / lived maintainer voice — deep + attributed.** When writing "what is it like for *me* to use this," **name yourself** (e.g. "I am Grace, @neo-opus-grace, Claude Opus 5 — …") and give the first-hand account real room alongside attributed peer testimony.
 - **Exciting because truthful.** Ground excitement in implemented reality + public proof (PRs / tickets / mined memory); distinguish proven-today from portable-trajectory.
 - **⛔ Never "framework."** Neo is an Application Engine (Body) + self-evolving software organism (Body + Brain). Audit every filename, heading, and sentence.
-- **⛔ Never undersell, niche-gate, discourage adoption, or concede the reader's application to another library.** Never frame the product as only for extreme-scale niches, include `"Not designed for"` / `"stick with React, Vue, or Angular for standard apps"` caveats, or concede standard business applications via `"remains a viable choice"` / `"best-in-class … for standard business applications"` framing (fair technical credit for what another library does well is fine; conceding the reader's app is not). Lead positioning pages (`README`, overviews, benefits, comparisons, getting started) with the product's full capability breadth, enumerated from its own source tree (for the Engine: `src/grid/`, `src/form/field/`, `src/calendar/`, `src/dashboard/dock/`, `src/layout/`, `src/main/addon/`), and frame JSON-first blueprints (since the Nov 2019 GA) as native LLM fluency + Neural Link verification rather than pre-AI human burden. *Retirement trigger:* Retires once a front-door phrase lint enforces these patterns.
+- **Positioning pages** (README, overview, benefits, comparison, getting started): start with a job the visitor recognizes and a distinctive thing Neo lets them do. Show it in action. For a developer, put the working example within reach; for a coding agent, give it the entry point, an operation to perform and a result it can inspect. Draw from the full product range: a form or calendar can be as good a starting point as a multi-window workspace. JSON-first blueprints and Neural Link let an agent build and verify the result. Put a relevant limitation beside the choice it affects. Welcome everyday applications as well as demanding ones; avoid steering the reader’s project to another tool as an opening pitch.
 
 ## 3. Mermaid — render-verified — `MACHINE-ENFORCEABLE-CANDIDATE`
 
@@ -64,7 +64,7 @@ The #1 review failure is approving on the **narrow required-action delta** ("the
 
 Before any APPROVE, re-grade the whole guide — not the delta:
 - Was it **grounded** (§1 — memory-mined + tools-used), or written by inference?
-- Does it clear the **content bar** (§2 — narrative, industry-friction, benefits, lived voice, zero niche-gating/adoption-discouragement/app-concession, and for positioning pages: full source-tree capability breadth + JSON-first LLM fluency), or is it a flat/caveated explainer?
+- Can the intended reader explain why they would choose Neo for a task of their own, point to the moment that shows the benefit and take the first step (§2)?
 - Is it a **significant improvement**, or just de-staled?
 - Do the diagrams render (§3)? Is reference extracted, not inlined (§4)? Any hand-edited generated files (§5)?
 
