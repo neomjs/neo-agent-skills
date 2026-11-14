@@ -121,7 +121,7 @@ export function readSections(root = sourceRoot) {
  *
  * **A wrapper group is ONE block, not a state machine.** Consecutive included sections sharing a
  * group collapse into a single `neo_core_overrides` block; sections without a group are their own
- * block; blocks join with a blank line. Excluding a section from the middle of a group therefore
+ * block, while empty unnumbered bodies emit none; blocks join with a blank line. Excluding a section from the middle of a group therefore
  * still yields a balanced block, and two adjacent-but-distinct groups stay two blocks.
  *
  * The tag spacing is exact and load-bearing, because the emitted file must diff clean against a
@@ -163,6 +163,8 @@ export function assemble({audience, preamble, repos, sections, manifest = skillM
 
             numbered.set(slot, section.id)
         }
+
+        if (!section.body && section.listNumber === null) return;
 
         const previous = blocks[blocks.length - 1],
               // A numbered item renders with its DECLARED number, never its position. Dropping one

@@ -7,8 +7,8 @@ Fires when you author, revise, or review a public blog post (`learn/blog/<slug>.
 ## 1. Pre-Flight & Narrative Arc — a hero piece, not a changelog
 
 - **Reader / acceptance pre-flight (before drafting):**
-  - **Blog & outbound posts:** Before choosing a topic, picture a person or coding agent trying to do a particular job. What gets in their way? What becomes possible with Neo, and which moment would make them want to try it? Choose another idea if the example matters only to its author. Draft the outbound with the post (venues and `outbound-post.md` §0).
-  - **Funding & accelerator pitches (`funding/**`):** Lead with the customer’s problem and the reason to back this team. Test the case against the verified record and the strongest objection.
+  - **Blog & outbound posts:** Picture a person or coding agent doing a particular job. What gets in their way? What does Neo let them do, and which moment would make them want to try it? Choose another subject if the example matters only to its author. Draft the outbound with the post. Its venues and their `outbound-post.md` §0 fills go through review in the same PR.
+  - **Funding & accelerator pitches (`funding/**`):** Mine the verified record (`strategy/areas/**`, `decisions-in-force.md`, Memory Core) before inventing a hook. From it, show the customer’s problem, the reason to back this team and the strongest objection.
 - **TL;DR thesis** — one paragraph in regular weight, stating the single bet so a skimmer gets the whole argument. Bold marks one phrase at most (the operator's read, #250); existing posts change when next touched.
 - **The hook** — open on that job in progress. Show what the reader gains and the distinctive Neo behavior that delivers it.
 - **The arc** — show the turning point, explain how it works, then let the reader use it on their own problem.
@@ -16,7 +16,7 @@ Fires when you author, revise, or review a public blog post (`learn/blog/<slug>.
 - **CTA** — the reader's next action (read the next part, star the repository, run the install), with its link. A closing question invites replies, not reads.
 - **The Try-It test** (the closing "How to run it today") — read it as an outside engineer or LLM without our stack: *would I try this now, and does the section walk me through it?* Lead with what runs today, step by step and adaptable to the reader's own tools, then the next level up (for Agent OS posts: `neo-agent-skills`, then the Brain's Memory Core, then the Fleet Manager). Never open the section with what does not work for the reader; a limit is stated as the next step on that path.
 
-**Visuals** (neomjs/neo#20226): give the reader something worth seeing. For a visible interaction, capture the real moment it changes their work, using a screenshot pair or short clip when movement matters. For an invisible mechanism, show a real input and result or a diagram that explains the change. Make the point legible at the size the reader will see. Render-check it before merge (§5).
+**Visuals** (neomjs/neo#20226). Every post carries at least one Mermaid diagram or image. Show a structure, flow or sequence where you explain it. Capture the interaction that changes the reader’s work, using a screenshot pair or short clip when movement matters. For an invisible mechanism, show a real input and result or diagram the change. Before merge, verify each visual at reading size on `#/news/blog/<blog.json id>` (`guide-authoring-bar` §3).
 
 ## 2. Claim-Class Verification & The Single Final-Version Fact Check (#262)
 
@@ -43,7 +43,7 @@ A claim can be literally true yet imply something false — and a *title* can be
 
 **The title** states the discovery or outcome in a declarative sentence or phrase. A question-shaped headline such as “What …” still sounds like a question without its punctuation. Ground the tension in the reader’s situation. Avoid taunts about their tools, vendor put-downs and unsupported boasts.
 
-**The preview** is the title, subtitle, cover and opening on Medium, or the title, thumbnail and domain on a link post. In the publish request, give the stranger’s reason to read on and the strongest reason they might leave. Use the latter to sharpen the promise or choose a stronger subject. Use numbers where they explain the stakes. §4 assigns this read.
+**The preview** on Medium includes title, subtitle, cover and opening. On a link post, read the title, thumbnail and domain together. Numbers prove in the subtitle and first paragraph. They never pitch in the title. Discard the bare engineering statement, a scale number detached from the reader’s problem and the competitor comparison. The publish request carries the stranger’s reason to read on and the strongest reason to leave. The author’s own pass never counts (§4).
 
 ## 4. The Cross-Family Review Bar (mandatory)
 
@@ -52,7 +52,7 @@ A public post ships only after **≥2 model reviews**. The cross-family review i
 - **Route ≥2 reviewers, at least one from a different model family** than the author. For a post *about* cross-family verification, route every available family — it is the thesis, demonstrated.
 - **One reviewer reads as a stranger:** look at the actual preview first. Say in your own words what you would use this for, which detail made you want to see more, and what you would try. If nothing did, say so while the subject can still change. Then check the closing Try-It and, for outbound, `outbound-post.md` §0.
 - **The authority/operator approves LAST.** If the authority approves first, peers anchor to that signal and rubber-stamp; approving last preserves their independent judgment. Corollary: do NOT record "X will approve anyway" in shared/telepathic memory — a peer reading it self-fulfills the rubber-stamp.
-- **Record the review on the PR.** Link each correction to its reviewer, update the head and request the final read.
+- **Address every catch on the durable PR.** Map the outcome to its reviewer (`[ADDRESSED]` for a fix), update the head and request the final read.
 
 ## 5. Mechanics
 
