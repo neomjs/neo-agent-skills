@@ -49,9 +49,10 @@ de-confliction, and a reconstructed lane is stale if a new message redirects it.
      says so; the session id alone can rotate) and resumes work rather than
      staying quiet, first self-DM `[sunset rescinded]` tagged `sunset-rescinded`,
      or neomjs/neo-agent-brain#1383 starts a second session beside you. If
-     another wrote it and the outbox below shows no `[sunset successor]` newer
-     than it, first send one: a self-DM tagged `sunset-successor`, `inReplyTo`
-     the handover, `wakeSuppressed: true` (retires with D#19401).
+     another wrote it and no outbox subject tagged `sunset-successor`
+     (`includeArchived: true`) names its id, first send one: subject
+     `[sunset successor] <id>`, that tag, `inReplyTo` it, `wakeSuppressed: true`
+     (retires with D#19401).
    - **Outbox:** `list_messages({box: 'outbox', projection: 'compact', limit: 10})`,
      newest first; page on only while rows are newer than the handover's `sentAt`
      (or within the current window when no handover exists). The test is whether
