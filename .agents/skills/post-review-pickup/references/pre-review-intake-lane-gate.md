@@ -1,13 +1,14 @@
 # Pre-Review Intake Lane Gate
 
 This gate governs first review/re-review intake after boot, recovery, or wake
-when no author/implementation lane is active. It preserves lane order—positive-
-ROI authorship first when claimable—without quotas or forced assignment.
+when no author/implementation lane is active. It prioritizes actionable outside
+contributions before a new internal lane, without quotas or forced assignment.
 
 ## Trigger
 
-Use when a review/re-review is available, no author lane/branch/self-assigned
-ticket is active, and no human-directed urgent review overrides discovery.
+Use before choosing a new internal lane, or when review/re-review is available
+and no author lane/branch/self-assigned ticket is active. Human-directed urgent
+work overrides discovery.
 
 If the agent already has an open PR waiting on CI, use
 `pull-request/references/ci-green-review-routing.md`; re-check its head after.
@@ -19,10 +20,20 @@ If the agent already has an open PR waiting on CI, use
 2. **Role-context check:** if `/lead-role` or `/peer-role` is active or
    explicitly invoked, read that role payload before choosing the lane. Do not
    synthesize role state when no real trigger exists.
-3. **Lane discovery:** inspect assigned-to-me, fresh operator focus, and open
+3. **Outside contributions:** before choosing a new internal lane, inspect the
+   existing open-work view and live PR state. Advance an older actionable
+   outside PR when a maintainer holds the next step: review within the seat
+   gate, safe maintainer-owned base maintenance, or a human merge handoff for
+   an approved merge-ready head. Distinguish CI, contributor, reviewer and
+   operator holds; a wake is not a delivery receipt. Leave substantive choices
+   with the author and do not demand repeated contributor rebases for base
+   churn maintainers can safely resolve. Use existing lifecycle communication,
+   not new routine notifications.
+4. **Lane discovery:** inspect assigned-to-me, fresh operator focus, and open
    unassigned positive-ROI tickets. Prefer an author lane when one is
-   claimable without violating collision checks.
-4. **Decision:** either claim the author lane and proceed through
+   claimable without violating collision checks and no older outside PR needs
+   an actionable maintainer step.
+5. **Decision:** either claim the author lane and proceed through
    `ticket-intake`, or record a review-first rationale before loading
    `/pr-review`.
 
@@ -42,6 +53,7 @@ symmetry: `pull-request-workflow.md §6.2`.
 Review-first is allowed when one of these is true:
 
 - Operator explicitly asked now.
+- An older outside PR has an actionable maintainer-held review step.
 - Urgent/security review blocks a peer's active author lane.
 - The named survey found no claimable positive-ROI author lane this turn.
 - Your own PR is open with CI pending; review uses that wait.
