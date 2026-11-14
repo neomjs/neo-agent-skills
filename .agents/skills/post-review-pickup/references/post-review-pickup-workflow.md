@@ -30,7 +30,7 @@ lane it admits with no accepted outcome, reopens D#19384.
 
 ## 2. Sibling payloads (read on trigger only)
 
-<!-- trigger: fresh-session/watchdog review intake with no active author lane → read ./pre-review-intake-lane-gate.md before loading /pr-review -->
+<!-- trigger: before choosing a new internal lane, or fresh-session/watchdog review intake with no active author lane → read ./pre-review-intake-lane-gate.md -->
 - [`./pre-review-intake-lane-gate.md`](./pre-review-intake-lane-gate.md) — when
   role payloads must be read before lane choice, and when review-first is
   legitimate.
@@ -92,6 +92,8 @@ cloud mode uses `[merge-readiness-uncertified][issuer-unavailable:cloud-mode]`.
 
 ## 6. Before claiming a lane
 
+- Before choosing a new internal lane, check actionable outside contributions
+  using [`./pre-review-intake-lane-gate.md`](./pre-review-intake-lane-gate.md).
 - targeted reviews where you hold the live requested seat; exceptional 1h
   unclaimed pickup must pass `pre-review-intake-lane-gate.md` at review-start;
 - assigned issues and your own PR follow-ups;
