@@ -20,17 +20,15 @@ If the agent already has an open PR waiting on CI, use
 2. **Role-context check:** if `/lead-role` or `/peer-role` is active or
    explicitly invoked, read that role payload before choosing the lane. Do not
    synthesize role state when no real trigger exists.
-3. **Outside contributions:** before choosing a new internal lane, inspect
-   routed open-work wakes and search live open PRs across the organization for
-   outside authors, including PRs without a reviewer request. Advance an older actionable
-   outside PR when a maintainer holds the next step: review within the seat
-   gate, safe in-place maintenance under `pull-request-workflow.md` §10, or a human merge handoff for
-   an approved merge-ready head. Distinguish CI, contributor, reviewer and
-   operator holds; a wake is not a delivery receipt. Leave substantive choices
-   with the author and do not demand repeated contributor rebases for base
-   churn maintainers can safely resolve. If a fork push is refused, comment once
-   with the exact commands; do not repeatedly request a rebase. Use existing
-   lifecycle communication, not new routine notifications.
+3. **Outside contributions:** before a new internal lane, inspect routed wakes
+   and live outside PRs across the organization, including those without a review
+   request. Advance older actionable maintainer work: an eligible review, safe
+   maintenance or a human merge handoff. Separate CI, author, reviewer and operator
+   holds; a wake is not delivery. Follow `pull-request-workflow.md` §10 for scoped
+   help, independent approval, the one-rebase-request ceiling and merge-method
+   `--ff-only` handback. A refused fork/CI route stays with a named maintainer until
+   an alternate accepts and execution is verified; it is not another author rebase
+   request. Use existing lifecycle communication.
 4. **Lane discovery:** inspect assigned-to-me, fresh operator focus, and open
    unassigned positive-ROI tickets. Prefer an author lane when one is
    claimable without violating collision checks and no older outside PR needs
@@ -47,8 +45,9 @@ direction; or an unengaged PR with no request (self-request) / a ≥1h stale
 request (replace one-for-one, record timeout). After mutation, record and
 re-read; proceed only if exactly your seat remains. Review, comment, acceptance,
 or another active seat means yield unless the operator explicitly overrides it.
-A seat of a family an outside PR discloses is ineligible and hands it on
-(`cross-family-mandate.md` §Outside authors).
+Outside author families include disclosures and verified content-repair authorship;
+a content-repairing seat cannot approve. Use `cross-family-mandate.md` §Outside
+authors before handing the review to an eligible seat.
 This gate settles eligibility; the rationale below only orders lanes. Author
 symmetry: `pull-request-workflow.md §6.2`.
 

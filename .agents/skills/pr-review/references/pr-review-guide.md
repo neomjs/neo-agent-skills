@@ -18,6 +18,7 @@ Build — and write down — your premise of the change **before** reading the p
 ## 1. Core Philosophy
 - **Internal peers:** enforce the "Fat Ticket" protocol and strict JSDoc completeness.
 - **External/first-time contributors:** same rigor, warmer register — discharge it in the template's opening slot: full form `Peer-Review Opening`, micro form `Opening` (`#97`). Any maintainer approves their pending workflow runs once the diff touches nothing the runs execute (`.github/**`, package scripts, lockfile beyond the version, source, build or test code); otherwise read those changes first.
+- **Contributor help:** [§10](../../pull-request/references/pull-request-workflow.md#10-authorship-respect) owns consent, refused prerequisites and independence. Correct first PRs need no revision; content repairers cannot approve. Demand budgets stay intact.
 - **Self-review (same session):** first person — rationale, trade-offs, known gaps. It is a **fallback** for intent capture and never substitutes for cross-family review (`pull-request §6.1`).
 
 ## 2. Agent Operational Mandates: The Reflection Phase

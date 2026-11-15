@@ -17,7 +17,8 @@ Fire this skill when **all** conditions hold:
 
 **Per-ticket one-shot:** once a maintainer has triaged and labeled a ticket, subsequent maintainers cite the prior triage rather than re-running this skill. Triage is not a per-pickup step — it's a per-ticket gate.
 
-If the ticket already has full labels (mandatory + primary + relevant secondary), skip this skill and proceed to `ticket-intake` (or PR review, if applicable).
+Full labels skip repeated triage. When adding a curated label later, still apply
+Step 3's claim-instruction handoff; this does not reopen the retrospective gate.
 
 ## 2. Pre-Triage Context Pull
 
@@ -69,6 +70,13 @@ Match the ticket's domain to relevant secondary labels:
 - **Cross-cutting:** `architecture`, `performance`, `regression`, `refactoring`, `documentation`, `security`.
 
 Verify each label exists in `list_labels` (**do NOT invent label names** — causes silent GitHub API rejections per `ticket-create §4`). If a needed domain label is missing, propose its creation via comment and halt triage until created. Apply via `manage_issue_labels(action: 'add', issue_number: N, labels: ['architecture', 'core', ...])`.
+
+When adding `good first issue` or `help wanted`, the issue author (or an explicitly
+authorized maintainer) places `ticket-create` §4's claim instruction above Context
+on the first screen, preserving the rationale. Use a current-body-hash guarded
+update and reread on conflict. Without body authority, retain a named owner for
+the author handoff; neither an automatic body writer nor a label-time comment
+substitutes for the instruction.
 
 ### Step 4 — Assignment Disposition (Optional)
 
