@@ -20,8 +20,7 @@ where the bearer does not know its own model or vendor. Operator ruling
 
 The trade should not be quietly enjoyed: a family nobody can state cannot be
 *shown* uncorrelated with the author's, so admitting it assumes part of what the
-mandate checks. A usable third seat, bought with a guarantee that was never
-verifiable for that seat.
+mandate checks.
 
 **Never infer a seat's family from a handle, a preview codename, or a rumour** —
 the record is the only citation, and `unknown` is an accurate value, not a gap
@@ -37,10 +36,9 @@ the merge-readiness verdict and the Fleet read.
 
 Outside PRs are presumed model-written (operator ruling 2026-11-14). One naming a
 family needs an approver from a family it does not name, so a seat of a named
-family hands it to an eligible seat. One naming none is open to any seat, and
-"none" needs every commit read: `gh pr view N --json body,commits` stops at 100,
-so a longer PR's messages come from `git log --format=%B <base>..<head>` on its
-fetched head. Until then its disclosure is unread, not unnamed.
+family hands it to an eligible seat. One naming none is open to any seat once
+every commit is read: `gh pr view` stops at 100 commits; a longer PR needs
+`git log --format=%B` over its range. Unread is not unnamed.
 
 ## Liveness is not consulted
 
