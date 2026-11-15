@@ -47,6 +47,8 @@ direction; or an unengaged PR with no request (self-request) / a ≥1h stale
 request (replace one-for-one, record timeout). After mutation, record and
 re-read; proceed only if exactly your seat remains. Review, comment, acceptance,
 or another active seat means yield unless the operator explicitly overrides it.
+A seat of a family an outside PR discloses is ineligible and hands it on
+(`cross-family-mandate.md` §Outside authors).
 This gate settles eligibility; the rationale below only orders lanes. Author
 symmetry: `pull-request-workflow.md §6.2`.
 
