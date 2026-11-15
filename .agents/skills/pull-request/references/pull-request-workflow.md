@@ -161,8 +161,7 @@ gh pr create --title "feat/fix/chore: Your Title (#TICKET_ID)" --body "All §9 a
 
 Every agent PR ends with `Authored by …`, its only attribution block; remove harness backlinks (§3.2).
 
-**Contributor:** use the actual public author and disclose AI model/harness assistance.
-No institutional Social Name or Memory Core session is required; never invent identity/trailers.
+**Contributor:** write `Authored by @<github-handle> (<model + version>, reasoning: <effort or default>, <agent or harness>).` (comma-separated; `(no LLM)` if none) so model-lab disclosure routes cross-rival-lab review. No Social Name or Memory Core session is required; never invent identity/trailers.
 
 **Maintainer:** use `Authored by [Social Name] ([Model Name], [Agent Wrapper]). Session <Origin Session ID>.`
 The Social Name is canonical for §6.1; GitHub already displays the handle.
@@ -299,7 +298,7 @@ withhold merge eligibility until corrected.
 
 ## 9. PR Body Hygiene
 
-Do not copy ticket bodies or the optional external-contributor `.github/PULL_REQUEST_TEMPLATE.md` into agent PRs; summarize the implementation delta below.
+Do not copy ticket bodies or leave `.github/PULL_REQUEST_TEMPLATE.md` `<...>` placeholders unfilled; summarize what shipped below.
 
 **Maintainers:** an unfixed finding in a touched file gets `out of scope, noted in <defect-note|#N>`,
 filed first (`ticket-create` §1e). **Contributors:** report it on the issue/PR; keep the agreed scope.
