@@ -19,7 +19,10 @@
 ### Verdict
 - [ ] **APPROVED** (All mechanical-hygiene cleared. Merge-ready.)
 - [ ] **COMMENTED CLOSURE** (RC2 budget spent; record the closure packet without creating another ordinary RC.)
-- [ ] **MAINTAINER POLISH FAST PATH APPLIED** (Reviewer unilaterally patched and pushed fixes. Approved.)
+- [ ] **MAINTAINER POLISH FAST PATH APPLIED** (Mechanical hygiene/metadata only under §10. Reviewer patched and pushed. Approved.)
+
+Content assistance is outside this verdict: its repairer hands back for independent
+approval under `pull-request-workflow.md` §10.
 
 ### RC2 Closure Packet
 *Required only when `COMMENTED CLOSURE` is selected; replace every placeholder.*

@@ -57,7 +57,7 @@ cite in-doc lifecycle rationale instead. ADR conflicts must name
 
 **Maintainer only:** before committing or opening a PR, verify formal self-assignment;
 claim an unassigned ticket through `manage_issue_assignees`, and halt if another person owns it.
-For §10's scoped contributor-help exception, record the existing PR ticket's
+For §10's contributor-help or mechanical Fast Path exceptions, record the PR ticket's
 authority and retain the contributor's assignment instead of taking it over.
 **Contributors:** use the public contribution/claim instructions and respect existing ownership;
 assignment confirmation is not a work-start gate.
@@ -200,7 +200,7 @@ from a seat whose `modelFamily` differs from the author's, per
 The reviewer MUST submit a formal GitHub PR Review state (`reviewDecision:
 APPROVED`); a comment alone is insufficient. Author family is resolved from the
 §5 Social Name, with `author.login` fallback. Outside author families include
-disclosures and actual seat-authored commits per `cross-family-mandate.md`.
+disclosures and verified content-repair authors per `cross-family-mandate.md`.
 A formal `APPROVED` is necessary but NOT sufficient: a non-empty
 `reviewRequests` blocks merge-handoff until each requested reviewer is disposed.
 `validateMergeReady` encodes this.
@@ -385,10 +385,16 @@ named scope. Later repairs stay within it; withdrawal stops edits. New intent,
 API/design or substantial replacement needs new agreement.
 
 **Maintainer Polish Fast Path.** Use the PR's existing ticket without replacing
-the contributor's assignment; record authorization, head, checks and credit,
-and send the lifecycle A2A. The content-repairer cannot approve that PR; actual
-maintainer author families count under [the cross-family rule](./cross-family-mandate.md).
-Reviewer-family demand budgets and Round-2 rules remain unchanged.
+the author's assignment; record authorization, head, checks and credit,
+and send the lifecycle A2A. On contributor PRs, content repair follows the scoped
+consent above, without a count threshold; the content-repairer cannot approve and
+its family counts under [the cross-family rule](./cross-family-mandate.md).
+On maintainer-authored PRs, retain the circuit-breaker trigger (at least three
+formal reviews or more than 24 KB of discussion), mechanical hygiene/metadata
+only, with verification documented. That arm grants no content-repair authority.
+The Micro-Delta patched-and-approved verdict is mechanical-only after semantic
+review; contributor content repair hands back to an independent reviewer instead.
+Ordinary reviewer eligibility, demand budgets and Round-2 rules stay intact.
 
 **Maintenance.** Mechanical work has one correct form from named inputs, no
 intent choice, and verified output (close-line/title/format corrections, for
@@ -441,11 +447,8 @@ Validate writer provenance, offer, original author's reply and commit/head resul
 failed/unverified execution gets no verified push record. Copied, malformed,
 multiple, unknown-version or foreign records stay unverified, never authorization.
 
-Count distinct PRs with verified pushes, not offers or duplicate receipts. Public
-author replies/snapshots supply accepted/declined/withdrawn/objection/unclear states;
-missing evidence is unknown. Contributors write no markers. Mechanical integration
-uses its operation/head/check receipts separately; zero content pushes is not zero
-maintenance. E2 owns release-marker/dedup; measurement consumers link these wires.
+Contributors write no markers. E2 owns its release-marker/dedup wire; measurement
+and response classification belong to the consumers, which link these contracts.
 
 Expanded content assistance needs per-repository activation receipts for published
 and freshly loaded policy, public guidance, deployed independence/routing and each

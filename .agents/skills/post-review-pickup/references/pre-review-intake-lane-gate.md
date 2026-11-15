@@ -45,7 +45,7 @@ direction; or an unengaged PR with no request (self-request) / a ≥1h stale
 request (replace one-for-one, record timeout). After mutation, record and
 re-read; proceed only if exactly your seat remains. Review, comment, acceptance,
 or another active seat means yield unless the operator explicitly overrides it.
-Outside author families include disclosed and actual maintainer authorship;
+Outside author families include disclosures and verified content-repair authorship;
 a content-repairing seat cannot approve. Use `cross-family-mandate.md` §Outside
 authors before handing the review to an eligible seat.
 This gate settles eligibility; the rationale below only orders lanes. Author

@@ -31,15 +31,19 @@ to fill.
 Outside PRs are presumed model-written (operator ruling 2026-11-14). Read body
 disclosures and `Co-Authored-By` trailers on every current-PR commit; a harness,
 path or topic sentence names no family. Brain's `ai/services/graph/disclosedModelFamilies.mjs` parses these
-claims. Union them with canonical families of actual seat-authored commits,
+claims. Union them with canonical families of verified content-repair authors,
 using the existing admitted identity/alias resolver and unknown-family policy,
-never handle guesses. A maintainer repair cannot disappear from this set merely
-because its commit has no disclosure trailer.
+never handle guesses. A content repair cannot disappear merely because its commit
+has no disclosure trailer. Classify the actual diff and public operation evidence
+under `pull-request-workflow.md` §10: a base-only merge preserving contributor
+commits, or other verified mechanical hygiene/metadata, adds no author family.
+A semantic conflict resolution is content even in a merge commit. A marker or
+commit title alone proves no classification; uncertainty cannot certify coverage.
 
 The content-repairing seat cannot approve that PR. An author-family approval
 cannot satisfy cross-family coverage; route to an eligible other family without
 changing demand-round or current-head rules. If neither disclosures nor actual
-maintainer authorship names a family, any otherwise eligible seat can review only
+content-repair authorship names a family, any otherwise eligible seat can review only
 after complete evidence is read. `gh pr view` stops at 100 commits; longer ranges
 need complete trailer reads (`git log --format=%B`) and linked author identities.
 The log alone supplies no GitHub account binding. Missing/truncated commit or
