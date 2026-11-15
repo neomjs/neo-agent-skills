@@ -31,14 +31,16 @@ to fill.
 
 An outside author has no record, so its family is what its PR discloses: a body
 line saying what produced the change, or a `Co-Authored-By` trailer on any
-commit, both in `gh pr view N --json body,commits`. Several named families all
-count; a harness, a path or a topic sentence names none. Brain's
-`ai/services/graph/disclosedModelFamilies.mjs` is the parse the merge-readiness
-verdict and the Fleet read.
+commit. Several named families all count; a harness, a path or a topic sentence
+names none. Brain's `ai/services/graph/disclosedModelFamilies.mjs` is the parse
+the merge-readiness verdict and the Fleet read.
 
 Outside PRs are presumed model-written (operator ruling 2026-11-14). One naming a
 family needs an approver from a family it does not name, so a seat of a named
-family hands it to an eligible seat. One naming none is open to any seat.
+family hands it to an eligible seat. One naming none is open to any seat, and
+"none" needs every commit read: `gh pr view N --json body,commits` stops at 100,
+so a longer PR's messages come from `git log --format=%B <base>..<head>` on its
+fetched head. Until then its disclosure is unread, not unnamed.
 
 ## Liveness is not consulted
 
