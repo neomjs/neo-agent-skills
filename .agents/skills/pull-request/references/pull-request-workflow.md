@@ -57,6 +57,8 @@ cite in-doc lifecycle rationale instead. ADR conflicts must name
 
 **Maintainer only:** before committing or opening a PR, verify formal self-assignment;
 claim an unassigned ticket through `manage_issue_assignees`, and halt if another person owns it.
+For §10's scoped contributor-help exception, record the existing PR ticket's
+authority and retain the contributor's assignment instead of taking it over.
 **Contributors:** use the public contribution/claim instructions and respect existing ownership;
 assignment confirmation is not a work-start gate.
 
@@ -197,8 +199,9 @@ from a seat whose `modelFamily` differs from the author's, per
 
 The reviewer MUST submit a formal GitHub PR Review state (`reviewDecision:
 APPROVED`); a comment alone is insufficient. Author family is resolved from the
-§5 Social Name, with `author.login` fallback; an outside author's is what its PR
-discloses. A formal `APPROVED` is necessary but NOT sufficient: a non-empty
+§5 Social Name, with `author.login` fallback. Outside author families include
+disclosures and actual seat-authored commits per `cross-family-mandate.md`.
+A formal `APPROVED` is necessary but NOT sufficient: a non-empty
 `reviewRequests` blocks merge-handoff until each requested reviewer is disposed.
 `validateMergeReady` encodes this.
 
@@ -367,22 +370,90 @@ Green anchors prove neither coverage nor consistency; reviewers still count and 
 
 ## 10. Authorship Respect
 
-Update your own authored artifacts in place; bodies via `update_issue_body` (or
-`gh issue edit` / `gh pr edit`). Another author's body, self-review or ACs get a
-comment, unless co-authorship is invited, an abandoned PR's salvage is documented
-first, or an exception below applies.
+Edit your own artifacts in place. Another author's body, self-review or ACs get
+a comment unless co-authorship is invited, abandoned-work salvage is documented,
+or authorized mechanical maintenance below applies.
 
-**Outside contributor's PR:** if maintainer edits are allowed, the triager fixes
-mechanical reds in place (`acknowledgedForeignBody` for the body) and names
-them in one comment: the close line (`Closes`/`Fixes #N` → `Resolves #N`), the
-title's `(#N)`, stripped markdown, `dev` merged with `dev`'s version lines.
-Content stays the author's; competing PRs are the reviewer's call. Edits not
-allowed: ask once, with the exact line.
+**Contributor choice.** Approve a correct first PR; otherwise give one complete
+actionable review and leave the first meaningful content revision to its author,
+unless help is requested sooner. Choose help by preference, risk and observed work.
+A bounded repair has an agreed local result and validation. An unchecked optional
+box invites an offer, not a push. Labels, merge counts, model brand and presumed
+effort prove neither competence nor consent.
+Each PR's first content push needs an affirmative author-account reply accepting
+named scope. Later repairs stay within it; withdrawal stops edits. New intent,
+API/design or substantial replacement needs new agreement.
 
-**Maintainer Polish Fast Path:** while the review-loop circuit breaker is active
-(>= 3 formal reviews OR > 24KB discussion), a reviewer may patch under the PR's
-ticket: mechanical hygiene or metadata drift only, verification documented, an
-FYI A2A broadcast.
+**Maintainer Polish Fast Path.** Use the PR's existing ticket without replacing
+the contributor's assignment; record authorization, head, checks and credit,
+and send the lifecycle A2A. The content-repairer cannot approve that PR; actual
+maintainer author families count under [the cross-family rule](./cross-family-mandate.md).
+Reviewer-family demand budgets and Round-2 rules remain unchanged.
+
+**Maintenance.** Mechanical work has one correct form from named inputs, no
+intent choice, and verified output (close-line/title/format corrections, for
+example). Use an authorized head-specific route; maintainers own base churn where
+it works, with at most one contributor rebase request. Merge the base into the
+existing head, preserving contributor commits: `gh pr update-branch`'s merge method,
+not `--rebase` or rebase/force-push. Use the expected-head guard; async acceptance
+is not completion. Record old/new heads and affected checks, hand back
+`git pull --ff-only` on the tracking branch, and recheck on the next author push.
+Local divergence preserves work for assisted reconciliation. Semantic conflict
+or discarding meaningful work is content, regardless of line count.
+
+Refused CI/integration stays with a named maintainer. The public receipt names
+head, operation and limitation until an alternate accepts and execution is
+verified. Tasks distinguish Submitted/Working/Completed and supported
+Failed/InputRequired; ordinary assignees cannot decline via Rejected. Task state,
+a message or a setting proves neither execution nor automatic rotation. Never
+bypass refusal or require the contributor to use private tools.
+
+**Time and credit.** Dependency dates require a named blocked dependency, an
+available author action and at least three working days from the latest legitimate
+action-adding handback, stated with date/timezone. Added actions obey review-round
+rules; unchanged repeats do not reset dates, and our review/CI/integration waits
+do not count. Respect agreed returns; check-ins and claim expiry are separate.
+Publish a decision when due. Release/recommitment does not reset a date or displace
+accepted continuation: settle reopening/revision and changed agreement. Changed
+dates/withdrawals are new comments; announced dates stand. Preserve commit
+authorship and truthful original-PR merge credit. After the target merges, compare
+the residual with `dev` and offer a focused ticket/retarget on the same PR before
+replacement. Declining help alone is no replacement reason; a separate continuation
+credits retained work without inventing original-author merge credit.
+Competing PRs use the published precedence rule; assistance creates no priority.
+
+### Assistance record wire
+
+One standalone HTML comment outside quotes/code fences:
+
+`<!-- neo-assistance:v1 {"kind":"offer","head":"<full-head-sha>","operation":"content-repair"} -->`
+
+`<!-- neo-assistance:v1 {"kind":"refusal","head":"<full-head-sha>","operation":"<named-operation>"} -->`
+
+`<!-- neo-assistance:v1 {"kind":"push","head":"<resulting-full-head-sha>","previousHead":"<prior-full-head-sha>","operation":"content-repair","offerCommentId":123,"consentCommentId":456} -->`
+
+Use exactly these fields: strings except positive numeric comment IDs on the same
+PR. Record key = repository ID, PR number, receipt comment ID; GitHub supplies
+writer/time. Visible offer text names scope; the consent reply identifies its
+offer. After verified content execution, the maintainer records heads/checks and
+retains accepted scope plus reply text, author identity, ID, timestamp and link.
+Validate writer provenance, offer, original author's reply and commit/head result;
+failed/unverified execution gets no verified push record. Copied, malformed,
+multiple, unknown-version or foreign records stay unverified, never authorization.
+
+Count distinct PRs with verified pushes, not offers or duplicate receipts. Public
+author replies/snapshots supply accepted/declined/withdrawn/objection/unclear states;
+missing evidence is unknown. Contributors write no markers. Mechanical integration
+uses its operation/head/check receipts separately; zero content pushes is not zero
+maintenance. E2 owns release-marker/dedup; measurement consumers link these wires.
+
+Expanded content assistance needs per-repository activation receipts for published
+and freshly loaded policy, public guidance, deployed independence/routing and each
+reachable seat's operation (or enforced exclusion). Source/CI, stored settings or a
+family representative do not suffice. Unwanted edit, lost work, permission bypass
+or attributable correctness regression stops expansion pending correction and a
+renewed decision. Keep residuals owned; the finite trial includes zero uptake or
+blocked gates.
 
 ## 11. Substrate Awareness ("Assume No Private Memory")
 

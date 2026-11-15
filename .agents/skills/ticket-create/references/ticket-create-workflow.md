@@ -131,11 +131,13 @@ Keep titles under ~70 characters. PR titles derive from ticket titles; length di
 
 ## 4. Label Rules
 
-**Most new non-critical standalone tickets our agents create: `good first issue` + `help wanted` + `ai`.**
-Neither label goes on urgent/critical, unresolved, private-dependent or already-owned work; say why.
-First-time does not mean novice: frontier models with public contributor instructions and
-npm-installed skills implement features, fixes and refactors without private Memory Core.
-Do not restrict them to trivial tests. Prepare public context and verification criteria (§5/§12).
+**Default for new non-critical standalone work: `good first issue` + `help wanted` + `ai`.**
+Keep curated labels off urgent/critical, unresolved, private-dependent or owned work; say why.
+First-time is not novice. Supply public context and checks (§5/§12) for features,
+fixes and refactors, not just trivial tests.
+
+With either curated label, put this above Context on the first screen; keep the rationale:
+“Please comment to claim before starting; check current assignees and linked PRs.”
 
 - **`ai` — required on agent-created tickets, including trivial ones.** Provenance, not difficulty or a maintainer claim.
 - **Primary — exactly one:** `epic`, `enhancement`, or `bug`. **Choosing it:** a standalone must be one-PR-resolvable — one `Resolves`, so a second PR closes it early or fails the lint. Bigger → **split**, or `epic` only when leaves coordinate toward one shared outcome (`epic-create` Procedure 1).
