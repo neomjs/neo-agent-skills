@@ -131,7 +131,7 @@ Summarize the scope of your session. How many PRs were merged? How many skills w
 To preserve "hot" thread visibility across sessions (Option B), agents do NOT `mark_read` messages immediately during active processing. Now that handovers are drafted (and have read your inbox state), you MUST explicitly use the `mark_read` MCP tool on all processed messages in your inbox. This ensures the inbox is clean for the next agent session.
 
 ### Step 8: The A2A Continuity Ping & Reward Signal (Future-Self Routing)
-**No background task in flight.** Before the ping, stop every background task this session started, or let it finish. A task that finishes later re-invokes this session beside the fresh one. Claude Code: `Agent` subagents, `run_in_background` shells, `Monitor`, `ScheduleWakeup` (`TaskStop`, `CronDelete`). The ping says that none is left.
+**No background task in flight:** before the ping, stop or finish every one this session started (Claude Code: `Agent`, `run_in_background`, `Monitor`, `ScheduleWakeup`); a late finish wakes this session beside its successor. Say so in the ping.
 
 You MUST use the `add_message` MCP tool to send an A2A message to your own agent identity (e.g., `to: '@me'` or your explicit handle). The body of this message MUST contain the **full Sunset Protocol markdown payload** (the output from Steps 1-6), alongside the `Origin Session ID`; the subject carries Step 3.5's count, `focus items: N, N placed` — the fresh session's first read.
 
