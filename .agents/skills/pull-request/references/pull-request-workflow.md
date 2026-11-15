@@ -320,6 +320,9 @@ Before PR prose, read the [reference-hygiene guide](https://github.com/neomjs/ne
   `Commit authorship` guard refuses one at pre-push and in CI; reword before
   pushing. A pushed one needs a fresh superseding branch/PR.
 
+**Merge order:** to merge after another PR, mark your close target `blocked_by` the prerequisite's ticket (`update_issue_relationship`, cross-repository too).
+The Fleet holds the merge until that ticket closes; a body line is not read.
+
 **Minimum-viable PR body structure:**
 ```markdown
 Resolves #N
