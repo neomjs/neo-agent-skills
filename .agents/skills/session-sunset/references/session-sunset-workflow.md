@@ -179,7 +179,7 @@ As the penultimate operational step, preserve the durable wake route unless the 
 False continuity is prevented by the old-transcript stale-wake invariant and the wake-suppressed continuity ping from Step 8. Any post-sunset wake-shaped payload delivered into the old transcript is noise; the canonical execution target is the fresh session that recovery spawns.
 
 ### Step 10: Memory Persistence (The Sandman Memory)
-This is the final memory checkpoint. You MUST invoke `add_memory` to persist a rich "Sandman memory" node. This memory should encapsulate the entire Sunset Protocol payload (Steps 1-10), including the declared `scope: solo-refresh | convergent` and preserved/decommissioned wake-route state. The resulting `Origin Session ID` or `Memory ID` serves as the direct pointer for the next agent. Sandman persistence is strictly REQUIRED for both `solo-refresh` and `convergent` scopes.
+This is the final memory checkpoint, and it closes the receipt's turn: save after Step 8, and again after any addendum. You MUST invoke `add_memory` to persist a rich "Sandman memory" node: the whole Sunset payload (Steps 1-10), the declared `scope` and the preserved/decommissioned wake-route state. The resulting `Origin Session ID` or `Memory ID` serves as the direct pointer for the next agent. Sandman persistence is REQUIRED for both scopes.
 
 ## 3. Terminating the Session
 
