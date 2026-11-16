@@ -3,9 +3,6 @@
 **Audience: maintainer** (default when undeclared). A declared contributor reports the public
 PR/CI state to their operator and does not enter this private lifecycle queue.
 
-Atlas entry for lifecycle-boundary pickup. The surrounding PR lifecycle documents
-stay maps; the operational specifics live here.
-
 ## 1. The whole intent
 
 After a lifecycle event, continue the current goal through its next unresolved
@@ -117,19 +114,19 @@ decision.**
 - Legitimate defer: name the artifact to re-read, the check to run, the peer
   signal awaited, or the external unblock condition. "Do it fresh next turn" or
   "await steer" name nothing.
-- A turn never ends into an unbounded wait: when the next step waits on an
-  external condition, run every owned bounded lane, then end with a wake
-  scheduled inside the provider's cache TTL (≤ 50 min on Anthropic, naming the
-  condition) or a subscription its message triggers. `AGENT:*` broadcasts do
-  not wake, and the plane defers wakes above its context gate (neo-agent-brain
-  `ai/daemons/wake/contextGatePolicy.mjs`); "waits on X" alone is the hold
-  state §L3 forbids.
-- Deferring the same positive-ROI lane twice while busy elsewhere is drift.
-  Resolve it: execute, hand off to a named peer with the collision state, or
-  downgrade it with evidence that it is no longer positive-ROI.
-
-Surface the decision where lifecycle decisions already surface. Never build
-dedicated telemetry substrate for it.
+- A turn never ends into an unbounded wait. After every owned bounded lane, a
+  wait a producer wakes on (Fleet open-work for CI, review or merge; an external
+  comment; a 1:1 A2A; a subagent's completion) ends the turn naming it in
+  `lane-state:`, with no self-timer. Only an uncovered wait (an `AGENT:*`
+  broadcast, a forge outside open-work, a degraded wake route) ends with a
+  self-timer inside the provider's cache TTL (≤ 50 min on Anthropic) or a
+  subscription its message triggers. The plane defers wakes above its context
+  gate (neo-agent-brain `ai/daemons/wake/contextGatePolicy.mjs`); "waits on X"
+  alone is the hold state §L3 forbids.
+- Deferring the same positive-ROI lane twice while busy elsewhere is drift:
+  execute it, hand it to a named peer with the collision state, or downgrade it
+  with evidence, surfaced where lifecycle decisions already surface; never in
+  dedicated telemetry.
 
 ## 8. Emitting lane-state
 
@@ -142,12 +139,10 @@ lane-state: next-lane (claiming #NNNN as primary reviewer)
 lane-state: next-lane (PR #NNNN at human merge gate; advancing the next acceptance step of the same outcome)
 ```
 
-**The fenced machine block is emitted ONLY when `stopHook.laneContinuation` is
-enabled.** Its sole consumer is `parseLaneState()` in the turn-end hooks; with
-the leaf off — the shipped default — nothing reads it, so emitting it is pure
-waste. Do not emit it by habit; do not treat its absence as a missing
-deliverable. When the leaf IS on it is required, and prose alone does not satisfy
-it:
+**Emit the fenced machine block only when `stopHook.laneContinuation` is on.**
+Its sole reader is `parseLaneState()` in the turn-end hooks: with the leaf off
+(the shipped default) it is waste and its absence no gap; with it on, prose
+alone does not satisfy it:
 
 ```lane-state
 {"laneContinuation":"next-lane","namedGates":[{"ref":"PR #NNNN","checkedAt":"YYYY-MM-DDTHH:mm:ssZ"}]}
@@ -180,4 +175,5 @@ it.
 | Claiming a review you were not assigned | Collides with the assigned reviewer and distorts cross-family seat accounting |
 | Fixup commits without the author-response comment + the handback | Leaves the reviewer unaware; the RC cycle silently stalls |
 | Treating operator-suppressed broadcast as work-stop | Confuses coordination visibility with implementation authority |
+| A self-timer (`ScheduleWakeup`, `schedule`, cron) on a wait a producer already wakes on | Each fire re-reads the whole session for news that arrives anyway |
 | Duplicating this content into the PR lifecycle maps | Violates the Map vs Atlas split and raises routine context load |
