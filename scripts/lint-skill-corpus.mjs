@@ -2,8 +2,9 @@
 /**
  * @summary The canonical anti-bloat guard for the skill corpus. Runs only here.
  *
- * 96% of this package is the skill corpus, so the corpus is the thing worth protecting and the only
- * thing this lint knows about. Consuming repositories run no corpus rules — they run
+ * 96% of this package is the skill corpus, so the corpus is the thing worth protecting — along with the
+ * opening skill counts in `README.md` (§3c), which describe that corpus to outside readers. Consuming
+ * repositories run no corpus rules — they run
  * `materialize --check` and nothing else. Keeping the budgets here rather than shipping them to
  * every consumer is the point: one enforcement site, not N.
  *
@@ -654,6 +655,46 @@ for (const {label, limitBytes, files} of COMBINED_BUDGETS) {
         errors.push(`${label}: budgeted file(s) absent — ${missing.join(', ')}. A budget over a file that does not exist silently bounds nothing.`)
     } else if (sum >= limitBytes) {
         errors.push(`${label}: ${sum} bytes against a limit of ${limitBytes}; the largest legal sum is ${limitBytes - 1}. Individually legal files can still breach a loaded surface.`)
+    }
+}
+
+// ── 3c. README opening skill counts ─────────────────────────────────────────────────────────────
+{
+    const
+        readmePath         = join(root, 'README.md'),
+        manifestSkillCount = Object.keys(manifest.skills || {}).length;
+
+    if (!existsSync(readmePath)) {
+        errors.push('README.md:1: missing README.md; cannot verify opening skill counts.')
+    } else {
+        const
+            readmeSource      = readFileSync(readmePath, 'utf8').replace(/\r\n/g, '\n'),
+            firstHeading      = /^## /m.exec(readmeSource),
+            opening           = firstHeading ? readmeSource.slice(0, firstHeading.index) : readmeSource,
+            countRe           = /\b(?:(\d+)\s+of\s+the\s+)?(\d+)\s+skills\b/g,
+            matches           = [...opening.matchAll(countRe)],
+            standaloneMatches = matches.filter(m => m[1] === undefined),
+            subsetMatches     = matches.filter(m => m[1] !== undefined);
+
+        if (!standaloneMatches.length || !subsetMatches.length) {
+            errors.push(`README.md:1: opening must state both "<N> skills" and "<M> of the <N> skills" against skills.manifest.json (${manifestSkillCount} skills).`)
+        }
+
+        for (const match of matches) {
+            const
+                line  = opening.slice(0, match.index).split('\n').length,
+                total = Number(match[2]);
+
+            if (total !== manifestSkillCount) {
+                const recountHint = match[1] !== undefined
+                    ? ' Recount the skills that name a server tool before updating the total.'
+                    : '';
+
+                errors.push(`README.md:${line}: "${match[0]}" disagrees with skills.manifest.json (${manifestSkillCount} skills).${recountHint}`)
+            } else if (match[1] !== undefined && Number(match[1]) > manifestSkillCount) {
+                errors.push(`README.md:${line}: "${match[0]}" exceeds total skill count (${manifestSkillCount}).`)
+            }
+        }
     }
 }
 
