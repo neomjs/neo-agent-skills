@@ -303,6 +303,21 @@ function addFortyFirstSkill(work) {
     })
 }
 
+/** @summary Derive 1-based opening count line numbers from a README string so layout edits above the counts stay green. */
+function readmeCountLines(source = readFileSync(join(repoRoot, 'README.md'), 'utf8')) {
+    const
+        normalized   = source.replace(/\r\n/g, '\n'),
+        firstHeading = /^## /m.exec(normalized),
+        opening      = firstHeading ? normalized.slice(0, firstHeading.index) : normalized,
+        lines        = opening.split('\n'),
+        totalLine    = lines.findIndex(line => /\b40\s+skills\b/.test(line) && !/\bof\s+the\s+40\s+skills\b/.test(line)) + 1,
+        subsetLine   = lines.findIndex(line => /\bof\s+the\s+40\s+skills\b/.test(line)) + 1;
+
+    return {totalLine, subsetLine}
+}
+
+const {totalLine: readmeTotalLine, subsetLine: readmeSubsetLine} = readmeCountLines();
+
 const cases = [
     ['baseline corpus is clean', 0, undefined,
         'the suite is worthless if the unmutated corpus does not pass'],
@@ -548,14 +563,14 @@ const cases = [
     // ── README opening skill counts ─────────────────────────────────────────────────────────────
     ['41 skills in manifest with unchanged README fails naming README.md and both count lines', 1, addFortyFirstSkill,
         'adding a skill without updating the README opening must fail and name README.md and the offending lines',
-        {expectedOut: /README\.md:25\b[\s\S]*README\.md:27\b/}],
+        {expectedOut: new RegExp(`README\\.md:${readmeTotalLine}\\b[\\s\\S]*README\\.md:${readmeSubsetLine}\\b`)}],
 
-    ['41 skills in manifest with only the first README count updated still fails naming line 27', 1, w => {
+    ['41 skills in manifest with only the first README count updated still fails naming the subset count line', 1, w => {
         addFortyFirstSkill(w);
         const readme = join(w, 'README.md');
         writeFileSync(readme, readFileSync(readme, 'utf8').replace('40 skills:', '41 skills:'))
     }, 'tying "28 of the N skills" to the manifest count forces recounting the MCP-coupled subset too',
-        {expectedOut: /README\.md:27\b/}],
+        {expectedOut: new RegExp(`README\\.md:${readmeSubsetLine}\\b`)}],
 
     ['41 skills in manifest with both README opening counts updated passes', 0, w => {
         addFortyFirstSkill(w);
@@ -566,8 +581,20 @@ const cases = [
     ['removing a skill count from the README opening fails naming README.md', 1, w => {
         const readme = join(w, 'README.md');
         writeFileSync(readme, readFileSync(readme, 'utf8').replace(', 40 skills', ''))
-    }, 'removing the counts violates #363 Avoided Traps',
-        {expectedOut: /README\.md:1\b/}]
+    }, 'removing the counts violates the opening-count contract',
+        {expectedOut: /README\.md:1\b/}],
+
+    ['inserting lines above the README opening counts stays green at 40 skills', 0, w => {
+        const readme = join(w, 'README.md');
+        writeFileSync(readme, readFileSync(readme, 'utf8').replace('# neo-agent-skills\n', '# neo-agent-skills\n<!-- layout shift -->\n\n'))
+    }, 'layout edits above the counts must not trip hardcoded line numbers while counts stay true'],
+
+    ['inserting lines above the README opening counts shifts reported lines at 41 skills', 1, w => {
+        addFortyFirstSkill(w);
+        const readme = join(w, 'README.md');
+        writeFileSync(readme, readFileSync(readme, 'utf8').replace('# neo-agent-skills\n', '# neo-agent-skills\n<!-- layout shift -->\n\n'))
+    }, 'the lint still reports the shifted 1-based lines when counts disagree after a header edit',
+        {expectedOut: new RegExp(`README\\.md:${readmeTotalLine + 2}\\b[\\s\\S]*README\\.md:${readmeSubsetLine + 2}\\b`)}]
 ],
 consumerCases = [
     ['a clean non-Neo consumer resolves projected document references', 0, false,

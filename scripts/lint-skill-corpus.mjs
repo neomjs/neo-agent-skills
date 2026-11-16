@@ -2,8 +2,9 @@
 /**
  * @summary The canonical anti-bloat guard for the skill corpus. Runs only here.
  *
- * 96% of this package is the skill corpus, so the corpus is the thing worth protecting and the only
- * thing this lint knows about. Consuming repositories run no corpus rules — they run
+ * 96% of this package is the skill corpus, so the corpus is the thing worth protecting — along with the
+ * opening skill counts in `README.md` (§3c), which describe that corpus to outside readers. Consuming
+ * repositories run no corpus rules — they run
  * `materialize --check` and nothing else. Keeping the budgets here rather than shipping them to
  * every consumer is the point: one enforcement site, not N.
  *
@@ -685,7 +686,11 @@ for (const {label, limitBytes, files} of COMBINED_BUDGETS) {
                 total = Number(match[2]);
 
             if (total !== manifestSkillCount) {
-                errors.push(`README.md:${line}: "${match[0]}" disagrees with skills.manifest.json (${manifestSkillCount} skills).`)
+                const recountHint = match[1] !== undefined
+                    ? ' Recount the skills that name a server tool before updating the total.'
+                    : '';
+
+                errors.push(`README.md:${line}: "${match[0]}" disagrees with skills.manifest.json (${manifestSkillCount} skills).${recountHint}`)
             } else if (match[1] !== undefined && Number(match[1]) > manifestSkillCount) {
                 errors.push(`README.md:${line}: "${match[0]}" exceeds total skill count (${manifestSkillCount}).`)
             }
