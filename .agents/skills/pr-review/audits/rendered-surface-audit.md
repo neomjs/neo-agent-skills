@@ -3,9 +3,9 @@
 **Trigger:** the PR changes what a rendered surface shows: a Stage frame, a Portal page, an app,
 an example, a cover.
 
-**Authority:** the operator merges no Stage PR without a before/after pair. neo #20724 passed two
-reviews on measured criteria and read 5 of 10 beside the released list, because nothing compared
-the whole (#409).
+**Authority:** the operator merges no Stage PR without a before/after pair. The example card of
+neo #20724 passed its design read and its review (neo #20813) on measured criteria, and the
+operator read the tab at 5 of 10 beside the released list: nothing had compared the whole (#409).
 
 ## The gate (Required-Action tier)
 
