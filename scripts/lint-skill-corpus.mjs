@@ -657,6 +657,42 @@ for (const {label, limitBytes, files} of COMBINED_BUDGETS) {
     }
 }
 
+// ── 3c. README opening skill counts ─────────────────────────────────────────────────────────────
+{
+    const
+        readmePath         = join(root, 'README.md'),
+        manifestSkillCount = Object.keys(manifest.skills || {}).length;
+
+    if (!existsSync(readmePath)) {
+        errors.push('README.md:1: missing README.md; cannot verify opening skill counts.')
+    } else {
+        const
+            readmeSource      = readFileSync(readmePath, 'utf8').replace(/\r\n/g, '\n'),
+            firstHeading      = /^## /m.exec(readmeSource),
+            opening           = firstHeading ? readmeSource.slice(0, firstHeading.index) : readmeSource,
+            countRe           = /\b(?:(\d+)\s+of\s+the\s+)?(\d+)\s+skills\b/g,
+            matches           = [...opening.matchAll(countRe)],
+            standaloneMatches = matches.filter(m => m[1] === undefined),
+            subsetMatches     = matches.filter(m => m[1] !== undefined);
+
+        if (!standaloneMatches.length || !subsetMatches.length) {
+            errors.push(`README.md:1: opening must state both "<N> skills" and "<M> of the <N> skills" against skills.manifest.json (${manifestSkillCount} skills).`)
+        }
+
+        for (const match of matches) {
+            const
+                line  = opening.slice(0, match.index).split('\n').length,
+                total = Number(match[2]);
+
+            if (total !== manifestSkillCount) {
+                errors.push(`README.md:${line}: "${match[0]}" disagrees with skills.manifest.json (${manifestSkillCount} skills).`)
+            } else if (match[1] !== undefined && Number(match[1]) > manifestSkillCount) {
+                errors.push(`README.md:${line}: "${match[0]}" exceeds total skill count (${manifestSkillCount}).`)
+            }
+        }
+    }
+}
+
 // ── 4. net-growth budget ────────────────────────────────────────────────────────────────────────
 const baseArg = process.argv.indexOf('--base');
 

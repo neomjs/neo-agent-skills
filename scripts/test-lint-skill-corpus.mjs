@@ -43,6 +43,7 @@ function run(mutate, {commitMessage = null} = {}) {
 
     cpSync(join(repoRoot, '.agents'), join(work, '.agents'), {recursive: true});
     cpSync(join(repoRoot, 'scripts'), join(work, 'scripts'), {recursive: true});
+    cpSync(join(repoRoot, 'README.md'), join(work, 'README.md'));
 
     if (commitMessage) {
         execFileSync('git', ['init', '-q'], {cwd: work});
@@ -282,6 +283,24 @@ function padTo(work, total) {
 
     if (need > 0) appendFileSync(target, '#'.repeat(need));
     else if (need < 0) writeFileSync(target, readFileSync(target, 'utf8').slice(0, need))
+}
+
+/** @summary Add a valid 41st skill to both disk and manifest without touching README.md. */
+function addFortyFirstSkill(work) {
+    const
+        name = 'extra-fixture-skill',
+        dir  = join(work, '.agents/skills', name),
+        desc = 'Fixture skill for README count verification.';
+
+    mkdirSync(dir, {recursive: true});
+    writeFileSync(join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: ${JSON.stringify(desc)}\n---\n\n# Extra Fixture Skill\n\nFixture router body.\n`);
+    editManifest(work, manifest => {
+        manifest.skills[name] = {
+            name,
+            description: desc,
+            audiences  : ['agent-os']
+        }
+    })
 }
 
 const cases = [
@@ -524,7 +543,31 @@ const cases = [
 
     ['an EMPTY growth marker does not justify growth', 1, growCorpus,
         'a token with no reason is ceremony, not a recorded decay-mitigation rationale',
-        {commitMessage: 'grow corpus\n\n[skill-growth-justified:]'}]
+        {commitMessage: 'grow corpus\n\n[skill-growth-justified:]'}],
+
+    // ── README opening skill counts ─────────────────────────────────────────────────────────────
+    ['41 skills in manifest with unchanged README fails naming README.md and both count lines', 1, addFortyFirstSkill,
+        'adding a skill without updating the README opening must fail and name README.md and the offending lines',
+        {expectedOut: /README\.md:25\b[\s\S]*README\.md:27\b/}],
+
+    ['41 skills in manifest with only the first README count updated still fails naming line 27', 1, w => {
+        addFortyFirstSkill(w);
+        const readme = join(w, 'README.md');
+        writeFileSync(readme, readFileSync(readme, 'utf8').replace('40 skills:', '41 skills:'))
+    }, 'tying "28 of the N skills" to the manifest count forces recounting the MCP-coupled subset too',
+        {expectedOut: /README\.md:27\b/}],
+
+    ['41 skills in manifest with both README opening counts updated passes', 0, w => {
+        addFortyFirstSkill(w);
+        const readme = join(w, 'README.md');
+        writeFileSync(readme, readFileSync(readme, 'utf8').replaceAll('40 skills', '41 skills'))
+    }, 'positive control proves the 41-skill fixture fails solely on the README count check'],
+
+    ['removing a skill count from the README opening fails naming README.md', 1, w => {
+        const readme = join(w, 'README.md');
+        writeFileSync(readme, readFileSync(readme, 'utf8').replace(', 40 skills', ''))
+    }, 'removing the counts violates #363 Avoided Traps',
+        {expectedOut: /README\.md:1\b/}]
 ],
 consumerCases = [
     ['a clean non-Neo consumer resolves projected document references', 0, false,
@@ -543,10 +586,14 @@ let failed = 0;
 console.log(`surface today: ${surfaceBytes()} of ${LIMIT} — headroom ${LIMIT - 1 - surfaceBytes()}\n`);
 
 for (const [name, expected, mutate, because, options] of cases) {
-    const {code} = run(mutate, options),
-          ok     = code === expected;
+    const {code, out} = run(mutate, options),
+          outOk       = !options?.expectedOut || options.expectedOut.test(out),
+          ok          = code === expected && outOk;
 
-    if (!ok) failed++;
+    if (!ok) {
+        failed++;
+        if (out) console.log(out)
+    }
 
     console.log(`${ok ? '  ok  ' : '  FAIL'} ${name} → exit ${code} (expected ${expected}) — ${because}`)
 }
