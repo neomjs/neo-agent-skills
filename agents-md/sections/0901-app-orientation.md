@@ -9,7 +9,7 @@ audiences: app
 `view/` holds its classes, and `neo-config.json` is its engine configuration. `npm run server-start`
 serves the workspace at `http://localhost:8080` (or `$PORT`, else the next free port, which the
 terminal prints) and opens it in a browser; `npm run server-start -- --no-open` serves it without one.
-An app runs at `/apps/<name>/index.html`. `npm run build-themes` compiles `resources/scss/`. The
+An app runs at `/apps/<name>/index.html`. `npm run build-themes` copies `resources/css/`. The
 engine packages require Node 24 or later.
 
 **The engine runs your app in a worker.** Your classes run in the App worker; the main thread only
