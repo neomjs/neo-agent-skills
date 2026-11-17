@@ -57,7 +57,7 @@ export default Neo.setupClass(MainView);
 - **Data views bind a store.** A grid, list or chart takes a `data.Store` whose `model` is a `data.Model` subclass declaring the `fields`. Never pass a hand-mapped array. `apps/colors/store/Colors.mjs` and `apps/colors/model/Color.mjs` in the engine are the minimal pair.
 - **State providers sit at view roots.** Put shared state in a `state.Provider` on the view that owns it, and bind children to it (`bind: {text: data => data.title}`). Don't thread values down through configs.
 - **Logic goes in a view controller** (`controller.Component`). Handlers are referenced by name in the view's configs.
-- **Styles stay in SCSS.** Structure goes under `resources/scss/src/apps/<app>/`, mirroring the class path, and theme variables go under `resources/scss/theme-*/apps/<app>/`. Build them with `npm run build-themes`. Use inline `style` only for values that change at runtime.
+- **Styles stay in CSS.** Structure goes under `resources/css/src/apps/<app>/`, mirroring the class path, and theme variables go under `resources/css/theme-*/apps/<app>/`. Build them with `npm run build-themes`. Use inline `style` only for values that change at runtime.
 
 ## 4. Run it and verify it
 

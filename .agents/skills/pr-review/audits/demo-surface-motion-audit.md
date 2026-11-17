@@ -6,7 +6,7 @@ transitions, choreography classes, motion-token consumption, or any UI state cha
 
 **Authority:** #14780's ratified rule set (design-authority ratification, 2026-07-12,
 including the two accepted reviewer corrections). The token vocabulary itself is merged
-substrate (`resources/scss/_motion.scss`, all themes).
+substrate (`resources/css/src/Global.css`, all themes).
 
 ## The gate (Required-Action tier)
 
