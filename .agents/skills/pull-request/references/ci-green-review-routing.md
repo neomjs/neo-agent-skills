@@ -53,7 +53,7 @@ Pending CI is not a halt-state: unblock a peer PR or take the next `post-review-
 
 Do not request formal review. The author fixes CI first, pushes the fix, and repeats the CI-green gate on the new head.
 
-If the author explicitly needs help diagnosing CI, route that as CI triage, not formal review:
+Help diagnosing CI is CI triage, not formal review:
 
 ```text
 Review role: ci-triage
@@ -69,16 +69,16 @@ If no checks, proceed only without a controller, and A2A the reviewer too: no `r
 
 After addressing feedback, apply the same gate. While CI is pending, end the Addressed comment with `CI status: pending on <head>; re-review follows at green.` instead of `Re-review requested.` At green, re-request on GitHub (`manage_pr_reviewers` add); no re-review DM.
 
-**A base update is not a re-review event** (operator ruling 2026-11-17), even when the Fleet sends `route-review` and merge-readiness calls the approval anchor stale. After a rebase or dev merge of an approved PR, run `git range-diff <old-base>..<old-head> <new-base>..<new-head>`. If it differs only in context, generated files or base-forced lines, post it on the PR as a delta note and request no one: a re-request blocks merge-readiness and spends the approver's budget on an unchanged review. Re-request only when reviewed content changed.
+**A base update is not a re-review event** (operator ruling 2026-11-17), even when the Fleet sends `route-review` and merge-readiness calls the approval anchor stale. After a rebase or dev merge of an approved PR, run `git range-diff <old-base>..<old-head> <new-base>..<new-head>`; it skips merge commits, so after a dev merge also run `git log --merges --remerge-diff <new-base>..<new-head>` (a clean merge shows no diff). If both show only context, generated files, base-forced lines or removed conflict markers, post them as a delta note on the PR and request no one: a re-request blocks merge-readiness and spends the approver's budget. Otherwise re-request.
 
-**Outside contributors:** any push by the author after approval re-enters review of the delta, because an untrusted "rebase" can carry content. A maintainer's own base merge there (`pull-request-workflow.md` §10) stays a mechanical delta.
+**Outside contributors:** any author push after approval re-enters review, since an untrusted "rebase" can carry content; a maintainer's own base merge there (`pull-request-workflow.md` §10) stays mechanical.
 
 ## 5. Anti-Patterns
 
 | Anti-pattern | Why it harms |
 |---|---|
 | Calling `manage_pr_reviewers` while CI is pending | GitHub reviewer assignment is itself an actionable review request. |
-| Suppressing all PR-open A2A until CI is green | Violates lifecycle visibility and makes the swarm blind to an opened PR. |
+| Suppressing the PR-open A2A until green | The swarm cannot see the opened PR. |
 | Treating green CI as approval | Green CI only permits requesting human/peer review. |
 | Waiting on pending CI (busy-wait, idle stop, harness PR monitor) | The Fleet's wake is the recheck; the wait belongs to another lane. |
 | A DM repeating a Fleet wake | A second wake for the reader, a message for the writer. |
