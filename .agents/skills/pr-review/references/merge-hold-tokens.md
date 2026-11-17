@@ -20,6 +20,8 @@ head moved and you have not re-read it). Open a comment with one of these tokens
 | `[MERGE_HOLD]` | Do not merge at this head. A prior approval is not a current authorization. |
 | `[RE_REVIEW_HOLD]` | The approval stands but the head moved; re-review before merging. |
 
+A mechanical base update of a maintainer's PR is no reason for either (pull-request `ci-green-review-routing.md` §4); on an outside contributor's PR, any author push after your approval is.
+
 `validateMergeReady` reads them and blocks readiness, naming you as the holder:
 
 - **Only a NEWER submitted review from you clears your hold.** A follow-up comment does not, not even
