@@ -101,7 +101,7 @@ When the Signal Ledger reaches the quorum rule (floor-2 + non-author-APPROVED â‰
 1. Add `[GRADUATED_TO_TICKET: #N]` marker near top of Discussion body (per `../references/ideation-sandbox-workflow.md` "Iterative Review Workflow" OQ-resolution-tag pattern).
 2. Update body with `## Signal Ledger` + `## Unresolved Dissent` + `## Unresolved Liveness` + `## Discussion Criteria Mapping` sections (template per Â§template-block above).
 3. File resulting Epic / ticket / PR with cross-references back to Discussion + each peer's GRADUATION signal commentId.
-4. Formally close Discussion via GraphQL `closeDiscussion(reason: RESOLVED)`.
+4. Close the Discussion: `manage_discussion({action: 'close', discussion_number, reason: 'RESOLVED'})`.
 
 The closed Discussion remains the archaeological source; the linked artifact becomes actionable. **The cycle-comments archive as the divergence-trail.**
 
