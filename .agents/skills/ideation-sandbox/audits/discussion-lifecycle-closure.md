@@ -15,4 +15,6 @@
 
 A Discussion with all OQs terminally resolved and no remaining scope is whole-Discussion-resolved and should close `RESOLVED`, even when no standalone ticket was needed.
 
+The author closes via `manage_discussion` (`action: 'close'`, `reason` `RESOLVED`, `OUTDATED` or `DUPLICATE`) after the verdict comment; another seat closes only when asked, passing `acknowledgedForeignClose`.
+
 The mechanical guard is read-only by design. `npm run ai:audit-discussion-lifecycle` reports required lifecycle actions, but never closes Discussions, edits Discussion bodies, or posts GitHub comments.
