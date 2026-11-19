@@ -17,8 +17,24 @@ import {join}                   from 'node:path';
 const
     EVENTS        = ['pull_request', 'pull_request_target', 'push'],
     WORKFLOW_FILE = /\.ya?ml$/,
-    indentOf      = line => line.match(/^ */)[0].length,
+    indentOf      = line => line.length - line.trimStart().length,
     isContent     = line => line.trim() !== '' && !line.trim().startsWith('#');
+
+/**
+ * @summary A YAML value without its trailing comment: everything before the first `#` that opens the value or follows
+ * whitespace. A scan, not a regular expression, so a long run of spaces costs linear time.
+ * @param {String} value
+ * @returns {String}
+ */
+function stripComment(value) {
+    for (let index = 0; index < value.length; index++) {
+        if (value[index] === '#' && (index === 0 || value[index - 1] === ' ' || value[index - 1] === '\t')) {
+            return value.slice(0, index).trim()
+        }
+    }
+
+    return value.trim()
+}
 
 /**
  * @summary The lines of a top-level block, such as `jobs:`, without the key line itself.
@@ -54,10 +70,10 @@ function childrenOf(lines) {
           children = [];
 
     for (const line of lines) {
-        const match = isContent(line) && indentOf(line) === indent && line.match(/^\s*['"]?([A-Za-z0-9_-]+)['"]?:\s*(.*)$/);
+        const match = isContent(line) && indentOf(line) === indent && line.match(/^\s*['"]?([A-Za-z0-9_-]+)['"]?:(.*)/);
 
         if (match) {
-            children.push({key: match[1], value: match[2].replace(/(^|\s+)#.*$/, '').trim(), lines: []})
+            children.push({key: match[1], value: stripComment(match[2]), lines: []})
         } else if (children.length && (!isContent(line) || indentOf(line) > indent)) {
             children.at(-1).lines.push(line)
         }
@@ -102,7 +118,7 @@ function dimensionSize({value, lines}) {
 export function workflowJobs(text) {
     const lines  = String(text).split('\n'),
           onLine = lines.find(line => /^['"]?on['"]?:/.test(line)) ?? '',
-          inline = onLine.replace(/^['"]?on['"]?:\s*/, '').replace(/(^|\s+)#.*$/, '').trim(),
+          inline = stripComment(onLine.slice(onLine.indexOf(':') + 1)),
           events = inline
               ? inline.replace(/^\[|\]$/g, '').split(',').map(event => event.trim())
               : childrenOf(blockOf(lines, /^['"]?on['"]?:\s*(#.*)?$/)).map(child => child.key);
