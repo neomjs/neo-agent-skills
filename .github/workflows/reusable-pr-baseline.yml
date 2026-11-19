@@ -26,7 +26,8 @@
 # live fetch buys nothing: the author fixes the body, nothing re-runs, and the red stands until an
 # unrelated commit arrives. `ready_for_review` re-judges a draft at the moment it becomes reviewable.
 # Every event runs every check: one context carries every verdict, so an edit that ran only the
-# body checks would overwrite another check's red on the same head.
+# body checks would overwrite another check's red on the same head. A merged pull request's events
+# run none: its head cannot merge again, so a skipped check there hides nothing.
 #
 # The trigger cannot be asserted here — a reusable workflow does not see its caller's `on:` block.
 # It is a caller obligation, tracked per repository under #14.
@@ -105,6 +106,7 @@ on:
 jobs:
   pr-baseline:
     name: PR baseline
+    if: ${{ github.event.pull_request.merged != true }}
     runs-on: ubuntu-latest
     # The top-level grant is `contents: read`; the PR-body steps also read the pull request itself.
     # Granted on this job, which runs no pull-request code, and never on `skills-materialized`.
@@ -407,6 +409,7 @@ jobs:
 
   skills-materialized:
     name: Skills materialized
+    if: ${{ github.event.pull_request.merged != true }}
     runs-on: ubuntu-latest
     steps:
       # With no repository override, checkout resolves the caller repository. The reusable workflow
@@ -430,7 +433,7 @@ jobs:
   # declares none skips the job and holds no runner slot for it.
   guards:
     name: guards
-    if: ${{ inputs.guards != '[]' }}
+    if: ${{ inputs.guards != '[]' && github.event.pull_request.merged != true }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
