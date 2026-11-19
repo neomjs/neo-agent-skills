@@ -3,15 +3,18 @@
 
 import assert                                   from 'node:assert/strict';
 import {spawn, spawnSync}                       from 'node:child_process';
-import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                 from 'node:os';
 import {dirname, join}                          from 'node:path';
 import {fileURLToPath}                          from 'node:url';
+import {compareRunnerJobs, readWorkflows, workflowJobs} from './ci-job-count.mjs';
 import {
+    CI_JOBS_ANCHOR,
     FRAME_CRITIQUE_ANCHOR,
     INVISIBLE_PR_BODY_ANCHORS,
     VISIBLE_PR_BODY_ANCHORS,
     findBodyViolations,
+    findCiJobViolations,
     findFrameCritiqueViolations,
     findImageEmbedViolations,
     hasAnchor,
@@ -394,6 +397,113 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     assert.equal(cli(['--close-target-only'], goodBody(`\n${frame}`)).code, 0, 'a human PR is judged on its close target alone')
 }
 
+// ── A diff that starts more CI runner jobs says why they cannot join an existing job ───────────
+{
+    const workflow = (on, jobs) => `name: x\n\non: ${on}\n\njobs:\n${jobs}`,
+          job      = (id, extra = '') => `  ${id}:\n    runs-on: ubuntu-latest\n${extra}    steps:\n      - run: |\n          echo "  not: a-job"\n`;
+
+    // What the estimate counts
+    assert.deepEqual(workflowJobs(workflow('[pull_request]', job('a') + job('b'))), {a: 1, b: 1}, 'a job per id');
+    assert.deepEqual(workflowJobs(workflow('\n  schedule:\n    - cron: "0 0 * * *"', job('a'))), {}, 'a schedule-only workflow starts no PR job');
+    assert.deepEqual(workflowJobs(workflow('push # on every push', job('a'))), {a: 1}, 'a commented inline trigger still counts');
+    assert.deepEqual(workflowJobs(workflow('\n  pull_request_target:\n    types: [opened]', job('a'))), {a: 1}, 'a block trigger counts');
+    assert.deepEqual(workflowJobs(workflow('[push]', job('m', '    strategy:\n      matrix:\n        shard: [1, 2, 3]\n        node: [22, 24]\n'))), {m: 6}, 'matrix axes multiply');
+    assert.deepEqual(workflowJobs(workflow('[push]', job('m', "    strategy:\n      fail-fast: false\n      # a comment\n      matrix:\n        shard: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '[1]' || needs.c.outputs.m || '[1, 2, 3, 4]') }}\n"))), {m: 4}, 'a fromJSON matrix counts its fallback list');
+    assert.deepEqual(workflowJobs(workflow('[push]', job('m', '    strategy:\n      matrix:\n        os:\n          - ubuntu-latest\n          - macos-latest\n'))), {m: 2}, 'a block list counts its entries');
+    assert.deepEqual(workflowJobs(workflow('[push]', job('m', '    strategy:\n      matrix:\n        include:\n          - shard: 1\n          - shard: 2\n          - shard: 3\n'))), {m: 3}, 'an include-only matrix counts its entries');
+    assert.deepEqual(workflowJobs(workflow('[push]', job('m', '    strategy:\n      matrix: ${{ fromJSON(needs.c.outputs.matrix) }}\n'))), {m: 1}, 'a dynamic matrix counts once');
+
+    // How base and head compare
+    const base  = {'ci.yml': workflow('[pull_request]', job('unit'))},
+          wider = compareRunnerJobs(base, {'ci.yml': workflow('[pull_request]', job('unit') + job('lint')), 'new.yml': workflow('[push]', job('e2e', '    strategy:\n      matrix:\n        shard: [1, 2]\n'))}),
+          fewer = compareRunnerJobs({'ci.yml': workflow('[pull_request]', job('unit') + job('lint'))}, base);
+
+    assert.deepEqual(wider, {base: 1, head: 4, grown: [{key: 'ci.yml#lint', from: 0, to: 1}, {key: 'new.yml#e2e', from: 0, to: 2}]}, 'a new job and a new workflow grow the count');
+    assert.deepEqual(fewer, {base: 2, head: 1, grown: []}, 'fewer jobs grow nothing');
+
+    // What the body must carry
+    const reason = `${CI_JOBS_ANCHOR} +3 — the shards cannot share a runner: each needs a clean browser profile.`,
+          found  = findCiJobViolations(goodBody(), wider);
+
+    assert.equal(found.length, 1, 'more jobs without a reason are refused');
+    assert.ok(found[0].startsWith(CI_JOBS_ANCHOR) && found[0].includes('20 concurrent runner jobs') && found[0].includes('new.yml#e2e 0 → 2'),
+        'the finding names the line, the budget and what grew');
+    assert.deepEqual(findCiJobViolations(goodBody(`\n${reason}`), wider), [], 'a reason satisfies it');
+    assert.equal(findCiJobViolations(goodBody(`\n\`\`\`md\n${reason}\n\`\`\``), wider).length, 1, 'a fenced reason is documentation');
+    assert.equal(findCiJobViolations(goodBody(`\nThe \`${CI_JOBS_ANCHOR}\` line comes later.`), wider).length, 1, 'an inline-code mention is not the line');
+    assert.equal(findCiJobViolations(goodBody(`\n${CI_JOBS_ANCHOR} +N — <why they cannot join an existing job>`), wider).length, 1, 'the unfilled template line is not a reason');
+    assert.equal(findCiJobViolations(goodBody(`\n${CI_JOBS_ANCHOR}`), wider).length, 1, 'a bare line is not a reason');
+    assert.equal(findCiJobViolations(goodBody(`\n${CI_JOBS_ANCHOR} +3 — <reason>`), wider).length, 1, 'a placeholder reason is not a reason');
+    assert.deepEqual(findCiJobViolations(goodBody(), fewer), [], 'fewer jobs need no reason');
+    assert.deepEqual(findCiJobViolations(goodBody(), undefined), [], 'without a base the rule is not judged');
+    assert.deepEqual(findBodyViolations({body: goodBody(), ciJobs: wider}).visible, found, 'the body check reports it');
+
+    // The CLI reads the base from git and the head from the working tree
+    const repo = mkdtempSync(join(tmpdir(), 'pr-body-ci-')),
+          git  = (...args) => spawnSync('git', ['-c', 'user.email=ci@example.com', '-c', 'user.name=ci', ...args], {cwd: repo, encoding: 'utf8'}),
+          cliIn = (args, body, cwd = repo) => {
+              const file = join(repo, 'body.md');
+
+              writeFileSync(file, body);
+
+              const result = spawnSync(process.execPath, [CLI_GUARD, '--body-file', file, ...args], {cwd, encoding: 'utf8'});
+
+              return {code: result.status, text: `${result.stdout}${result.stderr}`}
+          };
+
+    scratch.push(repo);
+    mkdirSync(join(repo, '.github', 'workflows'), {recursive: true});
+    writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), base['ci.yml']);
+    git('init', '-q');
+    git('add', '.');
+    git('commit', '-q', '-m', 'base');
+
+    assert.equal(cliIn(['--base', 'HEAD'], goodBody()).code, 0, 'an unchanged tree passes');
+
+    writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), workflow('[pull_request]', job('unit') + job('lint')));
+
+    const refused = cliIn(['--base', 'HEAD'], goodBody());
+
+    assert.equal(refused.code, 1, 'a tree that starts more jobs is refused');
+    assert.ok(refused.text.includes(`First missing: ${CI_JOBS_ANCHOR}`) && refused.text.includes('ci.yml#lint 0 → 1'), 'and names what grew');
+    assert.equal(cliIn(['--base', 'HEAD'], goodBody(`\n${reason}`)).code, 0, 'a reason lets it pass');
+    assert.equal(cliIn([], goodBody()).code, 0, 'without --base nothing is compared');
+
+    const unread = cliIn(['--base', 'no-such-ref'], goodBody());
+
+    assert.equal(unread.code, 1, 'a base git cannot read fails rather than judging nothing');
+    assert.ok(unread.text.includes('cannot compare CI jobs against no-such-ref'), 'and says so');
+
+    // The base is the fork point: a job the base cut after the branch forked is not the branch's to justify
+    git('commit', '-q', '-am', 'lint job');
+    git('checkout', '-q', '-b', 'feature');
+    writeFileSync(join(repo, 'notes.md'), 'a change outside the workflows\n');
+    git('add', 'notes.md');
+    git('commit', '-q', '-m', 'feature');
+    git('checkout', '-q', '-');
+    writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), base['ci.yml']);
+    git('commit', '-q', '-am', 'cut lint');
+
+    const tip = git('rev-parse', 'HEAD').stdout.trim();
+
+    git('checkout', '-q', 'feature');
+    assert.equal(cliIn(['--base', tip], goodBody()).code, 0, 'a branch forked before the base cut a job is not charged for it');
+
+    // Both sides read from the repository root, whatever the working directory
+    writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), workflow('[pull_request]', job('unit') + job('lint') + job('docs')));
+    mkdirSync(join(repo, 'sub'));
+    assert.equal(cliIn(['--base', 'HEAD'], goodBody(), join(repo, 'sub')).code, 1, 'a subdirectory still reads the tree\'s workflows');
+
+    // Only an absent workflows directory reads as no jobs; any other failure throws rather than counting zero
+    const bare  = mkdtempSync(join(tmpdir(), 'pr-body-ci-bare-')),
+          empty = git('commit-tree', '4b825dc642cb6eb9a060e54bf8d69288fbee4904', '-m', 'empty').stdout.trim();
+
+    scratch.push(bare);
+    assert.deepEqual(readWorkflows({root: bare}), {}, 'a tree without .github/workflows starts no jobs');
+    assert.deepEqual(readWorkflows({root: repo, ref: empty}), {}, 'a commit without .github/workflows starts no jobs');
+    assert.throws(() => readWorkflows({root: repo, ref: 'no-such-ref'}), 'a ref git cannot read throws')
+}
+
 // ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────
 //
 // An agent harness spawns its processes with a stdin that is neither a TTY nor a closed pipe. `spawnSync` closes the
@@ -428,7 +538,8 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     const pkg = JSON.parse(readFileSync(join(here, '../package.json'), 'utf8'));
 
     assert.equal(pkg.bin['neo-agent-skills-pr-body'], './scripts/check-pr-body.mjs');
-    assert.ok(pkg.files.includes('scripts/check-pr-body.mjs'), 'the guard must ship in the package')
+    assert.ok(pkg.files.includes('scripts/check-pr-body.mjs'), 'the guard must ship in the package');
+    assert.ok(pkg.files.includes('scripts/ci-job-count.mjs'), 'and the job counter it imports')
 }
 
 /** @summary Returns semantic-contract violations for the self-hosted `pr-body` job in `skill-corpus.yml`. */
@@ -456,7 +567,8 @@ function validateSkillCorpusPrBody(source) {
               ['released full-anchor bin', /"\$\{SKILLS_ROOT\}\/node_modules\/\.bin\/neo-agent-skills-pr-body"\n\s*--body-file "\$\{BODY_FILE\}"\s*$/m, prBodyJob],
               ['head checkout ref', /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m, headStep],
               ['head checkout path', /^\s*path: \.head\s*$/m, headStep],
-              ['head sparse guard path', /^\s*sparse-checkout: scripts\/check-pr-body\.mjs\s*$/m, headStep],
+              // The guard imports its job counter, so the sparse head carries both files
+              ['head sparse guard path', /^\s*sparse-checkout: \|\n\s*scripts\/check-pr-body\.mjs\n\s*scripts\/ci-job-count\.mjs\n/m, headStep],
               ['head close-target guard', /node \.head\/scripts\/check-pr-body\.mjs\n\s*--body-file "\$\{BODY_FILE\}" --close-target-only/, prBodyJob],
               ['head full-anchor guard', /node \.head\/scripts\/check-pr-body\.mjs\n\s*--body-file "\$\{BODY_FILE\}"\s*$/m, prBodyJob]
           ];

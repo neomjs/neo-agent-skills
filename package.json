@@ -1,6 +1,6 @@
 {
   "name": "neo-agent-skills",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "The working rules (skills) the cross-model Neo.mjs agent team loads every session: ticket intake, PR review gates, lane coordination and guards, versioned as one package. For apps built on Neo.mjs, for contributors, and for anyone who wants to read them.",
   "type": "module",
   "license": "MIT",
@@ -50,6 +50,7 @@
     "scripts/check-guides.mjs",
     "scripts/check-npm-overrides.mjs",
     "scripts/check-pr-body.mjs",
+    "scripts/ci-job-count.mjs",
     "scripts/check-pr-review-body.mjs",
     "scripts/check-secrets.mjs",
     "scripts/check-substrate-size.mjs",

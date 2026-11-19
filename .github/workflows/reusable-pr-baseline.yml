@@ -390,13 +390,19 @@ jobs:
           echo "${AUTHOR_LOGIN} is a GitHub App, whose pull request resolves no ticket,
           so its close target is not judged."
 
+      # `--base` adds one rule: a diff whose workflows start more runner jobs than the base needs a `CI jobs:` line
+      # saying why they cannot join an existing job (20 runner slots across the org). The guard reads the
+      # checked-out workflows as data and runs none of them, so it needs the workspace as its root.
       - name: Validate the required anchors
         if: ${{ !cancelled() && (startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai')) }}
+        working-directory: ${{ github.workspace }}
         env:
-          BODY_FILE  : ${{ runner.temp }}/pr-body.md
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
           SKILLS_ROOT: ${{ runner.temp }}/neo-agent-skills-guards
         run: >-
           "${SKILLS_ROOT}/node_modules/.bin/neo-agent-skills-pr-body"
+          --base "${BASE_SHA}"
           --body-file "${BODY_FILE}"
 
   skills-materialized:

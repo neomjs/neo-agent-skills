@@ -254,6 +254,11 @@ export function validateReusablePrBaseline(source) {
               ['PR-body isolated runner root', GUARD_ROOT, closeTargetStep],
               ['PR-body anchors isolated absolute bin', bin('neo-agent-skills-pr-body'), anchorsStep],
               ['PR-body anchors isolated runner root', GUARD_ROOT, anchorsStep],
+              // The CI-jobs rule compares the checked-out workflows with the pull request's base. Without `--base`
+              // it is never judged, and outside the workspace it reads no workflows, so both fail open.
+              ['PR-body anchors compare CI jobs against the base', /--base "\$\{BASE_SHA\}"/, anchorsStep],
+              ['PR-body anchors base from the pull request', BASE_SHA, anchorsStep],
+              ['PR-body anchors read the caller workspace', WORKSPACE, anchorsStep],
               ['guards input default', /^      guards:\n(?:        .*\n)*?        default: '\[\]'\n/m],
               ['guards job id', /^  guards:\n/m],
               ['guards stable name', /^    name: guards\n/m, guardsJob],
@@ -944,6 +949,13 @@ expectMutationFailure('PR-body body into a shell-visible env', source,
     'PR-body content reaches a shell-visible env value');
 
 const AGENT_GATE = "        if: ${{ !cancelled() && (startsWith(github.event.pull_request.user.login, 'neo-') || contains(github.event.pull_request.labels.*.name, 'ai')) }}\n";
+
+expectMutationFailure('PR-body anchors without the CI-jobs base', source,
+    inStep('Validate the required anchors', '          --base "${BASE_SHA}"\n', ''),
+    'missing PR-body anchors compare CI jobs against the base');
+expectMutationFailure('PR-body anchors outside the workspace', source,
+    inStep('Validate the required anchors', '        working-directory: ${{ github.workspace }}\n', ''),
+    'missing PR-body anchors read the caller workspace');
 
 expectMutationFailure('PR-body anchors ungated', source,
     value => value.replace(`      - name: Validate the required anchors\n${AGENT_GATE}`, "      - name: Validate the required anchors\n        if: ${{ !cancelled() }}\n"),
