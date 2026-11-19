@@ -7,7 +7,16 @@ import {mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir}                                 from 'node:os';
 import {dirname, join}                          from 'node:path';
 import {fileURLToPath}                          from 'node:url';
-import {VISIBLE_PR_BODY_ANCHORS, INVISIBLE_PR_BODY_ANCHORS, findBodyViolations, findImageEmbedViolations, hasAnchor, run} from './check-pr-body.mjs';
+import {
+    FRAME_CRITIQUE_ANCHOR,
+    INVISIBLE_PR_BODY_ANCHORS,
+    VISIBLE_PR_BODY_ANCHORS,
+    findBodyViolations,
+    findFrameCritiqueViolations,
+    findImageEmbedViolations,
+    hasAnchor,
+    run
+} from './check-pr-body.mjs';
 
 const
     here      = dirname(fileURLToPath(import.meta.url)),
@@ -309,9 +318,10 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
         rawRefs    = 'https://raw.githubusercontent.com/neomjs/neo-stage/refs/heads/dev/docs/ref.png',
         blobRefs   = 'https://github.com/neomjs/neo-stage/blob/dev/docs/ref.png?raw=true';
 
-    // Markdown image embed yields a visible finding naming the URL and its blob/...?raw=true replacement.
+    // Markdown image embed yields a visible finding naming the URL and its blob/...?raw=true replacement. The bodies
+    // here critique their frames, so the 404 rule is the only one under test.
     {
-        const body   = goodBody(`\n![before](${rawBefore})`),
+        const body   = goodBody(`\nFrame critique: none seen.\n![before](${rawBefore})`),
               res    = findBodyViolations({body}),
               cliRes = cli([], body);
 
@@ -338,6 +348,7 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     // Fenced blocks, indented code blocks, inline code spans, plain links, and blob/...?raw=true embeds stay green.
     const allowed = goodBody([
         '',
+        'Frame critique: none seen.',
         '```md',
         `![fenced](${rawBefore})`,
         `<img src="${rawAfter}">`,
@@ -359,6 +370,28 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     assert.deepEqual(findImageEmbedViolations(allowed), [], 'non-embed or code-wrapped raw URLs and blob?raw=true embeds must not trigger');
     assert.deepEqual(findBodyViolations({body: allowed}).visible, [], 'allowed forms must keep findBodyViolations green');
     assert.equal(cli([], allowed).code, 0, 'allowed forms must exit 0')
+}
+
+// ── A body that embeds a frame says what is wrong in it ────────────────────────────────────────
+{
+    const
+        frame   = '![changed](https://github.com/neomjs/neo/blob/0b7fa4a/review-evidence/after.png?raw=true)',
+        refused = extra => findFrameCritiqueViolations(goodBody(`\n${frame}${extra}`)).length === 1;
+
+    assert.deepEqual(findFrameCritiqueViolations(goodBody()), [], 'a body without a frame needs no critique');
+    assert.ok(refused(''), 'a frame without a critique is refused');
+    assert.ok(findFrameCritiqueViolations(goodBody(`\n${frame}`))[0].startsWith(FRAME_CRITIQUE_ANCHOR), 'the finding names the line');
+    assert.ok(findFrameCritiqueViolations(goodBody('\n<img src="https://github.com/o/r/blob/1/a.png?raw=true" width="300">')).length === 1, 'an <img> frame counts too');
+    assert.ok(!refused('\n\n- **Frame critique:** the proxy clears the target; the outline is whole.'), 'a critique line satisfies it, list and bold included');
+    assert.ok(refused('\n\n```md\nFrame critique: none seen.\n```'), 'a fenced line is documentation, not the line');
+    assert.ok(refused('\n\nThe `Frame critique:` line comes later.'), 'an inline code mention is not the line');
+    assert.ok(refused('\n\n    Frame critique: none seen.'), 'an indented code line is not the line');
+
+    const cliRes = cli([], goodBody(`\n${frame}`));
+
+    assert.equal(cliRes.code, 1, 'the CLI refuses the body');
+    assert.ok(cliRes.text.includes(`First missing: ${FRAME_CRITIQUE_ANCHOR}`), 'and names the line');
+    assert.equal(cli(['--close-target-only'], goodBody(`\n${frame}`)).code, 0, 'a human PR is judged on its close target alone')
 }
 
 // ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────

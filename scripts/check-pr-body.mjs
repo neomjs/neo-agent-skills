@@ -407,6 +407,30 @@ export function findImageEmbedViolations(body = '') {
 }
 
 /**
+ * The line a body that embeds a frame carries: what a reviewer could fault in each frame, and what became of it.
+ * @member {String} FRAME_CRITIQUE_ANCHOR
+ */
+export const FRAME_CRITIQUE_ANCHOR = 'Frame critique:';
+
+/**
+ * @summary Refuses a body that embeds a frame without a `Frame critique:` line, the author's own look for defects.
+ *
+ * The line counts in content only, as the anchors do, and not inside an inline code span, where it is a mention.
+ * @param {String} [body=''] Pull-request body.
+ * @returns {String[]} The one violation, or none.
+ */
+export function findFrameCritiqueViolations(body = '') {
+    const lines = markdownContentLines(body);
+
+    if (!lines.some(line => lineImageEmbedUrls(line).length > 0)
+        || lines.some(line => stripInlineCodeSpans(line).includes(FRAME_CRITIQUE_ANCHOR))) {
+        return []
+    }
+
+    return [`${FRAME_CRITIQUE_ANCHOR} the body embeds a frame. Name what a reviewer could fault in each one (overlap, clipping, a cut-off outline, a truncated label, siblings that differ) and what became of it.`]
+}
+
+/**
  * @summary Returns every reason this body must be refused, in the order a reader should fix them.
  *
  * Pure and transport-free: the same body yields the same findings whether it came from a webhook, a
@@ -420,7 +444,7 @@ export function findBodyViolations({body = ''} = {}) {
         visible   = VISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
         invisible = INVISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor);
 
-    visible.push(...findCloseTargetViolations(body), ...findImageEmbedViolations(body));
+    visible.push(...findCloseTargetViolations(body), ...findImageEmbedViolations(body), ...findFrameCritiqueViolations(body));
 
     return {invisible, visible}
 }
