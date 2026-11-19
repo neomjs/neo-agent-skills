@@ -31,6 +31,8 @@ const
     WORKSPACE    = /^\s*working-directory: \$\{\{ github\.workspace \}\}\s*$/m,
     BASE_SHA     = /^\s*BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}\s*$/m,
     PR_HEAD      = /^\s*ref: \$\{\{ github\.event\.pull_request\.head\.sha \}\}\s*$/m,
+    // A job-level condition (four spaces) that skips a merged pull request's events
+    MERGED_SKIP  = /^    if: \$\{\{[^\n]*github\.event\.pull_request\.merged != true[^\n]*\}\}\n/m,
     VERSION      = /^\s*SKILLS_VERSION: \$\{\{ steps\.version\.outputs\.version \}\}\s*$/m,
     bin          = name => new RegExp(`"\\$\\{SKILLS_ROOT\\}/node_modules/\\.bin/${name}"`),
     // The PR-baseline steps that run under more than `!cancelled()`, each gate whole. Every other step after the
@@ -262,7 +264,11 @@ export function validateReusablePrBaseline(source) {
               ['guards input default', /^      guards:\n(?:        .*\n)*?        default: '\[\]'\n/m],
               ['guards job id', /^  guards:\n/m],
               ['guards stable name', /^    name: guards\n/m, guardsJob],
-              ['guards job skipped without a list', /^    if: \$\{\{ inputs\.guards != '\[\]' \}\}\n/m, guardsJob],
+              ['guards job skipped without a list', /^    if: \$\{\{ inputs\.guards != '\[\]'(?: && [^\n]*)? \}\}\n/m, guardsJob],
+              // A merged head cannot merge again, so its events start no runner; any other event runs every job
+              ['PR baseline skipped on a merged pull request', MERGED_SKIP, baselineJob],
+              ['skills job skipped on a merged pull request', MERGED_SKIP, skillsJob],
+              ['guards job skipped on a merged pull request', MERGED_SKIP, guardsJob],
               ['guards caller checkout', /uses: actions\/checkout@v\d+/, guardsJob],
               ['guards Node input', /node-version: \$\{\{ inputs\.node_version \}\}/, guardsJob],
               ['guards lockfile install', /run: npm ci/, guardsJob],
@@ -272,6 +278,10 @@ export function validateReusablePrBaseline(source) {
     required.forEach(([label, pattern, target = source]) => {
         if (!pattern.test(target)) failures.push(`missing ${label}`)
     });
+
+    // One context carries every verdict, so a job skipped on an open pull request's edit would report a skipped
+    // (successful) check beside another event's red on the same head
+    if (/^    if: [^\n]*github\.event\.action/m.test(source)) failures.push('a job gated on the event action');
 
     const triggerBlock = source.match(/^on:\n([\s\S]*?)\njobs:/m)?.[1] || '';
 
@@ -655,8 +665,8 @@ expectMutationFailure('permissions', source,
     value => value.replace('contents: read', 'contents: write'),
     'missing read-only contents');
 expectMutationFailure('write-all shorthand', source,
-    value => value.replace('  skills-materialized:\n    name: Skills materialized\n    runs-on: ubuntu-latest\n',
-                           '  skills-materialized:\n    name: Skills materialized\n    runs-on: ubuntu-latest\n    permissions: write-all\n'),
+    value => value.replace('    name: Skills materialized\n    if: ${{ github.event.pull_request.merged != true }}\n    runs-on: ubuntu-latest\n',
+                           '    name: Skills materialized\n    if: ${{ github.event.pull_request.merged != true }}\n    runs-on: ubuntu-latest\n    permissions: write-all\n'),
     'write permission present');
 
 // ── The two-job boundary: the caller's install never shares a job with the guards ─────────────────
@@ -1030,8 +1040,25 @@ expectMutationFailure('PR-body runner root — suffixed root', source,
 
 // The guards job: each arm breaks one property the caller's single context stands behind
 expectMutationFailure('guards skip gate', source,
-    value => value.replace("    if: ${{ inputs.guards != '[]' }}\n", ''),
+    value => value.replace("    if: ${{ inputs.guards != '[]' && github.event.pull_request.merged != true }}\n",
+        '    if: ${{ github.event.pull_request.merged != true }}\n'),
     'missing guards job skipped without a list');
+
+// A merged pull request's events: each job keeps its own skip, and no job skips an open pull request's edit
+expectMutationFailure('PR baseline runs on a merged pull request', source,
+    value => value.replace('    name: PR baseline\n    if: ${{ github.event.pull_request.merged != true }}\n', '    name: PR baseline\n'),
+    'missing PR baseline skipped on a merged pull request');
+expectMutationFailure('skills job runs on a merged pull request', source,
+    value => value.replace('    name: Skills materialized\n    if: ${{ github.event.pull_request.merged != true }}\n', '    name: Skills materialized\n'),
+    'missing skills job skipped on a merged pull request');
+expectMutationFailure('guards job runs on a merged pull request', source,
+    value => value.replace("    if: ${{ inputs.guards != '[]' && github.event.pull_request.merged != true }}\n",
+        "    if: ${{ inputs.guards != '[]' }}\n"),
+    'missing guards job skipped on a merged pull request');
+expectMutationFailure('skills job skips an open pull request edit', source,
+    value => value.replace('    name: Skills materialized\n    if: ${{ github.event.pull_request.merged != true }}\n',
+        "    name: Skills materialized\n    if: ${{ github.event.pull_request.merged != true && github.event.action != 'edited' }}\n"),
+    'a job gated on the event action');
 expectMutationFailure('guards list interpolated', source,
     value => value.replace("const {GITHUB_STEP_SUMMARY = '', GUARDS = ''} = process.env;",
         "const {GITHUB_STEP_SUMMARY = ''} = process.env, GUARDS = '${{ inputs.guards }}';"),
