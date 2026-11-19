@@ -332,6 +332,8 @@ Evidence: L<X> (<sandbox-ceiling description>) → L<Y> required (<close-target 
 
 Micro-review eligible: <class> — <one line why>   ← optional (pr-review-guide §6.4)
 
+CI jobs: +N — <why they cannot join an existing job>   ← when the diff starts more runner jobs (20 slots, org-wide)
+
 ## AC Evidence
 | AC-1 | <CI-covered: owning spec reference> |
 | AC-2 | <outside-CI: command + receipt> |

@@ -24,10 +24,12 @@
  * guards. Both are fixed by being here: consumers call one stable job through an immutable release.
  */
 
-import {readFileSync, realpathSync} from 'node:fs';
-import process                      from 'node:process';
-import {parseArgs}                  from 'node:util';
-import {fileURLToPath}              from 'node:url';
+import {execFileSync}                       from 'node:child_process';
+import {readFileSync, realpathSync}         from 'node:fs';
+import process                              from 'node:process';
+import {parseArgs}                          from 'node:util';
+import {fileURLToPath}                      from 'node:url';
+import {compareRunnerJobs, readWorkflows}   from './ci-job-count.mjs';
 
 /**
  * Anchors named in the enumeration a seat reads. A body missing one is told which.
@@ -431,22 +433,75 @@ export function findFrameCritiqueViolations(body = '') {
 }
 
 /**
+ * The line a body carries when its diff starts more CI runner jobs: how many, and why they cannot join an existing job.
+ * @member {String} CI_JOBS_ANCHOR
+ */
+export const CI_JOBS_ANCHOR = 'CI jobs:';
+
+/**
+ * @summary Refuses a body whose diff starts more CI runner jobs without a `CI jobs:` line that says why.
+ *
+ * The org's CI has 20 concurrent runner jobs, so a new workflow, job, matrix entry or shard is paid for by every pull
+ * request that waits for a runner. The line counts in content only, outside inline code spans.
+ * @param {String} [body=''] Pull-request body.
+ * @param {Object} [ciJobs] `compareRunnerJobs()`'s result for the diff; absent, the rule is not judged
+ * @returns {String[]} The one violation, or none.
+ */
+export function findCiJobViolations(body = '', ciJobs) {
+    if (!ciJobs || ciJobs.head <= ciJobs.base
+        || markdownContentLines(body).some(line => stripInlineCodeSpans(line).includes(CI_JOBS_ANCHOR))) {
+        return []
+    }
+
+    const grown = ciJobs.grown.map(({key, from, to}) => `${key} ${from} → ${to}`).join(', ');
+
+    return [`${CI_JOBS_ANCHOR} the diff starts ${ciJobs.head - ciJobs.base} more runner job(s), ${ciJobs.base} → ${ciJobs.head} (${grown}). CI has 20 concurrent runner jobs across the org: join an existing job, or say why not on a "${CI_JOBS_ANCHOR} +N — <reason>" line.`]
+}
+
+/**
  * @summary Returns every reason this body must be refused, in the order a reader should fix them.
  *
  * Pure and transport-free: the same body yields the same findings whether it came from a webhook, a
  * local file, or a test fixture.
  * @param {Object} options
  * @param {String} options.body Pull-request body.
+ * @param {Object} [options.ciJobs] `compareRunnerJobs()`'s result for the diff, when a base was given
  * @returns {{visible: String[], invisible: String[]}} `invisible` is never surfaced in prose.
  */
-export function findBodyViolations({body = ''} = {}) {
+export function findBodyViolations({body = '', ciJobs} = {}) {
     const
         visible   = VISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor),
         invisible = INVISIBLE_PR_BODY_ANCHORS.filter(spec => !hasAnchor(body, spec)).map(spec => spec.anchor);
 
-    visible.push(...findCloseTargetViolations(body), ...findImageEmbedViolations(body), ...findFrameCritiqueViolations(body));
+    visible.push(
+        ...findCloseTargetViolations(body),
+        ...findImageEmbedViolations(body),
+        ...findFrameCritiqueViolations(body),
+        ...findCiJobViolations(body, ciJobs)
+    );
 
     return {invisible, visible}
+}
+
+/**
+ * @summary The runner jobs the checked-out tree starts against a base commit, for `--base`.
+ * @param {String} base A commit-ish the repository holds
+ * @returns {Object} `compareRunnerJobs()`'s result
+ * @throws {Error} When the base is not a commit here: an unread base would judge nothing and pass
+ */
+function ciJobsAgainst(base) {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${base}^{commit}`], {encoding: 'utf8'});
+
+    const read = options => {
+        try {
+            return readWorkflows(options)
+        } catch {
+            // A tree without `.github/workflows` starts no jobs
+            return {}
+        }
+    };
+
+    return compareRunnerJobs(read({ref: base}), read({}))
 }
 
 /**
@@ -463,7 +518,11 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
         args            : argv,
         allowPositionals: false,
         strict          : true,
-        options         : {'body-file': {type: 'string'}, 'close-target-only': {type: 'boolean', default: false}}
+        options         : {
+            base               : {type: 'string'},
+            'body-file'        : {type: 'string'},
+            'close-target-only': {type: 'boolean', default: false}
+        }
     });
 
     let body = stdin;
@@ -492,7 +551,18 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
         return 1
     }
 
-    const {invisible, visible} = findBodyViolations({body});
+    let ciJobs;
+
+    if (parsed.values.base) {
+        try {
+            ciJobs = ciJobsAgainst(parsed.values.base)
+        } catch (cause) {
+            error(`check-pr-body: cannot compare CI jobs against ${parsed.values.base} — ${cause.message.split('\n')[0]}`);
+            return 1
+        }
+    }
+
+    const {invisible, visible} = findBodyViolations({body, ciJobs});
 
     if (!visible.length && !invisible.length) {
         out('✅ PR body carries every required anchor.');

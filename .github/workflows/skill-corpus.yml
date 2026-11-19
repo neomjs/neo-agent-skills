@@ -142,6 +142,8 @@ jobs:
             || { echo "substrate-size CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-pr-body.mjs' \
             || { echo "PR-body CLI missing from the tarball"; exit 1; }
+          tar tzf "$TARBALL" | grep -q 'package/scripts/ci-job-count.mjs' \
+            || { echo "PR-body CLI's job counter missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-ticket-body.mjs' \
             || { echo "ticket-body CLI missing from the tarball"; exit 1; }
           tar tzf "$TARBALL" | grep -q 'package/scripts/check-workflow-concurrency.mjs' \
@@ -311,7 +313,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: .head
-          sparse-checkout: scripts/check-pr-body.mjs
+          sparse-checkout: |
+            scripts/check-pr-body.mjs
+            scripts/ci-job-count.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
