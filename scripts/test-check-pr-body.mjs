@@ -7,7 +7,7 @@ import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:
 import {tmpdir}                                 from 'node:os';
 import {dirname, join}                          from 'node:path';
 import {fileURLToPath}                          from 'node:url';
-import {compareRunnerJobs, workflowJobs}        from './ci-job-count.mjs';
+import {compareRunnerJobs, readWorkflows, workflowJobs} from './ci-job-count.mjs';
 import {
     CI_JOBS_ANCHOR,
     FRAME_CRITIQUE_ANCHOR,
@@ -431,6 +431,9 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     assert.deepEqual(findCiJobViolations(goodBody(`\n${reason}`), wider), [], 'a reason satisfies it');
     assert.equal(findCiJobViolations(goodBody(`\n\`\`\`md\n${reason}\n\`\`\``), wider).length, 1, 'a fenced reason is documentation');
     assert.equal(findCiJobViolations(goodBody(`\nThe \`${CI_JOBS_ANCHOR}\` line comes later.`), wider).length, 1, 'an inline-code mention is not the line');
+    assert.equal(findCiJobViolations(goodBody(`\n${CI_JOBS_ANCHOR} +N — <why they cannot join an existing job>`), wider).length, 1, 'the unfilled template line is not a reason');
+    assert.equal(findCiJobViolations(goodBody(`\n${CI_JOBS_ANCHOR}`), wider).length, 1, 'a bare line is not a reason');
+    assert.equal(findCiJobViolations(goodBody(`\n${CI_JOBS_ANCHOR} +3 — <reason>`), wider).length, 1, 'a placeholder reason is not a reason');
     assert.deepEqual(findCiJobViolations(goodBody(), fewer), [], 'fewer jobs need no reason');
     assert.deepEqual(findCiJobViolations(goodBody(), undefined), [], 'without a base the rule is not judged');
     assert.deepEqual(findBodyViolations({body: goodBody(), ciJobs: wider}).visible, found, 'the body check reports it');
@@ -438,12 +441,12 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     // The CLI reads the base from git and the head from the working tree
     const repo = mkdtempSync(join(tmpdir(), 'pr-body-ci-')),
           git  = (...args) => spawnSync('git', ['-c', 'user.email=ci@example.com', '-c', 'user.name=ci', ...args], {cwd: repo, encoding: 'utf8'}),
-          cliIn = (args, body) => {
+          cliIn = (args, body, cwd = repo) => {
               const file = join(repo, 'body.md');
 
               writeFileSync(file, body);
 
-              const result = spawnSync(process.execPath, [CLI_GUARD, '--body-file', file, ...args], {cwd: repo, encoding: 'utf8'});
+              const result = spawnSync(process.execPath, [CLI_GUARD, '--body-file', file, ...args], {cwd, encoding: 'utf8'});
 
               return {code: result.status, text: `${result.stdout}${result.stderr}`}
           };
@@ -469,7 +472,36 @@ VISIBLE_PR_BODY_ANCHORS.concat(INVISIBLE_PR_BODY_ANCHORS).filter(spec => spec.ma
     const unread = cliIn(['--base', 'no-such-ref'], goodBody());
 
     assert.equal(unread.code, 1, 'a base git cannot read fails rather than judging nothing');
-    assert.ok(unread.text.includes('cannot compare CI jobs against no-such-ref'), 'and says so')
+    assert.ok(unread.text.includes('cannot compare CI jobs against no-such-ref'), 'and says so');
+
+    // The base is the fork point: a job the base cut after the branch forked is not the branch's to justify
+    git('commit', '-q', '-am', 'lint job');
+    git('checkout', '-q', '-b', 'feature');
+    writeFileSync(join(repo, 'notes.md'), 'a change outside the workflows\n');
+    git('add', 'notes.md');
+    git('commit', '-q', '-m', 'feature');
+    git('checkout', '-q', '-');
+    writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), base['ci.yml']);
+    git('commit', '-q', '-am', 'cut lint');
+
+    const tip = git('rev-parse', 'HEAD').stdout.trim();
+
+    git('checkout', '-q', 'feature');
+    assert.equal(cliIn(['--base', tip], goodBody()).code, 0, 'a branch forked before the base cut a job is not charged for it');
+
+    // Both sides read from the repository root, whatever the working directory
+    writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), workflow('[pull_request]', job('unit') + job('lint') + job('docs')));
+    mkdirSync(join(repo, 'sub'));
+    assert.equal(cliIn(['--base', 'HEAD'], goodBody(), join(repo, 'sub')).code, 1, 'a subdirectory still reads the tree\'s workflows');
+
+    // Only an absent workflows directory reads as no jobs; any other failure throws rather than counting zero
+    const bare  = mkdtempSync(join(tmpdir(), 'pr-body-ci-bare-')),
+          empty = git('commit-tree', '4b825dc642cb6eb9a060e54bf8d69288fbee4904', '-m', 'empty').stdout.trim();
+
+    scratch.push(bare);
+    assert.deepEqual(readWorkflows({root: bare}), {}, 'a tree without .github/workflows starts no jobs');
+    assert.deepEqual(readWorkflows({root: repo, ref: empty}), {}, 'a commit without .github/workflows starts no jobs');
+    assert.throws(() => readWorkflows({root: repo, ref: 'no-such-ref'}), 'a ref git cannot read throws')
 }
 
 // ── A body file is read the same whatever stdin is, and no path passes an empty body ───────────

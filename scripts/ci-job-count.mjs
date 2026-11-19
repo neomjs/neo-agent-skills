@@ -10,8 +10,8 @@
  * Line-based on purpose: the package carries no YAML parser, and workflow structure keys sit at fixed indents.
  * @module scripts/ci-job-count
  */
-import {execFileSync}           from 'node:child_process';
-import {readdirSync, readFileSync} from 'node:fs';
+import {execFileSync, spawnSync} from 'node:child_process';
+import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {join}                   from 'node:path';
 
 const
@@ -188,23 +188,36 @@ export function compareRunnerJobs(base, head) {
 
 /**
  * @summary A repository's workflow files, at a git ref or in the working tree.
+ *
+ * Only an absent `.github/workflows` reads as no files, since such a tree starts no jobs. Any other failure throws:
+ * an unread side would compare as zero jobs and pass.
  * @param {Object} options
  * @param {String} [options.root=process.cwd()] The repository root
  * @param {String} [options.ref] A commit-ish to read from; omitted, the working tree
  * @returns {Object<String, String>} File name → YAML
+ * @throws {Error} When `ref` is not a commit, or a workflow cannot be read
  */
 export function readWorkflows({root = process.cwd(), ref} = {}) {
     const dir   = '.github/workflows',
           files = {};
 
     if (ref) {
-        const names = execFileSync('git', ['ls-tree', '--name-only', `${ref}:${dir}`], {cwd: root, encoding: 'utf8'})
-            .split('\n').filter(name => WORKFLOW_FILE.test(name));
+        const git = (...args) => execFileSync('git', args, {cwd: root, encoding: 'utf8', maxBuffer: 2 ** 26});
 
-        for (const name of names) {
-            files[name] = execFileSync('git', ['show', `${ref}:${dir}/${name}`], {cwd: root, encoding: 'utf8', maxBuffer: 2 ** 26})
+        git('rev-parse', '--verify', '--quiet', `${ref}^{commit}`);
+
+        if (spawnSync('git', ['cat-file', '-e', `${ref}:${dir}`], {cwd: root}).status !== 0) {
+            return files
         }
 
+        for (const name of git('ls-tree', '--name-only', `${ref}:${dir}`).split('\n').filter(name => WORKFLOW_FILE.test(name))) {
+            files[name] = git('show', `${ref}:${dir}/${name}`)
+        }
+
+        return files
+    }
+
+    if (!existsSync(join(root, dir))) {
         return files
     }
 

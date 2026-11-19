@@ -439,6 +439,12 @@ export function findFrameCritiqueViolations(body = '') {
 export const CI_JOBS_ANCHOR = 'CI jobs:';
 
 /**
+ * A filled {@link CI_JOBS_ANCHOR} line: a number of jobs and a reason, not the template's `+N` or `<…>` placeholders.
+ * @member {RegExp} CI_JOBS_LINE
+ */
+const CI_JOBS_LINE = new RegExp(`${CI_JOBS_ANCHOR}\\s*\\+\\d+\\s*[—–-]+\\s*[^\\s<]`);
+
+/**
  * @summary Refuses a body whose diff starts more CI runner jobs without a `CI jobs:` line that says why.
  *
  * The org's CI has 20 concurrent runner jobs, so a new workflow, job, matrix entry or shard is paid for by every pull
@@ -449,13 +455,13 @@ export const CI_JOBS_ANCHOR = 'CI jobs:';
  */
 export function findCiJobViolations(body = '', ciJobs) {
     if (!ciJobs || ciJobs.head <= ciJobs.base
-        || markdownContentLines(body).some(line => stripInlineCodeSpans(line).includes(CI_JOBS_ANCHOR))) {
+        || markdownContentLines(body).some(line => CI_JOBS_LINE.test(stripInlineCodeSpans(line)))) {
         return []
     }
 
     const grown = ciJobs.grown.map(({key, from, to}) => `${key} ${from} → ${to}`).join(', ');
 
-    return [`${CI_JOBS_ANCHOR} the diff starts ${ciJobs.head - ciJobs.base} more runner job(s), ${ciJobs.base} → ${ciJobs.head} (${grown}). CI has 20 concurrent runner jobs across the org: join an existing job, or say why not on a "${CI_JOBS_ANCHOR} +N — <reason>" line.`]
+    return [`${CI_JOBS_ANCHOR} the diff starts ${ciJobs.head - ciJobs.base} more runner job(s), ${ciJobs.base} → ${ciJobs.head} (${grown}). CI has 20 concurrent runner jobs across the org: join an existing job, or say why not on a "${CI_JOBS_ANCHOR} +N — <reason>" line, with N a number and the reason filled in.`]
 }
 
 /**
@@ -484,24 +490,19 @@ export function findBodyViolations({body = '', ciJobs} = {}) {
 }
 
 /**
- * @summary The runner jobs the checked-out tree starts against a base commit, for `--base`.
+ * @summary The runner jobs the checked-out tree starts against the commit it forked from, for `--base`.
+ *
+ * The fork point, not the base's tip: a job the base cut after the branch forked is not the branch's to justify. Both
+ * sides read from the repository root, whatever the working directory.
  * @param {String} base A commit-ish the repository holds
  * @returns {Object} `compareRunnerJobs()`'s result
- * @throws {Error} When the base is not a commit here: an unread base would judge nothing and pass
+ * @throws {Error} When the base shares no history here, or a side cannot be read: an unread side would judge nothing and pass
  */
 function ciJobsAgainst(base) {
-    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${base}^{commit}`], {encoding: 'utf8'});
+    const git  = (...args) => execFileSync('git', args, {encoding: 'utf8'}).trim(),
+          root = git('rev-parse', '--show-toplevel');
 
-    const read = options => {
-        try {
-            return readWorkflows(options)
-        } catch {
-            // A tree without `.github/workflows` starts no jobs
-            return {}
-        }
-    };
-
-    return compareRunnerJobs(read({ref: base}), read({}))
+    return compareRunnerJobs(readWorkflows({root, ref: git('merge-base', base, 'HEAD')}), readWorkflows({root}))
 }
 
 /**
