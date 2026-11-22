@@ -276,6 +276,28 @@ It is off by default, so an upgrade adds no check a caller did not ask for. `gui
 A repository whose guides name another repository's scripts skips `dead-script-ref` here and lets the repository
 that owns those scripts run the rule.
 
+## Shared public-docs lint
+
+```bash
+npx --no-install neo-agent-skills-public-docs --spoke neomjs/devindex
+```
+
+The default-deny publish lint each public spoke's CI runs. `docs/public-manifest.json` names every guide the hub may
+publish, and the lint fails closed on whatever must not publish:
+- **Structure:** `schema`, `spoke` (it must equal `--spoke`), `treeFile`, `entries` and one mount shape. A `treeMount`
+  is one folder the hub creates, so routes are `/learn/<treeMount.id>/<leaf id>`. `treeMounts` are folders of the
+  spoke's own tree, so routes are `/learn/<leaf id>`. Tree leaves and entries match 1:1, each file is a normalized
+  `learn/<leaf id>.md`, and each route is unique.
+- **Content of every admitted guide:** no real host path, no private-repository identifier, no forbidden term, and no
+  relative link outside code that misses the admitted set.
+- **Optional fields:** `excludedDirs` lists the record directories under `learn/` that no entry may name.
+  `sourceLinkRoots` lists the repository directories a guide may link into; such a link must reach a path git tracks.
+
+Forbidden terms are client names, so they arrive comma-separated in `NEO_PUBLIC_DOCS_FORBIDDEN_TERMS`, never in a file.
+A finding names a term by its position in that list, and the summary line counts the terms the run checked. The bin
+exits 0 on a pass and 1 on findings. It exits 2 on a usage error, or on a source link it cannot judge outside a git
+checkout.
+
 ## Shared PR-review check
 
 ```bash
