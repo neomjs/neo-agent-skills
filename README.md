@@ -292,6 +292,8 @@ publish, and the lint fails closed on whatever must not publish:
   relative link outside code that misses the admitted set.
 - **Optional fields:** `excludedDirs` lists the record directories under `learn/` that no entry may name.
   `sourceLinkRoots` lists the repository directories a guide may link into; such a link must reach a path git tracks.
+  Name only a root that the hub's link rewriters map back to the spoke (today the Brain's `ai/`); they map every other
+  root to `neomjs/neo`.
 
 Forbidden terms are client names, so they arrive comma-separated in `NEO_PUBLIC_DOCS_FORBIDDEN_TERMS`, never in a file.
 A finding names a term by its position in that list, and the summary line counts the terms the run checked. The bin

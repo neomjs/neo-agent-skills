@@ -16,7 +16,8 @@
  * **Content,** for every admitted guide: no real host path (`/Users/<name>/`, `/home/<name>/`, `C:\Users\<name>\`, or
  * a `file://` URL to one), no private-repository identifier, no forbidden term, and no relative link outside code that
  * misses the admitted set. A link may leave `learn/` only into a `sourceLinkRoots` directory, and only to a path git
- * tracks there: a file on disk may be a local overlay the hub never receives.
+ * tracks there: a file on disk may be a local overlay the hub never receives. Name only a root that the hub's link
+ * rewriters map back to this repository, since they map every other root to the Engine repository.
  *
  * **Forbidden terms** are client names, so no public repository can hold them. They arrive comma-separated in
  * `NEO_PUBLIC_DOCS_FORBIDDEN_TERMS`. A finding names a term by its position in that list, never by its text, and every
