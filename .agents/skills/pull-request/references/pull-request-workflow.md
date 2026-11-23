@@ -345,7 +345,8 @@ e2e/visual/live/mutation. No structured list ⇒ `No structured ACs on #N`. Empt
 
 ## Test Evidence
 <OUTSIDE-CI evidence only: e2e/visual/live receipts + mutation/diagonal results (what a green suite
-cannot show). All coverage in CI ⇒ the single line `All coverage runs in CI.` Never restate
+cannot show). A bug fix ⇒ its real flow red on base: command + receipt, never a manufactured red.
+All coverage in CI ⇒ the single line `All coverage runs in CI.` Never restate
 CI-covered counts (red CI already means no review). A changed rendered surface ⇒ the whole page or
 tab as released and as changed; new or re-composed ⇒ also `## Cold look` (pr-review 📸 audit). A
 frame ⇒ a `Frame critique:` line: each visible defect, cold readers' too, and its fate.>
