@@ -6,7 +6,7 @@ Run this catalog at the end of `pr-review-guide.md` §0, before the defect audit
 
 | Trigger | Diagnostic question |
 |---|---|
-| Premise-invalid | Is the PR's stated premise false, such as claiming to resolve a ticket or implement a feature whose substrate has a different shape? |
+| Premise-invalid | Is the PR's stated premise false, such as claiming to resolve a ticket or implement a feature whose substrate has a different shape, or handling a state with no **In Practice** receipt? |
 | Upstream not graduated | Does the PR depend on a Discussion, parent ticket, or Epic that has not reached its required graduation or closure state? |
 | Author bypassed | Did the author bypass a specific authority boundary, such as self-marking another peer's Discussion as graduated or crossing `peer-role` non-execution without handoff? |
 | Anti-pattern instantiation | Does the change instantiate a pattern Neo doctrine forbids, such as named-maintainer orchestrator/worker mapping, framework-category drift, or banned shell editing? |
