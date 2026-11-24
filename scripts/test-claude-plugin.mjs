@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * @summary Parity, path-rewrite, cache-version, and directory-policy contract tests for `scripts/generate-claude-plugin.mjs` and `plugins/neo`.
+ * @summary Registry, parity, path-rewrite, cache-version, and directory-policy contract tests for
+ * `scripts/generate-claude-plugin.mjs`, every `plugins/<slug>/` bundle, and `.claude-plugin/marketplace.json`.
  */
 
 import assert                                                                                        from 'node:assert/strict';
@@ -11,8 +12,12 @@ import {fileURLToPath}                                                          
 import {
     BLOB_ROOT,
     ICON_REL,
-    PLUGIN_REL,
-    appSkillsFrom,
+    ICON_SOURCE_REL,
+    MARKETPLACE_REL,
+    MAX_DESCRIPTION,
+    PLUGIN_BUNDLES,
+    audienceSkillsFrom,
+    bundleSkills,
     checkPlugin,
     expectedPluginManifest,
     generatePlugin,
@@ -21,9 +26,12 @@ import {
 } from './generate-claude-plugin.mjs';
 
 const
+    PLUGIN_REL    = 'plugins/neo',
     here          = dirname(fileURLToPath(import.meta.url)),
     packageRoot   = resolve(here, '..'),
-    committedIcon = join(packageRoot, PLUGIN_REL, ICON_REL),
+    committedIcon = join(packageRoot, ICON_SOURCE_REL),
+    neoBundle     = PLUGIN_BUNDLES.find(bundle => bundle.slug === 'neo'),
+    silent        = {out: () => {}, error: () => {}},
     TEXT_EXTS     = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
     tempRoots     = [];
 
@@ -93,16 +101,23 @@ function createFixture() {
 }
 
 try {
-    // 1. Committed repository bundle passes `--check`, syncs `version` to `package.json`, and leaves zero repo-relative `.agents/skills/` paths.
+    // 1. Committed bundles and marketplace pass `--check`, sync `version` to `package.json`, and leave zero repo-relative `.agents/skills/` paths.
     const rootPkgVersion = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')).version;
-    assert.deepEqual(checkPlugin({root: packageRoot}), [], 'committed plugins/neo bundle must have zero drift');
-    assert.equal(run(['--check', '--root', packageRoot], {out: () => {}, error: () => {}}), 0);
-    assert.equal(expectedPluginManifest(rootPkgVersion).version, rootPkgVersion);
+    assert.deepEqual(checkPlugin({root: packageRoot}), [], 'committed plugin bundles and marketplace must have zero drift');
+    assert.equal(run(['--check', '--root', packageRoot], silent), 0);
+    assert.equal(expectedPluginManifest(neoBundle, rootPkgVersion).version, rootPkgVersion);
 
-    const committedManifest = JSON.parse(readFileSync(join(packageRoot, PLUGIN_REL, '.claude-plugin/plugin.json'), 'utf8'));
-    assert.equal(committedManifest.version, rootPkgVersion, 'plugin.json version must mirror root package.json version');
+    for (const bundle of PLUGIN_BUNDLES) {
+        const committedManifest = JSON.parse(readFileSync(join(packageRoot, 'plugins', bundle.slug, '.claude-plugin/plugin.json'), 'utf8'));
+        assert.equal(committedManifest.version, rootPkgVersion, `plugins/${bundle.slug} plugin.json version must mirror root package.json version`);
+        assert.ok(bundle.description.length <= MAX_DESCRIPTION, `plugins/${bundle.slug} description must fit the directory search cut`)
+    }
 
-    for (const file of walkTextFiles(join(packageRoot, PLUGIN_REL))) {
+    const marketplace = JSON.parse(readFileSync(join(packageRoot, MARKETPLACE_REL), 'utf8'));
+    assert.equal(marketplace.metadata.version, rootPkgVersion);
+    assert.deepEqual(marketplace.plugins.map(entry => entry.source), PLUGIN_BUNDLES.map(bundle => `./plugins/${bundle.slug}`));
+
+    for (const file of walkTextFiles(join(packageRoot, 'plugins'))) {
         const text = readFileSync(file, 'utf8');
         assert.equal(/(?<!\/)\.agents\/skills\//.test(text), false, `${file} must not contain repo-relative .agents/skills/ path`)
     }
@@ -110,7 +125,7 @@ try {
     const authoringSkill = readFileSync(join(packageRoot, PLUGIN_REL, 'skills/neo-app-authoring/SKILL.md'), 'utf8');
     assert.ok(authoringSkill.includes('${CLAUDE_SKILL_DIR}/references/app-authoring-guide.md'));
 
-    // 2. `rewriteSkillText` maps own skill -> `${CLAUDE_SKILL_DIR}`, sibling app skill -> `${CLAUDE_PLUGIN_ROOT}`, maintainer skill -> canonical HTTPS URL.
+    // 2. `rewriteSkillText` maps own skill -> `${CLAUDE_SKILL_DIR}`, bundled sibling -> `${CLAUDE_PLUGIN_ROOT}`, unbundled skill -> canonical HTTPS URL.
     {
         const rewritten = rewriteSkillText(
             'Own: `.agents/skills/neo-app-authoring/references/a.md`, sibling: `.agents/skills/neural-link/SKILL.md`, maintainer: (`.agents/skills/pr-review/audits/x.md`).',
@@ -123,13 +138,14 @@ try {
         )
     }
 
-    // 3. Fresh fixture materializes only `app` skills with rewritten paths and passes `--check`.
+    // 3. Fresh fixture materializes only `app` skills into `plugins/neo` with rewritten paths, writes the marketplace, and passes `--check`.
     {
         const
-            root     = createFixture(),
-            {skills} = generatePlugin({root});
+            root        = createFixture(),
+            [{skills}]  = generatePlugin({root});
 
         assert.deepEqual(skills, ['neo-app-authoring', 'neural-link']);
+        assert.deepEqual(JSON.parse(readFileSync(join(root, MARKETPLACE_REL), 'utf8')).plugins.map(entry => entry.name), ['neomjs']);
         assert.equal(lstatSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring')).isSymbolicLink(), false);
         assert.ok(lstatSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring')).isDirectory());
 
@@ -152,7 +168,7 @@ try {
         assert.equal(run(['--check', '--root', root], {out: () => {}, error: () => {}}), 1)
     }
 
-    // 5. Unrewritten `.agents/skills/` path or stale `"version"` in `plugin.json` fails closed (RA-1 & RA-2 guards).
+    // 5. Unrewritten `.agents/skills/` path or stale `"version"` in `plugin.json` fails closed.
     {
         const root = createFixture();
         generatePlugin({root});
@@ -230,12 +246,65 @@ try {
         };
         writeFileSync(manifestPath, JSON.stringify(updated, null, 2), 'utf8');
 
-        assert.deepEqual(appSkillsFrom(updated), ['context-recovery', 'neo-app-authoring', 'neural-link']);
-        assert.ok(checkPlugin({root}).some(line => line.includes('context-recovery: missing app-audience skill directory')))
+        assert.deepEqual(audienceSkillsFrom(updated, 'app'), ['context-recovery', 'neo-app-authoring', 'neural-link']);
+        assert.ok(checkPlugin({root}).some(line => line.includes('context-recovery: missing bundled skill directory')))
     }
 
     // 10. Unknown CLI flags return exit code 2.
-    assert.equal(run(['--unknown-flag'], {out: () => {}, error: () => {}}), 2);
+    assert.equal(run(['--unknown-flag'], silent), 2);
+
+    // 11. A second bundle with explicit skills projects its own tree: bundled siblings resolve inside the plugin,
+    //     unbundled skills resolve to HTTPS, the icon is copied, and the marketplace lists both bundles.
+    {
+        const
+            root    = createFixture(),
+            magnet  = {slug: 'magnet', name: 'magnet', displayName: 'Magnet', description: 'After /compact, rebuild the lane.', keywords: ['compaction'], skills: ['session-sunset', 'neural-link']},
+            bundles = [neoBundle, magnet];
+
+        generatePlugin({root, bundles});
+
+        const
+            linkSkill   = readFileSync(join(root, 'plugins/magnet/skills/neural-link/SKILL.md'), 'utf8'),
+            sunsetSkill = readFileSync(join(root, 'plugins/magnet/skills/session-sunset/SKILL.md'), 'utf8'),
+            market      = JSON.parse(readFileSync(join(root, MARKETPLACE_REL), 'utf8'));
+
+        assert.deepEqual(readdirSync(join(root, 'plugins/magnet/skills')).sort(), ['neural-link', 'session-sunset']);
+        assert.ok(linkSkill.includes('${CLAUDE_SKILL_DIR}/references/guide.md'));
+        assert.ok(linkSkill.includes('${CLAUDE_PLUGIN_ROOT}/skills/session-sunset/references/guide.md'));
+        assert.ok(sunsetSkill.includes('${CLAUDE_SKILL_DIR}/references/guide.md'));
+        assert.ok(lstatSync(join(root, 'plugins/magnet', ICON_REL)).isFile());
+        assert.deepEqual(market.plugins.map(entry => [entry.name, entry.source]), [['neomjs', './plugins/neo'], ['magnet', './plugins/magnet']]);
+        assert.deepEqual(checkPlugin({root, bundles}), []);
+
+        // The default registry does not know `plugins/magnet`: an unregistered bundle directory fails closed.
+        assert.ok(checkPlugin({root}).some(line => line.includes('plugins/magnet: not registered in PLUGIN_BUNDLES')))
+    }
+
+    // 12. A marketplace out of step with the registry or the package version fails closed.
+    {
+        const root = createFixture();
+        generatePlugin({root});
+        writeFileSync(join(root, 'package.json'), JSON.stringify({name: 'neo-agent-skills', version: '2.6.1'}, null, 2) + '\n', 'utf8');
+
+        assert.ok(checkPlugin({root}).some(line => line.includes(`${MARKETPLACE_REL}: content out of sync with generator`)))
+    }
+
+    // 13. Registry errors fail closed: an unknown skill, both or neither selector, a duplicate name, an over-long description.
+    {
+        const
+            root     = createFixture(),
+            manifest = JSON.parse(readFileSync(join(root, '.agents/skills/skills.manifest.json'), 'utf8')),
+            base     = {slug: 'x', name: 'x', displayName: 'X', description: 'X.', keywords: []};
+
+        assert.throws(() => bundleSkills({...base, skills: ['no-such-skill']}, manifest), /has no no-such-skill/);
+        assert.throws(() => bundleSkills({...base, skills: ['neural-link'], audience: 'app'}, manifest), /exactly one of skills or audience/);
+        assert.throws(() => bundleSkills(base, manifest), /exactly one of skills or audience/);
+
+        generatePlugin({root});
+        const findings = checkPlugin({root, bundles: [neoBundle, {...neoBundle, slug: 'neo2', description: 'x'.repeat(MAX_DESCRIPTION + 1)}]});
+        assert.ok(findings.some(line => line.includes("duplicate name 'neomjs'")));
+        assert.ok(findings.some(line => line.includes(`description is ${MAX_DESCRIPTION + 1} characters`)))
+    }
 
     console.log('✅ claude-plugin contract checks pass.')
 } finally {

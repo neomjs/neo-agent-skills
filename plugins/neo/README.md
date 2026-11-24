@@ -1,11 +1,12 @@
 # Neo.mjs — Official Claude Plugin
 
-Author and live-inspect multi-threaded **Neo.mjs** applications across Web Workers, SharedWorkers, and native browser windows.
+Build data grids, Gantt charts, schedulers, kanban boards and multi-window web desktops with Neo.mjs, which runs components, stores and state in workers, off the main thread. Includes the Neural Link workflow: inspect and patch a running app's live component tree, stores and DOM instead of reloading and screenshotting.
 
 Neo.mjs keeps UI components, data stores, and state providers alive as persistent object graphs off the main thread. Pair these bundled skills with the published `neo-neural-link` MCP bridge so Claude can inspect the live component tree, query stores and state providers, simulate events, measure DOM geometry, and hot-patch running code without reloads.
 
 ## Install
 
+- **Marketplace (Claude Code):** run `claude plugin marketplace add neomjs/neo-agent-skills`, then `claude plugin install neomjs@neomjs`.
 - **Claude Directory (Claude Code, Cowork, Claude apps):** install **Neo.mjs** (`neomjs`) from `https://claude.ai/directory`.
 - **From a local clone (`neomjs/neo-agent-skills`):** run `claude --plugin-dir ./plugins/neo`.
 
@@ -17,7 +18,7 @@ The bundled `neural-link` skill drives the `neo-neural-link` MCP tools. Because 
 claude mcp add neo-neural-link -- npx -y neo-neural-link
 ```
 
-## Bundled Skills (`app` audience)
+## Bundled Skills
 
 - **`context-recovery`** — Post-compaction runbook for reconstructing active lane state; use immediately after context compaction/compression, resuming a summarized session, or detecting a lossy summary.
 - **`neo-app-authoring`** — Write app code in a neo.mjs workspace the engine's way: classes, reactive configs, stores, state providers, CSS. Triggers: before writing or changing anything under apps/ in a workspace built on neo.mjs.

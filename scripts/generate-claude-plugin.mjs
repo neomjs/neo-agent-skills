@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 /**
- * @summary Materializes and verifies the `plugins/neo` Claude Code Plugin Bundle from `skills.manifest.json`.
+ * @summary Materializes and verifies the Claude Code plugin bundles under `plugins/<slug>/` and the root
+ * `.claude-plugin/marketplace.json` from `PLUGIN_BUNDLES` and `skills.manifest.json`.
  *
- * Projects every `audiences: ["app"]` skill into `plugins/neo/skills/<name>/` as real files (`ARCHIVE_SYMLINK_EXEC_SURFACE`
- * forbids Git symlinks in Anthropic Directory archives) while rewriting repo-relative `.agents/skills/` references so
- * installed plugins resolve their own payloads inside `~/.claude/plugins/cache/`:
- * - `.agents/skills/<own-skill>/...`        -> `${CLAUDE_SKILL_DIR}/...`
- * - `.agents/skills/<other-app-skill>/...`  -> `${CLAUDE_PLUGIN_ROOT}/skills/<other-app-skill>/...`
- * - `.agents/skills/<maintainer-skill>/...` -> `https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/<maintainer-skill>/...`
+ * `PLUGIN_BUNDLES` is harness-neutral: each entry names a slug, the plugin, the description a model reads when it
+ * decides to install, and its skills. This file is the Claude projector (`plugin.json`, `marketplace.json`); another
+ * harness's catalog is another projector over the same registry.
  *
- * `.claude-plugin/plugin.json` mirrors root `package.json`'s `version` (enforced to bump on every maintainer release by
- * `scripts/check-version-bump.mjs` and auto-synced via the `npm version` lifecycle script) so Claude Code invalidates
- * `~/.claude/plugins/cache/` on every release (`code.claude.com/docs/en/plugins/loading#how-claude-code-computes-the-version`)
- * while satisfying semver validation cleanly.
+ * Every bundle's skills are projected as real files (`ARCHIVE_SYMLINK_EXEC_SURFACE` forbids Git symlinks in Anthropic
+ * Directory archives), with repo-relative `.agents/skills/` references rewritten so an installed plugin resolves its
+ * own payloads inside `~/.claude/plugins/cache/`:
+ * - `.agents/skills/<own-skill>/...`       -> `${CLAUDE_SKILL_DIR}/...`
+ * - `.agents/skills/<bundled-sibling>/...` -> `${CLAUDE_PLUGIN_ROOT}/skills/<bundled-sibling>/...`
+ * - `.agents/skills/<other-skill>/...`     -> `https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/<other-skill>/...`
+ *
+ * Every `plugin.json` and the marketplace mirror root `package.json`'s `version` (bumped on every maintainer release,
+ * enforced by `scripts/check-version-bump.mjs`, synced by the `npm version` lifecycle script) so Claude Code
+ * invalidates `~/.claude/plugins/cache/` on every release
+ * (`code.claude.com/docs/en/plugins/loading#how-claude-code-computes-the-version`).
  */
 
 import {cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync} from 'node:fs';
@@ -21,9 +26,49 @@ import process                                                                  
 import {parseArgs}                                                                                                from 'node:util';
 import {fileURLToPath}                                                                                            from 'node:url';
 
-export const PLUGIN_REL   = 'plugins/neo';
-export const ICON_REL     = 'assets/icon.png';
-export const BLOB_ROOT    = 'https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills';
+export const PLUGINS_REL      = 'plugins';
+export const ICON_REL         = 'assets/icon.png';
+export const ICON_SOURCE_REL  = 'plugins/neo/assets/icon.png';
+export const MARKETPLACE_REL  = '.claude-plugin/marketplace.json';
+export const MARKETPLACE_NAME = 'neomjs';
+export const BLOB_ROOT        = 'https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills';
+
+/**
+ * @summary Longest `description` a deciding model reads whole: directory search results cut it at 500 characters,
+ * mid-word (measured on the Anthropic Directory, 2026-11-24).
+ */
+export const MAX_DESCRIPTION = 500;
+
+/**
+ * @summary Harness-neutral registry of plugin bundles, one per `plugins/<slug>/`.
+ *
+ * `description` is the pitch a model reads when it decides to install: name the task it is in and the capability it
+ * lacks, in its words, never ours. A bundle lists its `skills`, or takes every skill of one manifest `audience`.
+ * `intro` and `setup` are README lines; `setup` covers what the plugin cannot do itself (an MCP server to register).
+ * @type {Object[]}
+ */
+export const PLUGIN_BUNDLES = [{
+    slug            : 'neo',
+    name            : 'neomjs',
+    displayName     : 'Neo.mjs',
+    description     : 'Build data grids, Gantt charts, schedulers, kanban boards and multi-window web desktops with Neo.mjs, which runs components, stores and state in workers, off the main thread. Includes the Neural Link workflow: inspect and patch a running app\'s live component tree, stores and DOM instead of reloading and screenshotting.',
+    keywords        : ['data-grid', 'gantt', 'scheduler', 'kanban', 'multi-window', 'docking', 'web-desktop', 'web-workers', 'sharedworker', 'offscreen-canvas', 'live-dom-inspection', 'context-recovery', 'neural-link', 'mcp', 'neomjs'],
+    audience        : 'app',
+    documentationUrl: 'https://neomjs.com/learn',
+    supportUrl      : 'https://github.com/neomjs/neo/issues',
+    intro           : [
+        'Neo.mjs keeps UI components, data stores, and state providers alive as persistent object graphs off the main thread. Pair these bundled skills with the published `neo-neural-link` MCP bridge so Claude can inspect the live component tree, query stores and state providers, simulate events, measure DOM geometry, and hot-patch running code without reloads.'
+    ],
+    setup           : [
+        '## Connect the Live Neural Link MCP Bridge',
+        '',
+        'The bundled `neural-link` skill drives the `neo-neural-link` MCP tools. Because unverified directory plugins do not auto-start local `stdio` servers, register the published `neo-neural-link` server (`Node.js >= 24.0.0`) once in your workspace:',
+        '',
+        '```bash',
+        'claude mcp add neo-neural-link -- npx -y neo-neural-link',
+        '```'
+    ]
+}];
 
 const
     PNG_MAGIC         = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -31,121 +76,159 @@ const
     TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
     REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
     UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\//,
+    AUTHOR            = {name: 'Neo.mjs', url: 'https://neomjs.com'},
+    REPOSITORY        = 'https://github.com/neomjs/neo-agent-skills',
     here              = dirname(fileURLToPath(import.meta.url)),
     defaultRoot       = resolve(here, '..');
 
 /**
- * @summary Canonical `.claude-plugin/plugin.json` manifest payload synced to root `package.json` `version`.
- * @param {String} version
- * @returns {Object}
- */
-export function expectedPluginManifest(version) {
-    return {
-        name            : 'neomjs',
-        displayName     : 'Neo.mjs',
-        version,
-        description     : 'Neo.mjs multi-threaded application authoring skills and Neural Link live runtime inspection workflow.',
-        icon            : ICON_REL,
-        author          : {
-            name: 'Neo.mjs',
-            url : 'https://neomjs.com'
-        },
-        homepage        : 'https://neomjs.com',
-        repository      : 'https://github.com/neomjs/neo-agent-skills',
-        documentationUrl: 'https://neomjs.com/learn',
-        supportUrl      : 'https://github.com/neomjs/neo/issues',
-        license         : 'MIT',
-        keywords        : [
-            'neomjs',
-            'web-workers',
-            'sharedworker',
-            'multi-window',
-            'ui-engine',
-            'neural-link',
-            'mcp'
-        ]
-    }
-}
-
-/**
- * @summary Sorted names of skills declaring the `app` audience in `skills.manifest.json`.
+ * @summary Sorted names of skills declaring `audience` in `skills.manifest.json` (a row without `audiences` is maintainer-only).
  * @param {Object} manifest
+ * @param {String} audience
  * @returns {String[]}
  */
-export function appSkillsFrom(manifest) {
+export function audienceSkillsFrom(manifest, audience) {
     return Object.entries(manifest?.skills || {})
-        .filter(([, row]) => (row.audiences ?? ['maintainer']).includes('app'))
+        .filter(([, row]) => (row.audiences ?? ['maintainer']).includes(audience))
         .map(([name]) => name)
         .sort()
 }
 
 /**
- * @summary Rewrites repo-relative `.agents/skills/` references for standalone plugin installations.
+ * @summary Sorted skill names a bundle projects: its explicit `skills`, else every skill of its `audience`.
+ * @param {Object} bundle
+ * @param {Object} manifest
+ * @returns {String[]}
+ * @throws {Error} When the bundle sets both or neither field, or names a skill the manifest lacks.
+ */
+export function bundleSkills(bundle, manifest) {
+    if (Boolean(bundle.skills) === Boolean(bundle.audience)) {
+        throw new Error(`plugin bundle '${bundle.slug}': set exactly one of skills or audience`)
+    }
+
+    if (bundle.audience) {
+        return audienceSkillsFrom(manifest, bundle.audience)
+    }
+
+    const unknown = bundle.skills.filter(name => !manifest?.skills?.[name]);
+
+    if (unknown.length) {
+        throw new Error(`plugin bundle '${bundle.slug}': skills.manifest.json has no ${unknown.join(', ')}`)
+    }
+
+    return [...bundle.skills].sort()
+}
+
+/**
+ * @summary Canonical `.claude-plugin/plugin.json` payload for one bundle, synced to root `package.json` `version`.
+ * @param {Object} bundle
+ * @param {String} version
+ * @returns {Object}
+ */
+export function expectedPluginManifest(bundle, version) {
+    return {
+        name            : bundle.name,
+        displayName     : bundle.displayName,
+        version,
+        description     : bundle.description,
+        icon            : ICON_REL,
+        author          : AUTHOR,
+        homepage        : 'https://neomjs.com',
+        repository      : REPOSITORY,
+        documentationUrl: bundle.documentationUrl ?? `${REPOSITORY}/tree/dev/${PLUGINS_REL}/${bundle.slug}`,
+        supportUrl      : bundle.supportUrl       ?? `${REPOSITORY}/issues`,
+        license         : 'MIT',
+        keywords        : bundle.keywords
+    }
+}
+
+/**
+ * @summary Canonical root `.claude-plugin/marketplace.json` payload listing every bundle, synced to root `package.json` `version`.
+ * @param {Object[]} bundles
+ * @param {String} version
+ * @returns {Object}
+ */
+export function expectedMarketplace(bundles, version) {
+    return {
+        name    : MARKETPLACE_NAME,
+        owner   : AUTHOR,
+        metadata: {
+            description: 'Claude Code plugins projected from the neomjs/neo-agent-skills skill corpus.',
+            version
+        },
+        plugins : bundles.map(bundle => ({
+            name       : bundle.name,
+            source     : `./${PLUGINS_REL}/${bundle.slug}`,
+            description: bundle.description,
+            version,
+            keywords   : bundle.keywords
+        }))
+    }
+}
+
+/**
+ * @summary Rewrites repo-relative `.agents/skills/` references for a standalone plugin installation.
  * @param {String} text
  * @param {String} skillName
- * @param {Set<String>} appSkillSet
+ * @param {Set<String>} bundleSkillSet
  * @returns {String}
  */
-export function rewriteSkillText(text, skillName, appSkillSet) {
+export function rewriteSkillText(text, skillName, bundleSkillSet) {
     return text.replace(REPO_SKILL_REF_RE, (_match, targetSkill, rest) => {
         if (targetSkill === skillName) {
             return `\${CLAUDE_SKILL_DIR}/${rest}`
         }
-        if (appSkillSet.has(targetSkill)) {
+        if (bundleSkillSet.has(targetSkill)) {
             return `\${CLAUDE_PLUGIN_ROOT}/skills/${targetSkill}/${rest}`
         }
         return `${BLOB_ROOT}/${targetSkill}/${rest}`
     })
 }
 
-function projectSkillFile(srcPath, skillName, appSkillSet) {
+function projectSkillFile(srcPath, skillName, bundleSkillSet) {
     const raw = readFileSync(srcPath);
 
     if (!TEXT_EXTENSIONS.has(extname(srcPath).toLowerCase())) {
         return raw
     }
 
-    return Buffer.from(rewriteSkillText(raw.toString('utf8'), skillName, appSkillSet), 'utf8')
+    return Buffer.from(rewriteSkillText(raw.toString('utf8'), skillName, bundleSkillSet), 'utf8')
 }
 
 /**
- * @summary Canonical `plugins/neo/README.md` text derived from admitted `app` skills.
+ * @summary Canonical `plugins/<slug>/README.md` text for one bundle.
+ * @param {Object} bundle
  * @param {Object} manifest
  * @returns {String}
  */
-export function expectedReadme(manifest) {
-    const rows = appSkillsFrom(manifest)
-        .map(name => `- **\`${name}\`** — ${manifest.skills[name].description}`)
-        .join('\n');
+export function expectedReadme(bundle, manifest) {
+    const
+        rel  = `${PLUGINS_REL}/${bundle.slug}`,
+        rows = bundleSkills(bundle, manifest)
+            .map(name => `- **\`${name}\`** — ${manifest.skills[name].description}`)
+            .join('\n');
 
     return [
-        '# Neo.mjs — Official Claude Plugin',
+        `# ${bundle.displayName} — Official Claude Plugin`,
         '',
-        'Author and live-inspect multi-threaded **Neo.mjs** applications across Web Workers, SharedWorkers, and native browser windows.',
+        bundle.description,
         '',
-        'Neo.mjs keeps UI components, data stores, and state providers alive as persistent object graphs off the main thread. Pair these bundled skills with the published `neo-neural-link` MCP bridge so Claude can inspect the live component tree, query stores and state providers, simulate events, measure DOM geometry, and hot-patch running code without reloads.',
-        '',
+        ...(bundle.intro ?? []).flatMap(paragraph => [paragraph, '']),
         '## Install',
         '',
-        '- **Claude Directory (Claude Code, Cowork, Claude apps):** install **Neo.mjs** (`neomjs`) from `https://claude.ai/directory`.',
-        '- **From a local clone (`neomjs/neo-agent-skills`):** run `claude --plugin-dir ./plugins/neo`.',
+        `- **Marketplace (Claude Code):** run \`claude plugin marketplace add neomjs/neo-agent-skills\`, then \`claude plugin install ${bundle.name}@${MARKETPLACE_NAME}\`.`,
+        `- **Claude Directory (Claude Code, Cowork, Claude apps):** install **${bundle.displayName}** (\`${bundle.name}\`) from \`https://claude.ai/directory\`.`,
+        `- **From a local clone (\`neomjs/neo-agent-skills\`):** run \`claude --plugin-dir ./${rel}\`.`,
         '',
-        '## Connect the Live Neural Link MCP Bridge',
-        '',
-        'The bundled `neural-link` skill drives the `neo-neural-link` MCP tools. Because unverified directory plugins do not auto-start local `stdio` servers, register the published `neo-neural-link` server (`Node.js >= 24.0.0`) once in your workspace:',
-        '',
-        '```bash',
-        'claude mcp add neo-neural-link -- npx -y neo-neural-link',
-        '```',
-        '',
-        '## Bundled Skills (`app` audience)',
+        ...(bundle.setup ? [...bundle.setup, ''] : []),
+        '## Bundled Skills',
         '',
         rows,
         '',
         '## Local Plugin Validation',
         '',
         '```bash',
-        'claude plugin validate ./plugins/neo',
+        `claude plugin validate ./${rel}`,
         'npm run generate-claude-plugin -- --check',
         '```',
         ''
@@ -200,41 +283,58 @@ function scanTree(dir, base = dir) {
 }
 
 /**
- * @summary Materializes `plugins/neo` under `root` from `.agents/skills/skills.manifest.json` using path-rewritten real files.
- * @param {{root?: String}} [options={}]
- * @returns {{pluginDir: String, skills: String[]}}
+ * @summary Materializes every bundle under `plugins/<slug>/` and the root marketplace from path-rewritten real files.
+ * @param {{root?: String, bundles?: Object[]}} [options={}]
+ * @returns {{slug: String, skills: String[]}[]}
  */
-export function generatePlugin({root = defaultRoot} = {}) {
+export function generatePlugin({root = defaultRoot, bundles = PLUGIN_BUNDLES} = {}) {
     const
-        manifest    = readSkillManifest(root),
-        pkgVersion  = readPackageVersion(root),
-        skills      = appSkillsFrom(manifest),
-        appSkillSet = new Set(skills),
-        pluginDir   = join(root, PLUGIN_REL),
-        metaDir     = join(pluginDir, '.claude-plugin'),
-        skillsDir   = join(pluginDir, 'skills');
+        manifest   = readSkillManifest(root),
+        version    = readPackageVersion(root),
+        iconSource = join(root, ICON_SOURCE_REL),
+        projected  = [];
 
-    mkdirSync(metaDir, {recursive: true});
-    rmSync(skillsDir, {recursive: true, force: true});
-    rmSync(join(pluginDir, '.mcp.json'), {force: true});
-    mkdirSync(skillsDir, {recursive: true});
-
-    writeFileSync(join(metaDir, 'plugin.json'), jsonText(expectedPluginManifest(pkgVersion)), 'utf8');
-    writeFileSync(join(pluginDir, 'README.md'), expectedReadme(manifest), 'utf8');
-
-    for (const name of skills) {
+    for (const bundle of bundles) {
         const
-            srcDir = join(root, '.agents/skills', name),
-            dstDir = join(skillsDir, name);
+            skills    = bundleSkills(bundle, manifest),
+            skillSet  = new Set(skills),
+            pluginDir = join(root, PLUGINS_REL, bundle.slug),
+            metaDir   = join(pluginDir, '.claude-plugin'),
+            skillsDir = join(pluginDir, 'skills'),
+            iconPath  = join(pluginDir, ICON_REL);
 
-        for (const rel of scanTree(srcDir).files) {
-            const dstFile = join(dstDir, rel);
-            mkdirSync(dirname(dstFile), {recursive: true});
-            writeFileSync(dstFile, projectSkillFile(join(srcDir, rel), name, appSkillSet))
+        mkdirSync(metaDir, {recursive: true});
+        rmSync(skillsDir, {recursive: true, force: true});
+        rmSync(join(pluginDir, '.mcp.json'), {force: true});
+        mkdirSync(skillsDir, {recursive: true});
+
+        if (iconPath !== iconSource) {
+            mkdirSync(dirname(iconPath), {recursive: true});
+            cpSync(iconSource, iconPath)
         }
+
+        writeFileSync(join(metaDir, 'plugin.json'), jsonText(expectedPluginManifest(bundle, version)), 'utf8');
+        writeFileSync(join(pluginDir, 'README.md'), expectedReadme(bundle, manifest), 'utf8');
+
+        for (const name of skills) {
+            const
+                srcDir = join(root, '.agents/skills', name),
+                dstDir = join(skillsDir, name);
+
+            for (const rel of scanTree(srcDir).files) {
+                const dstFile = join(dstDir, rel);
+                mkdirSync(dirname(dstFile), {recursive: true});
+                writeFileSync(dstFile, projectSkillFile(join(srcDir, rel), name, skillSet))
+            }
+        }
+
+        projected.push({slug: bundle.slug, skills})
     }
 
-    return {pluginDir, skills}
+    mkdirSync(join(root, dirname(MARKETPLACE_REL)), {recursive: true});
+    writeFileSync(join(root, MARKETPLACE_REL), jsonText(expectedMarketplace(bundles, version)), 'utf8');
+
+    return projected
 }
 
 function checkExactFile(filePath, label, expected) {
@@ -256,41 +356,106 @@ function checkExactFile(filePath, label, expected) {
 }
 
 /**
- * @summary Returns every contract, directory-policy, path-rewrite, or parity violation in `plugins/neo` under `root`.
- * @param {{root?: String}} [options={}]
+ * @summary Registry findings: duplicate slugs or names, and descriptions that are empty or longer than the search cut.
+ * @param {Object[]} bundles
  * @returns {String[]}
  */
-export function checkPlugin({root = defaultRoot} = {}) {
-    const
-        manifest    = readSkillManifest(root),
-        pkgVersion  = readPackageVersion(root),
-        expected    = appSkillsFrom(manifest),
-        appSkillSet = new Set(expected),
-        pluginDir   = join(root, PLUGIN_REL),
-        metaDir     = join(pluginDir, '.claude-plugin'),
-        skillsDir   = join(pluginDir, 'skills'),
-        iconPath    = join(pluginDir, ICON_REL),
-        findings    = [];
+function checkRegistry(bundles) {
+    const findings = [];
 
-    if (!existsSync(pluginDir)) {
-        return [`${PLUGIN_REL}: directory missing`]
+    for (const key of ['slug', 'name']) {
+        const values = bundles.map(bundle => bundle[key]);
+
+        for (const value of new Set(values.filter((value, i) => values.indexOf(value) !== i))) {
+            findings.push(`PLUGIN_BUNDLES: duplicate ${key} '${value}'`)
+        }
     }
 
-    const wholeScan = scanTree(pluginDir);
+    for (const bundle of bundles) {
+        const length = bundle.description?.trim().length ?? 0;
+
+        if (!length) {
+            findings.push(`PLUGIN_BUNDLES '${bundle.slug}': description is empty`)
+        } else if (length > MAX_DESCRIPTION) {
+            findings.push(`PLUGIN_BUNDLES '${bundle.slug}': description is ${length} characters; directory search cuts it at ${MAX_DESCRIPTION}`)
+        }
+    }
+
+    return findings
+}
+
+/**
+ * @summary Icon findings: a regular, square 512..2048 px PNG under 2 MB.
+ * @param {String} iconPath
+ * @param {String} label
+ * @returns {String[]}
+ */
+function checkIcon(iconPath, label) {
+    try {
+        const stat = lstatSync(iconPath);
+        if (!stat.isFile() || stat.isSymbolicLink()) {
+            return [`${label}: expected a regular PNG file`]
+        }
+
+        const bytes = readFileSync(iconPath);
+        if (bytes.length < 24 || !bytes.subarray(0, 8).equals(PNG_MAGIC)) {
+            return [`${label}: invalid PNG header`]
+        }
+        if (bytes.length >= MAX_ICON_B) {
+            return [`${label}: exceeds 2 MB cap (${bytes.length} bytes)`]
+        }
+
+        const
+            width  = bytes.readUInt32BE(16),
+            height = bytes.readUInt32BE(20);
+
+        return width !== height || width < 512 || width > 2048
+            ? [`${label}: icon must be square 512..2048 px (got ${width}x${height})`]
+            : []
+    } catch {
+        return [`${label}: missing square PNG icon`]
+    }
+}
+
+/**
+ * @summary One bundle's directory-policy, manifest, README, icon, path-rewrite and skill-parity findings.
+ * @param {String} root
+ * @param {Object} bundle
+ * @param {Object} manifest
+ * @param {String} version
+ * @returns {String[]}
+ */
+function checkBundle(root, bundle, manifest, version) {
+    const
+        rel       = `${PLUGINS_REL}/${bundle.slug}`,
+        pluginDir = join(root, rel),
+        metaDir   = join(pluginDir, '.claude-plugin'),
+        skillsDir = join(pluginDir, 'skills'),
+        findings  = [];
+
+    if (!existsSync(pluginDir)) {
+        return [`${rel}: directory missing`]
+    }
+
+    const
+        expected  = bundleSkills(bundle, manifest),
+        skillSet  = new Set(expected),
+        wholeScan = scanTree(pluginDir);
+
     for (const sym of wholeScan.symlinks) {
-        findings.push(`${PLUGIN_REL}/${sym}: symbolic links are forbidden by ARCHIVE_SYMLINK_EXEC_SURFACE`)
+        findings.push(`${rel}/${sym}: symbolic links are forbidden by ARCHIVE_SYMLINK_EXEC_SURFACE`)
     }
 
     if (existsSync(join(pluginDir, '.mcp.json'))) {
-        findings.push(`${PLUGIN_REL}/.mcp.json: local stdio MCP servers are refused for unverified organizations; document \`claude mcp add\` in README.md instead`)
+        findings.push(`${rel}/.mcp.json: local stdio MCP servers are refused for unverified organizations; document \`claude mcp add\` in README.md instead`)
     }
 
     const manifestJsonPath = join(metaDir, 'plugin.json');
     if (existsSync(manifestJsonPath) && !lstatSync(manifestJsonPath).isSymbolicLink()) {
         try {
             const parsedManifest = JSON.parse(readFileSync(manifestJsonPath, 'utf8'));
-            if (parsedManifest.version !== pkgVersion) {
-                findings.push(`${PLUGIN_REL}/.claude-plugin/plugin.json: version '${parsedManifest.version}' out of sync with package.json '${pkgVersion}'`)
+            if (parsedManifest.version !== version) {
+                findings.push(`${rel}/.claude-plugin/plugin.json: version '${parsedManifest.version}' out of sync with package.json '${version}'`)
             }
         } catch {
             // Covered by checkExactFile below.
@@ -298,67 +463,37 @@ export function checkPlugin({root = defaultRoot} = {}) {
     }
 
     findings.push(
-        ...checkExactFile(manifestJsonPath, `${PLUGIN_REL}/.claude-plugin/plugin.json`, jsonText(expectedPluginManifest(pkgVersion))),
-        ...checkExactFile(join(pluginDir, 'README.md'), `${PLUGIN_REL}/README.md`, expectedReadme(manifest))
+        ...checkExactFile(manifestJsonPath, `${rel}/.claude-plugin/plugin.json`, jsonText(expectedPluginManifest(bundle, version))),
+        ...checkExactFile(join(pluginDir, 'README.md'), `${rel}/README.md`, expectedReadme(bundle, manifest)),
+        ...checkIcon(join(pluginDir, ICON_REL), `${rel}/${ICON_REL}`)
     );
 
     if (existsSync(metaDir)) {
         const extraMeta = readdirSync(metaDir).filter(name => name !== 'plugin.json').sort();
         if (extraMeta.length) {
-            findings.push(`${PLUGIN_REL}/.claude-plugin: must contain only plugin.json (found: ${extraMeta.join(', ')})`)
+            findings.push(`${rel}/.claude-plugin: must contain only plugin.json (found: ${extraMeta.join(', ')})`)
         }
     }
 
-    try {
-        const stat = lstatSync(iconPath);
-        if (!stat.isFile() || stat.isSymbolicLink()) {
-            findings.push(`${PLUGIN_REL}/${ICON_REL}: expected a regular PNG file`)
-        } else {
-            const bytes = readFileSync(iconPath);
-            if (bytes.length < 24 || !bytes.subarray(0, 8).equals(PNG_MAGIC)) {
-                findings.push(`${PLUGIN_REL}/${ICON_REL}: invalid PNG header`)
-            } else if (bytes.length >= MAX_ICON_B) {
-                findings.push(`${PLUGIN_REL}/${ICON_REL}: exceeds 2 MB cap (${bytes.length} bytes)`)
-            } else {
-                const
-                    width  = bytes.readUInt32BE(16),
-                    height = bytes.readUInt32BE(20);
-
-                if (width !== height || width < 512 || width > 2048) {
-                    findings.push(`${PLUGIN_REL}/${ICON_REL}: icon must be square 512..2048 px (got ${width}x${height})`)
-                }
-            }
-        }
-    } catch {
-        findings.push(`${PLUGIN_REL}/${ICON_REL}: missing square PNG icon`)
-    }
-
-    for (const rel of wholeScan.files) {
-        if (!TEXT_EXTENSIONS.has(extname(rel).toLowerCase())) {
-            continue
-        }
-        const text = readFileSync(join(pluginDir, rel), 'utf8');
-        if (UNREWROTE_REF_RE.test(text)) {
-            findings.push(`${PLUGIN_REL}/${rel}: contains unrewritten repo-relative .agents/skills/ path`)
+    for (const file of wholeScan.files) {
+        if (TEXT_EXTENSIONS.has(extname(file).toLowerCase()) && UNREWROTE_REF_RE.test(readFileSync(join(pluginDir, file), 'utf8'))) {
+            findings.push(`${rel}/${file}: contains unrewritten repo-relative .agents/skills/ path`)
         }
     }
 
     if (!existsSync(skillsDir)) {
-        findings.push(`${PLUGIN_REL}/skills: directory missing`);
+        findings.push(`${rel}/skills: directory missing`);
         return findings
     }
 
-    const
-        present     = readdirSync(skillsDir).sort(),
-        expectedSet = new Set(expected),
-        presentSet  = new Set(present);
+    const presentSet = new Set(readdirSync(skillsDir));
 
     for (const missing of expected.filter(name => !presentSet.has(name))) {
-        findings.push(`${PLUGIN_REL}/skills/${missing}: missing app-audience skill directory`)
+        findings.push(`${rel}/skills/${missing}: missing bundled skill directory`)
     }
 
-    for (const unexpected of present.filter(name => !expectedSet.has(name))) {
-        findings.push(`${PLUGIN_REL}/skills/${unexpected}: unexpected entry (only app-audience skills may be bundled)`)
+    for (const unexpected of [...presentSet].filter(name => !skillSet.has(name)).sort()) {
+        findings.push(`${rel}/skills/${unexpected}: unexpected entry (only the bundle's skills may be bundled)`)
     }
 
     for (const name of expected.filter(entry => presentSet.has(entry))) {
@@ -377,22 +512,46 @@ export function checkPlugin({root = defaultRoot} = {}) {
             srcSet   = new Set(srcFiles),
             dstSet   = new Set(dstFiles);
 
-        for (const rel of srcFiles.filter(f => !dstSet.has(f))) {
-            findings.push(`${PLUGIN_REL}/skills/${name}/${rel}: missing file from source skill`)
+        for (const file of srcFiles.filter(f => !dstSet.has(f))) {
+            findings.push(`${rel}/skills/${name}/${file}: missing file from source skill`)
         }
-        for (const rel of dstFiles.filter(f => !srcSet.has(f))) {
-            findings.push(`${PLUGIN_REL}/skills/${name}/${rel}: extra file absent from source skill`)
+        for (const file of dstFiles.filter(f => !srcSet.has(f))) {
+            findings.push(`${rel}/skills/${name}/${file}: extra file absent from source skill`)
         }
-        for (const rel of srcFiles.filter(f => dstSet.has(f))) {
-            const
-                expectedBuf = projectSkillFile(join(srcDir, rel), name, appSkillSet),
-                dstBuf      = readFileSync(join(dstDir, rel));
-
-            if (!expectedBuf.equals(dstBuf)) {
-                findings.push(`${PLUGIN_REL}/skills/${name}/${rel}: drifted from projected .agents/skills/${name}/${rel}`)
+        for (const file of srcFiles.filter(f => dstSet.has(f))) {
+            if (!projectSkillFile(join(srcDir, file), name, skillSet).equals(readFileSync(join(dstDir, file)))) {
+                findings.push(`${rel}/skills/${name}/${file}: drifted from projected .agents/skills/${name}/${file}`)
             }
         }
     }
+
+    return findings
+}
+
+/**
+ * @summary Returns every registry, contract, directory-policy, path-rewrite, or parity violation across all bundles and the marketplace.
+ * @param {{root?: String, bundles?: Object[]}} [options={}]
+ * @returns {String[]}
+ */
+export function checkPlugin({root = defaultRoot, bundles = PLUGIN_BUNDLES} = {}) {
+    const
+        manifest = readSkillManifest(root),
+        version  = readPackageVersion(root),
+        findings = checkRegistry(bundles),
+        slugs    = new Set(bundles.map(bundle => bundle.slug)),
+        rootDir  = join(root, PLUGINS_REL);
+
+    for (const bundle of bundles) {
+        findings.push(...checkBundle(root, bundle, manifest, version))
+    }
+
+    if (existsSync(rootDir)) {
+        for (const orphan of readdirSync(rootDir).filter(name => !slugs.has(name)).sort()) {
+            findings.push(`${PLUGINS_REL}/${orphan}: not registered in PLUGIN_BUNDLES`)
+        }
+    }
+
+    findings.push(...checkExactFile(join(root, MARKETPLACE_REL), MARKETPLACE_REL, jsonText(expectedMarketplace(bundles, version))));
 
     return findings
 }
@@ -432,12 +591,14 @@ export function run(argv = process.argv.slice(2), {out = console.log, error = co
                 return 1
             }
 
-            out(`claude-plugin: ${PLUGIN_REL} coherent with skills.manifest.json.`);
+            out(`claude-plugin: ${PLUGIN_BUNDLES.length} bundle(s) and ${MARKETPLACE_REL} coherent with skills.manifest.json.`);
             return 0
         }
 
-        const {skills} = generatePlugin({root});
-        out(`claude-plugin: materialized ${PLUGIN_REL} (${skills.length} app skills: ${skills.join(', ')}).`);
+        for (const {slug, skills} of generatePlugin({root})) {
+            out(`claude-plugin: materialized ${PLUGINS_REL}/${slug} (${skills.length} skills: ${skills.join(', ')}).`)
+        }
+        out(`claude-plugin: wrote ${MARKETPLACE_REL}.`);
         return 0
     } catch (cause) {
         error(`generate-claude-plugin: ${cause.message}`);
