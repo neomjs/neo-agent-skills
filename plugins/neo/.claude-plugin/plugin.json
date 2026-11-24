@@ -1,0 +1,25 @@
+{
+  "name": "neomjs",
+  "displayName": "Neo.mjs",
+  "version": "2.6.1",
+  "description": "Neo.mjs multi-threaded application authoring skills and Neural Link live runtime inspection workflow.",
+  "icon": "assets/icon.png",
+  "author": {
+    "name": "Neo.mjs",
+    "url": "https://neomjs.com"
+  },
+  "homepage": "https://neomjs.com",
+  "repository": "https://github.com/neomjs/neo-agent-skills",
+  "documentationUrl": "https://neomjs.com/learn",
+  "supportUrl": "https://github.com/neomjs/neo/issues",
+  "license": "MIT",
+  "keywords": [
+    "neomjs",
+    "web-workers",
+    "sharedworker",
+    "multi-window",
+    "ui-engine",
+    "neural-link",
+    "mcp"
+  ]
+}
