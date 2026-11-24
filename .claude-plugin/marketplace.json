@@ -1,0 +1,36 @@
+{
+  "name": "neomjs",
+  "owner": {
+    "name": "Neo.mjs",
+    "url": "https://neomjs.com"
+  },
+  "metadata": {
+    "description": "Claude Code plugins projected from the neomjs/neo-agent-skills skill corpus.",
+    "version": "2.7.0"
+  },
+  "plugins": [
+    {
+      "name": "neomjs",
+      "source": "./plugins/neo",
+      "description": "Build data grids, Gantt charts, schedulers, kanban boards and multi-window web desktops with Neo.mjs, which runs components, stores and state in workers, off the main thread. Includes the Neural Link workflow: inspect and patch a running app's live component tree, stores and DOM instead of reloading and screenshotting.",
+      "version": "2.7.0",
+      "keywords": [
+        "data-grid",
+        "gantt",
+        "scheduler",
+        "kanban",
+        "multi-window",
+        "docking",
+        "web-desktop",
+        "web-workers",
+        "sharedworker",
+        "offscreen-canvas",
+        "live-dom-inspection",
+        "context-recovery",
+        "neural-link",
+        "mcp",
+        "neomjs"
+      ]
+    }
+  ]
+}
