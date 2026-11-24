@@ -4,7 +4,7 @@ Fires when you discover or recommend external distribution venues/directories, p
 
 **Source of Authority:** [Discussion #19500](https://github.com/neomjs/neo/discussions/19500) (§2–§6, graduated 2026-10-10), ADR 0042 (`neomjs/neo-agent-brain#977`, merged in [`neomjs/neo-agent-brain#1261`](https://github.com/neomjs/neo-agent-brain/pull/1261)), [Hacker News Guidelines](https://news.ycombinator.com/newsguidelines.html), and [Introduction.md](https://github.com/neomjs/neo/blob/dev/learn/benefits/Introduction.md) §9.
 
-**The One-Line Harness Rule:** **A seat never publishes; it requests or hands off.** Public publishing is human-owned: on Fleet-supported channels (`x`, `linkedin`), a seat sends a typed, versioned `requestPublish` A2A Task to the **Fleet's registered operator principal** (`@tobiu` in Neo's Fleet; §3) released under Fleet-held credentials (`<userData>/brain/fleet`); on manual or human-authored venues (Medium, newsletters, directories, Hacker News), a seat hands the verified venue/demo receipts and appropriate material (§3.2, §4.2) to the operator.
+**The One-Line Harness Rule:** **A seat never publishes; it requests or hands off.** Public publishing is human-owned: on Fleet-supported channels (`x`, `linkedin`), a seat sends a typed, versioned `requestPublish` A2A Task to the **Fleet's registered operator principal** (`@tobiu` in Neo's Fleet; §3.1, §4.2 Path A) released under Fleet-held credentials (`<userData>/brain/fleet`); on manual or human-authored venues (Medium, newsletters, directories, Hacker News), a seat hands the verified venue/demo receipts and appropriate material (§3.2, §4.3 Path B) to the operator.
 
 ---
 
@@ -52,7 +52,7 @@ Every outbound post, manual-venue packet, `link-reply`, `reply`, or attributed a
 16. **A seat never holds a social credential and never calls a platform API** — OAuth tokens live exclusively in Fleet custody (`<userData>/brain/fleet`); they never appear in a payload, log, or Task, and no social MCP tool is exposed to seats (`D#19500` §2, §4, §5.3; `ADR 0042 §2.1–§2.4`).
 17. **A reply to a stranger carries an answer or a receipt, never a pitch** (`D#19500` §3, §4; see §5).
 18. **No coordinated amplification among our own accounts** — no like, repost, or reply rings among peer accounts; public peer-to-peer exchanges happen only on genuine disagreement or public review (hypothesis `a` live), disclosed by automated labels and bios (`D#19500` §4).
-19. **Human-authored venues (`news.ycombinator.com`)** — Hacker News's published guidelines (`https://news.ycombinator.com/newsguidelines.html`: *"Please don't post generated comments or other generated content"* / *"Write any text that you post to HN by hand"*) require human authorship across the final title, submission `text`, and every comment (including AI-edited comments). Never draft copy-paste titles, submission `text`, outreach prose, or comments for HN; hand the operator a raw verified fact brief (metrics, links, and receipts) for their own writing (`link` submissions leave `text` blank; normal link posts omit `Show HN:`).
+19. **Human-authored venues (`news.ycombinator.com`)** — Hacker News's published guidelines (`https://news.ycombinator.com/newsguidelines.html`) forbid posting generated comments or other generated content — including AI-edited text — so human authorship applies across the final title, submission `text`, and every comment. Never draft copy-paste titles, submission `text`, outreach prose, or comments for HN; hand the operator a raw verified fact brief (metrics, links, and receipts) for their own writing (`link` submissions leave `text` blank; normal link posts omit `Show HN:`).
 
 ---
 
@@ -75,7 +75,7 @@ Outbound posts and channel submissions carry the same failure modes as blog post
 
 ### 3.1 Fleet-Supported Channels (`x`, `linkedin` — `ADR 0042 §1.1–§1.6`)
 
-A peer requests X or LinkedIn publication via `add_message` to the **Fleet's registered operator principal** (`"@tobiu"` in Neo's Fleet) with `taggedConcepts: ["requestPublish"]` and a versioned `requestPublish` payload (`schemaVersion: 1`). For dated publications, lock final text, media, and cross-family attestation (`§4.1`) by 18:00 CET on D-1 before the operator's publish click (urgent incident/security notices follow operator direction):
+A peer requests X or LinkedIn publication via `add_message` to the **Fleet's registered operator principal** (`"@tobiu"` in Neo's Fleet) with `taggedConcepts: ["requestPublish"]` and a versioned `requestPublish` payload (`schemaVersion: 1`). For dated publications, lock final text, media, and cross-family attestation (`§4.1` + `§4.2 Path A`) by 18:00 CET on D-1 before the operator's publish click (urgent incident/security notices follow operator direction):
 
 ```json
 {
@@ -121,7 +121,7 @@ A peer requests X or LinkedIn publication via `add_message` to the **Fleet's reg
 
 ### 3.2 Manual & Human-Published Venues (Medium, Newsletters, Directories, Hacker News)
 
-Venues outside `'x'` and `'linkedin'` do **not** use `requestPublish`, `revisionDigest`, or Fleet gate switches. Instead, after cross-family review (§4.2), the seat hands the operator a **manual-venue packet**:
+Venues outside `'x'` and `'linkedin'` do **not** use `requestPublish`, `revisionDigest`, or Fleet gate switches. Instead, after cross-family review (§4.1 + §4.3 Path B), the seat hands the operator a **manual-venue packet**:
 - **Target venue & Gate A receipts:** submission URL/address, dated current-year activity receipt (edition date for newsletters; recent activity/accepted listing for directories/communities), and audience-fit note.
 - **Verified demo receipt (when linking a live route):** deployed URL, exact gesture exercised, observed result, and open-issue check.
 - **Venue-appropriate material:** reviewed attributed markdown/form fields for venues accepting drafted copy (Medium, directory/newsletter forms), or a **raw verified fact brief only** (metrics, links, receipts — zero drafted title, `text`, or comments) for human-authored venues such as Hacker News (§1.19).
@@ -132,17 +132,19 @@ Venues outside `'x'` and `'linkedin'` do **not** use `requestPublish`, `revision
 
 Every outbound post, manual-venue packet (beyond pure discovery lists), and reply introducing a new system claim (§1.7) requires review by **a peer from a different model family than the author** (`D#19500` §4, OQ-3, `#168` AC-5):
 
-1. **Common review checks (all venues):**
-   - Every factual claim, dated venue-activity check (edition vs. recent listing), and metric against its public receipt (`Verify-Before-Assert`);
-   - Deployed demo URL, exact reader gesture exercised, observed outcome, and open-issue check (§0 Gate A.2);
-   - All 19 boundaries in §1 and every rule in §2 (`Introduction.md` §9 category-drift ban + all flavors), plus the title test of `blog-authoring-guide.md` §3 on drafted previews;
-   - §0 Gate B fills on drafted posts (or §1.19 raw-fact-brief-only compliance on human-authored venues like HN), opening with the `blog-authoring-guide.md` §4 verdict.
-2. **Path A — Fleet-supported `requestPublish` attestation (`x`, `linkedin`; `ADR 0042 §1.4, §3.2`):**
-   - Also check `hypothesis` (`a` / `b` / `d`, never `c` without receipt), `format` (`post` / `link-reply` / `reply`, keeping the URL in `'link-reply'` on cold X accounts per §5.1), and §5 target eligibility on `'reply'`.
-   - Verify the 64-hex RFC 8785 `revisionDigest` and send an A2A review message carrying it (*review-before-admission* via `"attestation": {"reviewerMessageId", "revisionDigest"}` or *later attestation* via `attestPublishRevision` citing `{requestId, revisionNumber, revisionDigest}`).
-   - **Never supply or trust caller-declared `reviewer` or `reviewerFamily` fields (`ADR 0042 §1.2, §1.4`):** `MailboxService` and Fleet derive sender identity/family from mailbox and roster authority, refusing missing, rejected, or same-family attestations with `refused: attestation` (including under `'auto-approve after a cross-family review attestation'`).
-3. **Path B — Manual / human-published venue sign-off & operator handoff:**
-   - The cross-family reviewer records the `§§0–2` check (naming the dated venue receipt, the exercised demo gesture + result, and either copy compliance or §1.19 raw-fact-brief compliance) in an A2A/issue/PR review note — **without** `revisionDigest` or Fleet gate-switch fields — and the author hands the approved manual-venue packet (§3.2) to the operator for submission.
+### 4.1 Common Review Checks (All Venues)
+- Every factual claim, dated venue-activity check (edition vs. recent listing), and metric against its public receipt (`Verify-Before-Assert`);
+- Deployed demo URL, exact reader gesture exercised, observed outcome, and open-issue check (§0 Gate A.2);
+- All 19 boundaries in §1 and every rule in §2 (`Introduction.md` §9 category-drift ban + all flavors), plus the title test of `blog-authoring-guide.md` §3 on drafted previews;
+- §0 Gate B fills on drafted posts (or §1.19 raw-fact-brief-only compliance on human-authored venues like HN), opening with the `blog-authoring-guide.md` §4 verdict.
+
+### 4.2 Path A — Fleet-Supported `requestPublish` Attestation (`x`, `linkedin`; `ADR 0042 §1.4, §3.2`)
+- Also check `hypothesis` (`a` / `b` / `d`, never `c` without receipt), `format` (`post` / `link-reply` / `reply`, keeping the URL in `'link-reply'` on cold X accounts per §5.1), and §5 target eligibility on `'reply'`.
+- Verify the 64-hex RFC 8785 `revisionDigest` and send an A2A review message carrying it (*review-before-admission* via `"attestation": {"reviewerMessageId", "revisionDigest"}` or *later attestation* via `attestPublishRevision` citing `{requestId, revisionNumber, revisionDigest}`).
+- **Never supply or trust caller-declared `reviewer` or `reviewerFamily` fields (`ADR 0042 §1.2, §1.4`):** `MailboxService` and Fleet derive sender identity/family from mailbox and roster authority, refusing missing, rejected, or same-family attestations with `refused: attestation` (including under `'auto-approve after a cross-family review attestation'`).
+
+### 4.3 Path B — Manual / Human-Published Venue Sign-Off & Operator Handoff
+- The cross-family reviewer records the §4.1 check (naming the dated venue receipt, the exercised demo gesture + result, and either copy compliance or §1.19 raw-fact-brief compliance) in an A2A/issue/PR review note — **without** `revisionDigest` or Fleet gate-switch fields — and the author hands the approved manual-venue packet (§3.2) to the operator for submission.
 
 ---
 
