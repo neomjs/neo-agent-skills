@@ -1,7 +1,7 @@
 {
   "name": "neomjs",
   "displayName": "Neo.mjs",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Neo.mjs multi-threaded application authoring skills and Neural Link live runtime inspection workflow.",
   "icon": "assets/icon.png",
   "author": {

@@ -32,7 +32,7 @@
     },
     "blog-post": {
       "name": "blog-post",
-      "description": "Guide for blog posts, outbound social posts, and funding/pitch copy; use when authoring, revising, or reviewing learn/blog/*.md (+ portal registration), X/LinkedIn/Medium posts, or funding/pitch drafts."
+      "description": "Guide for blog posts, outbound posts/venues, and pitch copy; use when discovering/vetting external venues/directories or authoring/reviewing learn/blog/*.md, social/newsletter/HN/directory submissions, or pitches."
     },
     "context-recovery": {
       "name": "context-recovery",
