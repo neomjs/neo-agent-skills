@@ -1,33 +1,49 @@
 #!/usr/bin/env node
 /**
  * @summary Materializes and verifies the `plugins/neo` Claude Code Plugin Bundle from `skills.manifest.json`.
+ *
+ * Projects every `audiences: ["app"]` skill into `plugins/neo/skills/<name>/` as real files (`ARCHIVE_SYMLINK_EXEC_SURFACE`
+ * forbids Git symlinks in Anthropic Directory archives) while rewriting repo-relative `.agents/skills/` references so
+ * installed plugins resolve their own payloads inside `~/.claude/plugins/cache/`:
+ * - `.agents/skills/<own-skill>/...`        -> `${CLAUDE_SKILL_DIR}/...`
+ * - `.agents/skills/<other-app-skill>/...`  -> `${CLAUDE_PLUGIN_ROOT}/skills/<other-app-skill>/...`
+ * - `.agents/skills/<maintainer-skill>/...` -> `https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/<maintainer-skill>/...`
+ *
+ * `.claude-plugin/plugin.json` mirrors root `package.json`'s `version` (enforced to bump on every maintainer release by
+ * `scripts/check-version-bump.mjs` and auto-synced via the `npm version` lifecycle script) so Claude Code invalidates
+ * `~/.claude/plugins/cache/` on every release (`code.claude.com/docs/en/plugins/loading#how-claude-code-computes-the-version`)
+ * while satisfying semver validation cleanly.
  */
 
 import {cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync} from 'node:fs';
-import {dirname, join, relative, resolve}                                                                         from 'node:path';
+import {dirname, extname, join, relative, resolve}                                                                from 'node:path';
 import process                                                                                                    from 'node:process';
 import {parseArgs}                                                                                                from 'node:util';
 import {fileURLToPath}                                                                                            from 'node:url';
 
-export const PLUGIN_REL     = 'plugins/neo';
-export const PLUGIN_VERSION = '1.0.0';
-export const ICON_REL       = 'assets/icon.png';
+export const PLUGIN_REL   = 'plugins/neo';
+export const ICON_REL     = 'assets/icon.png';
+export const BLOB_ROOT    = 'https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills';
 
 const
-    PNG_MAGIC   = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    MAX_ICON_B  = 2 * 1024 * 1024,
-    here        = dirname(fileURLToPath(import.meta.url)),
-    defaultRoot = resolve(here, '..');
+    PNG_MAGIC         = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    MAX_ICON_B        = 2 * 1024 * 1024,
+    TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
+    REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
+    UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\//,
+    here              = dirname(fileURLToPath(import.meta.url)),
+    defaultRoot       = resolve(here, '..');
 
 /**
- * @summary Canonical `.claude-plugin/plugin.json` manifest payload.
+ * @summary Canonical `.claude-plugin/plugin.json` manifest payload synced to root `package.json` `version`.
+ * @param {String} version
  * @returns {Object}
  */
-export function expectedPluginManifest() {
+export function expectedPluginManifest(version) {
     return {
         name            : 'neomjs',
         displayName     : 'Neo.mjs',
-        version         : PLUGIN_VERSION,
+        version,
         description     : 'Neo.mjs multi-threaded application authoring skills and Neural Link live runtime inspection workflow.',
         icon            : ICON_REL,
         author          : {
@@ -64,6 +80,35 @@ export function appSkillsFrom(manifest) {
 }
 
 /**
+ * @summary Rewrites repo-relative `.agents/skills/` references for standalone plugin installations.
+ * @param {String} text
+ * @param {String} skillName
+ * @param {Set<String>} appSkillSet
+ * @returns {String}
+ */
+export function rewriteSkillText(text, skillName, appSkillSet) {
+    return text.replace(REPO_SKILL_REF_RE, (_match, targetSkill, rest) => {
+        if (targetSkill === skillName) {
+            return `\${CLAUDE_SKILL_DIR}/${rest}`
+        }
+        if (appSkillSet.has(targetSkill)) {
+            return `\${CLAUDE_PLUGIN_ROOT}/skills/${targetSkill}/${rest}`
+        }
+        return `${BLOB_ROOT}/${targetSkill}/${rest}`
+    })
+}
+
+function projectSkillFile(srcPath, skillName, appSkillSet) {
+    const raw = readFileSync(srcPath);
+
+    if (!TEXT_EXTENSIONS.has(extname(srcPath).toLowerCase())) {
+        return raw
+    }
+
+    return Buffer.from(rewriteSkillText(raw.toString('utf8'), skillName, appSkillSet), 'utf8')
+}
+
+/**
  * @summary Canonical `plugins/neo/README.md` text derived from admitted `app` skills.
  * @param {Object} manifest
  * @returns {String}
@@ -80,23 +125,28 @@ export function expectedReadme(manifest) {
         '',
         'Neo.mjs keeps UI components, data stores, and state providers alive as persistent object graphs off the main thread. Pair these bundled skills with the published `neo-neural-link` MCP bridge so Claude can inspect the live component tree, query stores and state providers, simulate events, measure DOM geometry, and hot-patch running code without reloads.',
         '',
-        '## Bundled Skills (`app` audience)',
+        '## Install',
         '',
-        rows,
+        '- **Claude Directory (Claude Code, Cowork, Claude apps):** install **Neo.mjs** (`neomjs`) from `https://claude.ai/directory`.',
+        '- **From a local clone (`neomjs/neo-agent-skills`):** run `claude --plugin-dir ./plugins/neo`.',
         '',
         '## Connect the Live Neural Link MCP Bridge',
         '',
-        'Register the published `neo-neural-link` stdio server (`Node.js >= 24.0.0`) in your workspace:',
+        'The bundled `neural-link` skill drives the `neo-neural-link` MCP tools. Because unverified directory plugins do not auto-start local `stdio` servers, register the published `neo-neural-link` server (`Node.js >= 24.0.0`) once in your workspace:',
         '',
         '```bash',
         'claude mcp add neo-neural-link -- npx -y neo-neural-link',
         '```',
         '',
-        '## Local Plugin Validation & Development',
+        '## Bundled Skills (`app` audience)',
+        '',
+        rows,
+        '',
+        '## Local Plugin Validation',
         '',
         '```bash',
         'claude plugin validate ./plugins/neo',
-        'claude --plugin-dir ./plugins/neo',
+        'npm run generate-claude-plugin -- --check',
         '```',
         ''
     ].join('\n')
@@ -107,6 +157,10 @@ const toPosix  = value => value.replace(/\\/g, '/');
 
 function readSkillManifest(root) {
     return JSON.parse(readFileSync(join(root, '.agents/skills/skills.manifest.json'), 'utf8'))
+}
+
+function readPackageVersion(root) {
+    return JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version
 }
 
 /**
@@ -146,28 +200,38 @@ function scanTree(dir, base = dir) {
 }
 
 /**
- * @summary Materializes `plugins/neo` under `root` from `.agents/skills/skills.manifest.json` using real files.
+ * @summary Materializes `plugins/neo` under `root` from `.agents/skills/skills.manifest.json` using path-rewritten real files.
  * @param {{root?: String}} [options={}]
  * @returns {{pluginDir: String, skills: String[]}}
  */
 export function generatePlugin({root = defaultRoot} = {}) {
     const
-        manifest  = readSkillManifest(root),
-        skills    = appSkillsFrom(manifest),
-        pluginDir = join(root, PLUGIN_REL),
-        metaDir   = join(pluginDir, '.claude-plugin'),
-        skillsDir = join(pluginDir, 'skills');
+        manifest    = readSkillManifest(root),
+        pkgVersion  = readPackageVersion(root),
+        skills      = appSkillsFrom(manifest),
+        appSkillSet = new Set(skills),
+        pluginDir   = join(root, PLUGIN_REL),
+        metaDir     = join(pluginDir, '.claude-plugin'),
+        skillsDir   = join(pluginDir, 'skills');
 
     mkdirSync(metaDir, {recursive: true});
     rmSync(skillsDir, {recursive: true, force: true});
     rmSync(join(pluginDir, '.mcp.json'), {force: true});
     mkdirSync(skillsDir, {recursive: true});
 
-    writeFileSync(join(metaDir, 'plugin.json'), jsonText(expectedPluginManifest()), 'utf8');
+    writeFileSync(join(metaDir, 'plugin.json'), jsonText(expectedPluginManifest(pkgVersion)), 'utf8');
     writeFileSync(join(pluginDir, 'README.md'), expectedReadme(manifest), 'utf8');
 
     for (const name of skills) {
-        cpSync(join(root, '.agents/skills', name), join(skillsDir, name), {recursive: true})
+        const
+            srcDir = join(root, '.agents/skills', name),
+            dstDir = join(skillsDir, name);
+
+        for (const rel of scanTree(srcDir).files) {
+            const dstFile = join(dstDir, rel);
+            mkdirSync(dirname(dstFile), {recursive: true});
+            writeFileSync(dstFile, projectSkillFile(join(srcDir, rel), name, appSkillSet))
+        }
     }
 
     return {pluginDir, skills}
@@ -192,19 +256,21 @@ function checkExactFile(filePath, label, expected) {
 }
 
 /**
- * @summary Returns every contract, directory-policy, or parity violation in `plugins/neo` under `root`.
+ * @summary Returns every contract, directory-policy, path-rewrite, or parity violation in `plugins/neo` under `root`.
  * @param {{root?: String}} [options={}]
  * @returns {String[]}
  */
 export function checkPlugin({root = defaultRoot} = {}) {
     const
-        manifest  = readSkillManifest(root),
-        expected  = appSkillsFrom(manifest),
-        pluginDir = join(root, PLUGIN_REL),
-        metaDir   = join(pluginDir, '.claude-plugin'),
-        skillsDir = join(pluginDir, 'skills'),
-        iconPath  = join(pluginDir, ICON_REL),
-        findings  = [];
+        manifest    = readSkillManifest(root),
+        pkgVersion  = readPackageVersion(root),
+        expected    = appSkillsFrom(manifest),
+        appSkillSet = new Set(expected),
+        pluginDir   = join(root, PLUGIN_REL),
+        metaDir     = join(pluginDir, '.claude-plugin'),
+        skillsDir   = join(pluginDir, 'skills'),
+        iconPath    = join(pluginDir, ICON_REL),
+        findings    = [];
 
     if (!existsSync(pluginDir)) {
         return [`${PLUGIN_REL}: directory missing`]
@@ -219,8 +285,20 @@ export function checkPlugin({root = defaultRoot} = {}) {
         findings.push(`${PLUGIN_REL}/.mcp.json: local stdio MCP servers are refused for unverified organizations; document \`claude mcp add\` in README.md instead`)
     }
 
+    const manifestJsonPath = join(metaDir, 'plugin.json');
+    if (existsSync(manifestJsonPath) && !lstatSync(manifestJsonPath).isSymbolicLink()) {
+        try {
+            const parsedManifest = JSON.parse(readFileSync(manifestJsonPath, 'utf8'));
+            if (parsedManifest.version !== pkgVersion) {
+                findings.push(`${PLUGIN_REL}/.claude-plugin/plugin.json: version '${parsedManifest.version}' out of sync with package.json '${pkgVersion}'`)
+            }
+        } catch {
+            // Covered by checkExactFile below.
+        }
+    }
+
     findings.push(
-        ...checkExactFile(join(metaDir, 'plugin.json'), `${PLUGIN_REL}/.claude-plugin/plugin.json`, jsonText(expectedPluginManifest())),
+        ...checkExactFile(manifestJsonPath, `${PLUGIN_REL}/.claude-plugin/plugin.json`, jsonText(expectedPluginManifest(pkgVersion))),
         ...checkExactFile(join(pluginDir, 'README.md'), `${PLUGIN_REL}/README.md`, expectedReadme(manifest))
     );
 
@@ -253,6 +331,16 @@ export function checkPlugin({root = defaultRoot} = {}) {
         }
     } catch {
         findings.push(`${PLUGIN_REL}/${ICON_REL}: missing square PNG icon`)
+    }
+
+    for (const rel of wholeScan.files) {
+        if (!TEXT_EXTENSIONS.has(extname(rel).toLowerCase())) {
+            continue
+        }
+        const text = readFileSync(join(pluginDir, rel), 'utf8');
+        if (UNREWROTE_REF_RE.test(text)) {
+            findings.push(`${PLUGIN_REL}/${rel}: contains unrewritten repo-relative .agents/skills/ path`)
+        }
     }
 
     if (!existsSync(skillsDir)) {
@@ -297,11 +385,11 @@ export function checkPlugin({root = defaultRoot} = {}) {
         }
         for (const rel of srcFiles.filter(f => dstSet.has(f))) {
             const
-                srcBuf = readFileSync(join(srcDir, rel)),
-                dstBuf = readFileSync(join(dstDir, rel));
+                expectedBuf = projectSkillFile(join(srcDir, rel), name, appSkillSet),
+                dstBuf      = readFileSync(join(dstDir, rel));
 
-            if (!srcBuf.equals(dstBuf)) {
-                findings.push(`${PLUGIN_REL}/skills/${name}/${rel}: drifted from .agents/skills/${name}/${rel}`)
+            if (!expectedBuf.equals(dstBuf)) {
+                findings.push(`${PLUGIN_REL}/skills/${name}/${rel}: drifted from projected .agents/skills/${name}/${rel}`)
             }
         }
     }

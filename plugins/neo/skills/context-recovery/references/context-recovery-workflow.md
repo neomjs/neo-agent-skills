@@ -109,7 +109,7 @@ that found nothing. Read the primary artifact before asserting any absence.
    origin/identity memories + the recency feed. Any identity fact about a named
    agent (self OR peer) carries that bearer's record citation — mine your own
    trail for self-claims; cite the peer's record or drop the name for
-   peer-claims (`.agents/skills/pr-review/audits/identity-claim-audit.md`).
+   peer-claims (`https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/pr-review/audits/identity-claim-audit.md`).
 
 ## 4. Lane Reconstruction
 
