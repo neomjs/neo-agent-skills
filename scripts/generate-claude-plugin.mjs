@@ -12,7 +12,8 @@
  * own payloads inside `~/.claude/plugins/cache/`:
  * - `.agents/skills/<own-skill>/...`       -> `${CLAUDE_SKILL_DIR}/...`
  * - `.agents/skills/<bundled-sibling>/...` -> `${CLAUDE_PLUGIN_ROOT}/skills/<bundled-sibling>/...`
- * - `.agents/skills/<other-skill>/...`     -> `https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/<other-skill>/...`
+ * - `.agents/skills/<other-skill>/...`     -> `neo-agent-skills:<other-skill>/...`, a name, never a fetchable URL: the
+ *   Software Directory Policy §2F forbids directing Claude to pull behavioral instructions from external sources.
  *
  * Every `plugin.json` and the marketplace mirror root `package.json`'s `version` (bumped on every maintainer release,
  * enforced by `scripts/check-version-bump.mjs`, synced by the `npm version` lifecycle script) so Claude Code
@@ -31,7 +32,7 @@ export const ICON_REL         = 'assets/icon.png';
 export const ICON_SOURCE_REL  = 'plugins/neo/assets/icon.png';
 export const MARKETPLACE_REL  = '.claude-plugin/marketplace.json';
 export const MARKETPLACE_NAME = 'neomjs';
-export const BLOB_ROOT        = 'https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills';
+export const UNBUNDLED_PREFIX = 'neo-agent-skills:';
 
 /**
  * @summary Longest `description` a deciding model reads whole: directory search results cut it at 500 characters,
@@ -76,6 +77,7 @@ const
     TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
     REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
     UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\//,
+    FETCHABLE_REF_RE  = /https:\/\/(?:github\.com\/neomjs\/neo-agent-skills\/(?:blob|raw)\/|raw\.githubusercontent\.com\/neomjs\/neo-agent-skills\/)/,
     AUTHOR            = {name: 'Neo.mjs', url: 'https://neomjs.com'},
     REPOSITORY        = 'https://github.com/neomjs/neo-agent-skills',
     here              = dirname(fileURLToPath(import.meta.url)),
@@ -181,7 +183,7 @@ export function rewriteSkillText(text, skillName, bundleSkillSet) {
         if (bundleSkillSet.has(targetSkill)) {
             return `\${CLAUDE_PLUGIN_ROOT}/skills/${targetSkill}/${rest}`
         }
-        return `${BLOB_ROOT}/${targetSkill}/${rest}`
+        return `${UNBUNDLED_PREFIX}${targetSkill}/${rest}`
     })
 }
 
@@ -476,8 +478,17 @@ function checkBundle(root, bundle, manifest, version) {
     }
 
     for (const file of wholeScan.files) {
-        if (TEXT_EXTENSIONS.has(extname(file).toLowerCase()) && UNREWROTE_REF_RE.test(readFileSync(join(pluginDir, file), 'utf8'))) {
+        if (!TEXT_EXTENSIONS.has(extname(file).toLowerCase())) {
+            continue
+        }
+
+        const text = readFileSync(join(pluginDir, file), 'utf8');
+
+        if (UNREWROTE_REF_RE.test(text)) {
             findings.push(`${rel}/${file}: contains unrewritten repo-relative .agents/skills/ path`)
+        }
+        if (FETCHABLE_REF_RE.test(text)) {
+            findings.push(`${rel}/${file}: links a fetchable neo-agent-skills file; Directory Policy §2F forbids pulling behavioral instructions from external sources`)
         }
     }
 
