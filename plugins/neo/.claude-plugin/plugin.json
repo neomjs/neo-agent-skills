@@ -1,0 +1,12 @@
+{
+  "name": "neo",
+  "version": "1.0.0",
+  "description": "Neo.mjs multi-threaded application authoring skills and Neural Link live runtime MCP bridge.",
+  "author": {
+    "name": "Neo.mjs",
+    "url": "https://neomjs.com"
+  },
+  "homepage": "https://neomjs.com",
+  "repository": "https://github.com/neomjs/neo-agent-skills",
+  "license": "MIT"
+}
