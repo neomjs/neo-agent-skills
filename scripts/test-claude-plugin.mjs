@@ -10,12 +10,12 @@ import {tmpdir}                                                                 
 import {dirname, extname, join, resolve}                                                             from 'node:path';
 import {fileURLToPath}                                                                               from 'node:url';
 import {
-    BLOB_ROOT,
     ICON_REL,
     ICON_SOURCE_REL,
     MARKETPLACE_REL,
     MAX_DESCRIPTION,
     PLUGIN_BUNDLES,
+    UNBUNDLED_PREFIX,
     audienceSkillsFrom,
     bundleSkills,
     checkPlugin,
@@ -125,7 +125,7 @@ try {
     const authoringSkill = readFileSync(join(packageRoot, PLUGIN_REL, 'skills/neo-app-authoring/SKILL.md'), 'utf8');
     assert.ok(authoringSkill.includes('${CLAUDE_SKILL_DIR}/references/app-authoring-guide.md'));
 
-    // 2. `rewriteSkillText` maps own skill -> `${CLAUDE_SKILL_DIR}`, bundled sibling -> `${CLAUDE_PLUGIN_ROOT}`, unbundled skill -> canonical HTTPS URL.
+    // 2. `rewriteSkillText` maps own skill -> `${CLAUDE_SKILL_DIR}`, bundled sibling -> `${CLAUDE_PLUGIN_ROOT}`, unbundled skill -> a non-fetchable name.
     {
         const rewritten = rewriteSkillText(
             'Own: `.agents/skills/neo-app-authoring/references/a.md`, sibling: `.agents/skills/neural-link/SKILL.md`, maintainer: (`.agents/skills/pr-review/audits/x.md`).',
@@ -134,7 +134,7 @@ try {
         );
         assert.equal(
             rewritten,
-            `Own: \`\${CLAUDE_SKILL_DIR}/references/a.md\`, sibling: \`\${CLAUDE_PLUGIN_ROOT}/skills/neural-link/SKILL.md\`, maintainer: (\`${BLOB_ROOT}/pr-review/audits/x.md\`).`
+            `Own: \`\${CLAUDE_SKILL_DIR}/references/a.md\`, sibling: \`\${CLAUDE_PLUGIN_ROOT}/skills/neural-link/SKILL.md\`, maintainer: (\`${UNBUNDLED_PREFIX}pr-review/audits/x.md\`).`
         )
     }
 
@@ -151,7 +151,8 @@ try {
 
         const copiedSkill = readFileSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring/SKILL.md'), 'utf8');
         assert.ok(copiedSkill.includes('${CLAUDE_SKILL_DIR}/references/guide.md'));
-        assert.ok(copiedSkill.includes(`${BLOB_ROOT}/session-sunset/references/guide.md`));
+        assert.ok(copiedSkill.includes(`${UNBUNDLED_PREFIX}session-sunset/references/guide.md`));
+        assert.equal(/https:\/\//.test(copiedSkill), false, 'an unbundled skill must never project as a fetchable URL');
         assert.equal(/(?<!\/)\.agents\/skills\//.test(copiedSkill), false);
         assert.equal(checkPlugin({root}).length, 0);
         assert.equal(run(['--check', '--root', root], {out: () => {}, error: () => {}}), 0)
@@ -280,7 +281,20 @@ try {
         assert.ok(checkPlugin({root}).some(line => line.includes('plugins/magnet: not registered in PLUGIN_BUNDLES')))
     }
 
-    // 12. A marketplace out of step with the registry or the package version fails closed.
+    // 12. A fetchable neo-agent-skills file link inside a bundle fails closed (Directory Policy §2F).
+    {
+        const root = createFixture();
+        generatePlugin({root});
+        writeFileSync(
+            join(root, PLUGIN_REL, 'skills/neo-app-authoring/references/guide.md'),
+            'Follow https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/pr-review/SKILL.md first.\n',
+            'utf8'
+        );
+
+        assert.ok(checkPlugin({root}).some(line => line.includes('links a fetchable neo-agent-skills file')))
+    }
+
+    // 13. A marketplace out of step with the registry or the package version fails closed.
     {
         const root = createFixture();
         generatePlugin({root});
@@ -289,7 +303,7 @@ try {
         assert.ok(checkPlugin({root}).some(line => line.includes(`${MARKETPLACE_REL}: content out of sync with generator`)))
     }
 
-    // 13. Registry errors fail closed: an unknown skill, both or neither selector, a duplicate name, an over-long description.
+    // 14. Registry errors fail closed: an unknown skill, both or neither selector, a duplicate name, an over-long description.
     {
         const
             root     = createFixture(),
