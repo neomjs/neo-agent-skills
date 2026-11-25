@@ -18,6 +18,7 @@ import {
     UNBUNDLED_PREFIX,
     audienceSkillsFrom,
     bundleSkills,
+    checkBundleRelativeLinks,
     checkPlugin,
     expectedPluginManifest,
     generatePlugin,
@@ -104,7 +105,11 @@ function createFixture() {
             `---\nname: ${name}\ndescription: "${manifest.skills[name].description}"\n---\nRead \`.agents/skills/${name}/references/guide.md\` and \`.agents/skills/session-sunset/references/guide.md\`.\n`,
             'utf8'
         );
-        writeFileSync(join(dir, 'guide.md'), `# ${name}\n`, 'utf8')
+        writeFileSync(
+            join(dir, 'guide.md'),
+            `# ${name}\nSee [self](./guide.md), [sibling](../../neural-link/SKILL.md), and [unbundled](../../session-sunset/references/guide.md#step-1).\n`,
+            'utf8'
+        )
     }
 
     return root
@@ -206,7 +211,27 @@ try {
         assert.equal(
             rewritten,
             `Own: \`\${CLAUDE_SKILL_DIR}/references/a.md\`, sibling: \`\${CLAUDE_PLUGIN_ROOT}/skills/neural-link/SKILL.md\`, maintainer: (\`${UNBUNDLED_PREFIX}pr-review/audits/x.md\`).`
-        )
+        );
+
+        const relativeRewritten = rewriteSkillText(
+            [
+                'Own: [core](../audits/core-idiom-audit.md) and `./local.md`.',
+                'Bundled sibling: [§10](../../pull-request/references/pull-request-workflow.md#10-authorship-respect).',
+                'Unbundled link: [gate](../../post-review-pickup/references/pre-review-intake-lane-gate.md#trigger).',
+                'Unbundled backtick: `../../identity-firewall/audits/channel-separation.md`.',
+                '<!-- trigger: x -> read ../../guide-authoring/references/guide-authoring-bar.md -->'
+            ].join('\n'),
+            'pr-review',
+            new Set(['pr-review', 'pull-request']),
+            'references/pr-review-guide.md'
+        );
+        assert.equal(relativeRewritten, [
+            'Own: [core](../audits/core-idiom-audit.md) and `./local.md`.',
+            'Bundled sibling: [§10](../../pull-request/references/pull-request-workflow.md#10-authorship-respect).',
+            `Unbundled link: [gate](${UNBUNDLED_PREFIX}post-review-pickup/references/pre-review-intake-lane-gate.md#trigger).`,
+            `Unbundled backtick: \`${UNBUNDLED_PREFIX}identity-firewall/audits/channel-separation.md\`.`,
+            `<!-- trigger: x -> read ${UNBUNDLED_PREFIX}guide-authoring/references/guide-authoring-bar.md -->`
+        ].join('\n'))
     }
 
     // 3. Fresh fixture materializes only `app` skills into `plugins/neo` with rewritten paths, writes the marketplace, and passes `--check`.
@@ -412,6 +437,32 @@ try {
         const findings = checkPlugin({root, bundles: [neoBundle, {...neoBundle, slug: 'neo2', description: 'x'.repeat(MAX_DESCRIPTION + 1)}]});
         assert.ok(findings.some(line => line.includes("duplicate name 'neomjs'")));
         assert.ok(findings.some(line => line.includes(`description is ${MAX_DESCRIPTION + 1} characters`)))
+    }
+
+    // 16. Relative `.md` references inside `plugins/**` must resolve inside their own bundle: unbundled targets project
+    //     to `neo-agent-skills:<skill>/<rest>`, bundled targets stay relative, and any dead relative `.md` path fails closed.
+    {
+        const root = createFixture();
+        generatePlugin({root});
+
+        const projectedGuide = readFileSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring/references/guide.md'), 'utf8');
+        assert.ok(projectedGuide.includes('[self](./guide.md)'));
+        assert.ok(projectedGuide.includes('[sibling](../../neural-link/SKILL.md)'));
+        assert.ok(projectedGuide.includes(`[unbundled](${UNBUNDLED_PREFIX}session-sunset/references/guide.md#step-1)`));
+        assert.deepEqual(checkBundleRelativeLinks(join(root, PLUGIN_REL), PLUGIN_REL), []);
+
+        writeFileSync(
+            join(root, PLUGIN_REL, 'skills/neo-app-authoring/references/guide.md'),
+            'Dead sibling: [unbundled](../../session-sunset/references/guide.md) and dead local `./missing.md`.\n',
+            'utf8'
+        );
+
+        const linkFindings = checkBundleRelativeLinks(join(root, PLUGIN_REL), PLUGIN_REL);
+        assert.equal(linkFindings.length, 2);
+        assert.ok(linkFindings.some(line => line.includes("unresolved relative .md reference '../../session-sunset/references/guide.md'")));
+        assert.ok(linkFindings.some(line => line.includes("unresolved relative .md reference './missing.md'")));
+        assert.ok(checkPlugin({root}).some(line => line.includes("unresolved relative .md reference '../../session-sunset/references/guide.md'")));
+        assert.equal(run(['--check', '--root', root], silent), 1)
     }
 
     console.log('✅ claude-plugin contract checks pass.')

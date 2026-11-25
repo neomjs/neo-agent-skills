@@ -6,7 +6,7 @@ This payload provides the ADR-specific branch of the ticket-intake successor-ris
 
 Run this audit when any architecture-bearing ticket, Discussion, Epic, or PR:
 
-- cites an ADR (`<org>/<repo>#adr:<slug>`, same-repo `adr:<slug>`, or canonical key `adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>` per [neomjs/neo-agent-brain#adr:adrs-as-graph-queryable-entities](neomjs/neo-agent-brain:learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md) and [`guide-authoring-bar.md §7`](../../guide-authoring/references/guide-authoring-bar.md#7-adr-custody-redirects-repository-qualified-identity--slug-citations--machine-enforceable-candidate)), Decision Record, or `learn/**/decisions/` file;
+- cites an ADR (`<org>/<repo>#adr:<slug>`, same-repo `adr:<slug>`, or canonical key `adr:<E(forge)>:<E(repositoryId)>:<E(namespace)>:<number>` per [neomjs/neo-agent-brain#adr:adrs-as-graph-queryable-entities](neomjs/neo-agent-brain:learn/agentos/decisions/0006-adrs-as-graph-queryable-entities.md) and [`guide-authoring-bar.md §7`](neo-agent-skills:guide-authoring/references/guide-authoring-bar.md#7-adr-custody-redirects-repository-qualified-identity--slug-citations--machine-enforceable-candidate)), Decision Record, or `learn/**/decisions/` file;
 - predates a related accepted ADR and prescribes a conflicting shape;
 - postdates an accepted ADR and proposes a different architecture;
 - introduces, amends, supersedes, or retires durable agent/workflow substrate;

@@ -14,6 +14,8 @@
  * - `.agents/skills/<bundled-sibling>/...` -> `${CLAUDE_PLUGIN_ROOT}/skills/<bundled-sibling>/...`
  * - `.agents/skills/<other-skill>/...`     -> `neo-agent-skills:<other-skill>/...`, a name, never a fetchable URL: the
  *   Software Directory Policy §2F forbids directing Claude to pull behavioral instructions from external sources.
+ * - `../../<other-skill>/...`              -> `neo-agent-skills:<other-skill>/...` when `<other-skill>` is not in the
+ *   bundle; relative `.md` links targeting the same skill or a bundled sibling stay untouched.
  * - `https://github.com/neomjs/<repo>/(blob|raw)/<ref>/<path>` -> `neomjs/<repo>:<path>`, for the same reason.
  *
  * Every `plugin.json` and the marketplace mirror root `package.json`'s `version` (bumped on every maintainer release,
@@ -23,7 +25,7 @@
  */
 
 import {cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync} from 'node:fs';
-import {dirname, extname, join, relative, resolve}                                                                from 'node:path';
+import {dirname, extname, join, posix, relative, resolve}                                                         from 'node:path';
 import process                                                                                                    from 'node:process';
 import {parseArgs}                                                                                                from 'node:util';
 import {fileURLToPath}                                                                                            from 'node:url';
@@ -116,7 +118,8 @@ const
     PNG_MAGIC         = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     MAX_ICON_B        = 2 * 1024 * 1024,
     TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
-    REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
+    REPO_SKILL_REF_RE  = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
+    RELATIVE_MD_REF_RE = /(?<![A-Za-z0-9_/:.-])((?:\.\.?\/)+[A-Za-z0-9_./-]+\.md(?:#[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)?)/g,
     // Concrete `<skill>` slugs only so prose globs (`.agents/skills/**`) in `turn-memory-pre-flight` pass; leaves `.agents/skills/<file>` unguarded.
     UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\/[a-z0-9-]+(?:\/|$)/,
     FETCHABLE_REF_RE  = /https:\/\/(?:github\.com\/neomjs\/[a-z0-9-]+\/(?:blob|raw)\/|raw\.githubusercontent\.com\/neomjs\/)/,
@@ -212,15 +215,20 @@ export function expectedMarketplace(bundles, version) {
 }
 
 /**
- * @summary Rewrites a plugin file so nothing in it is fetchable. Repo-relative `.agents/skills/` references resolve
- * inside the plugin or become `neo-agent-skills:` names. Absolute neomjs `blob`/`raw` URLs become `neomjs/<repo>:<path>`
- * names, except links to a skill in this repository, which take the skill-aware rewrite.
+ * @summary Rewrites a plugin file so nothing in it is fetchable or left as a dead cross-skill relative path.
+ * Repo-relative `.agents/skills/` references resolve inside the plugin or become `neo-agent-skills:` names; relative
+ * `.md` references whose resolved target skill is absent from the bundle also become `neo-agent-skills:<skill>/<rest>`
+ * while bundled relative targets stay unchanged. Absolute neomjs `blob`/`raw` URLs become `neomjs/<repo>:<path>` names,
+ * except links to a skill in this repository, which take the skill-aware rewrite.
  * @param {String} text
  * @param {String} skillName
  * @param {Set<String>} bundleSkillSet
+ * @param {String} [relPath='references/_'] File path relative to `.agents/skills/<skillName>/`.
  * @returns {String}
  */
-export function rewriteSkillText(text, skillName, bundleSkillSet) {
+export function rewriteSkillText(text, skillName, bundleSkillSet, relPath = 'references/_') {
+    const skillBaseDir = posix.dirname(posix.join(skillName, toPosix(relPath)));
+
     return text.replace(NEOMJS_URL_RE, (_match, blobRepo, blobPath, rawRepo, rawPath) => {
         const
             repo = blobRepo ?? rawRepo,
@@ -235,17 +243,38 @@ export function rewriteSkillText(text, skillName, bundleSkillSet) {
             return `\${CLAUDE_PLUGIN_ROOT}/skills/${targetSkill}/${rest}`
         }
         return `${UNBUNDLED_PREFIX}${targetSkill}/${rest}`
+    }).replace(RELATIVE_MD_REF_RE, rawRef => {
+        const
+            hashIndex = rawRef.indexOf('#'),
+            refPath   = hashIndex === -1 ? rawRef : rawRef.slice(0, hashIndex),
+            fragment  = hashIndex === -1 ? '' : rawRef.slice(hashIndex),
+            resolved  = posix.normalize(posix.join(skillBaseDir, refPath)),
+            slash     = resolved.indexOf('/');
+
+        if (resolved.startsWith('../') || slash === -1) {
+            return rawRef
+        }
+
+        const
+            targetSkill = resolved.slice(0, slash),
+            rest        = resolved.slice(slash + 1);
+
+        if (!/^[a-z0-9-]+$/.test(targetSkill) || targetSkill === skillName || bundleSkillSet.has(targetSkill)) {
+            return rawRef
+        }
+
+        return `${UNBUNDLED_PREFIX}${targetSkill}/${rest}${fragment}`
     })
 }
 
-function projectSkillFile(srcPath, skillName, bundleSkillSet) {
+function projectSkillFile(srcPath, skillName, bundleSkillSet, relPath) {
     const raw = readFileSync(srcPath);
 
     if (!TEXT_EXTENSIONS.has(extname(srcPath).toLowerCase())) {
         return raw
     }
 
-    return Buffer.from(rewriteSkillText(raw.toString('utf8'), skillName, bundleSkillSet), 'utf8')
+    return Buffer.from(rewriteSkillText(raw.toString('utf8'), skillName, bundleSkillSet, relPath), 'utf8')
 }
 
 /**
@@ -377,7 +406,7 @@ export function generatePlugin({root = defaultRoot, bundles = PLUGIN_BUNDLES} = 
             for (const rel of scanTree(srcDir).files) {
                 const dstFile = join(dstDir, rel);
                 mkdirSync(dirname(dstFile), {recursive: true});
-                writeFileSync(dstFile, projectSkillFile(join(srcDir, rel), name, skillSet))
+                writeFileSync(dstFile, projectSkillFile(join(srcDir, rel), name, skillSet, rel))
             }
         }
 
@@ -471,6 +500,53 @@ function checkIcon(iconPath, label) {
 }
 
 /**
+ * @summary Scans `.md` files under a bundle directory and reports any `./` or `../` `.md` reference that escapes the
+ * bundle or fails to resolve to a regular file inside `bundleDir`.
+ * @param {String} bundleDir
+ * @param {String} [labelPrefix='']
+ * @returns {String[]}
+ */
+export function checkBundleRelativeLinks(bundleDir, labelPrefix = '') {
+    const
+        resolvedRoot = resolve(bundleDir),
+        findings     = [];
+
+    for (const file of scanTree(bundleDir).files) {
+        if (extname(file).toLowerCase() !== '.md') {
+            continue
+        }
+
+        const
+            absFile = join(resolvedRoot, file),
+            text    = readFileSync(absFile, 'utf8'),
+            seen    = new Set();
+
+        for (const match of text.matchAll(RELATIVE_MD_REF_RE)) {
+            const
+                rawRef    = match[1],
+                hashIndex = rawRef.indexOf('#'),
+                refPath   = hashIndex === -1 ? rawRef : rawRef.slice(0, hashIndex);
+
+            if (seen.has(refPath)) {
+                continue
+            }
+            seen.add(refPath);
+
+            const
+                target   = resolve(dirname(absFile), refPath),
+                relToDir = toPosix(relative(resolvedRoot, target));
+
+            if (relToDir.startsWith('../') || relToDir === '..' || !existsSync(target) || !lstatSync(target).isFile()) {
+                const prefix = labelPrefix ? `${labelPrefix}/${file}` : file;
+                findings.push(`${prefix}: unresolved relative .md reference '${rawRef}'`)
+            }
+        }
+    }
+
+    return findings
+}
+
+/**
  * @summary One bundle's directory-policy, manifest, README, icon, path-rewrite and skill-parity findings.
  * @param {String} root
  * @param {Object} bundle
@@ -543,6 +619,8 @@ function checkBundle(root, bundle, manifest, version) {
         }
     }
 
+    findings.push(...checkBundleRelativeLinks(pluginDir, rel));
+
     if (!existsSync(skillsDir)) {
         findings.push(`${rel}/skills: directory missing`);
         return findings
@@ -581,7 +659,7 @@ function checkBundle(root, bundle, manifest, version) {
             findings.push(`${rel}/skills/${name}/${file}: extra file absent from source skill`)
         }
         for (const file of srcFiles.filter(f => dstSet.has(f))) {
-            if (!projectSkillFile(join(srcDir, file), name, skillSet).equals(readFileSync(join(dstDir, file)))) {
+            if (!projectSkillFile(join(srcDir, file), name, skillSet, file).equals(readFileSync(join(dstDir, file)))) {
                 findings.push(`${rel}/skills/${name}/${file}: drifted from projected .agents/skills/${name}/${file}`)
             }
         }
