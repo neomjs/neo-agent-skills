@@ -1,0 +1,12 @@
+{
+  "bundle": "verify-before-code",
+  "queries": [
+    "github issue workflow",
+    "issue intake",
+    "epic review",
+    "spec before code"
+  ],
+  "targetRank": 3,
+  "status": "pending-directory-listing",
+  "trackingIssue": "neomjs/neo-agent-skills#446"
+}

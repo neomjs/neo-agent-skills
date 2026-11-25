@@ -4,6 +4,8 @@ Authoritative protocol for pre-work review of epics. Epic-review is a skill-gate
 
 Epic errors have N-sub blast radius. By the time `pr-review` catches drift on sub N, subs 1..N-1 have already pulled in the same wrong assumption. This skill gates at the larger blast radius — catching scope or approach errors *before* any sub work begins, when the cost of pivoting is cheapest.
 
+> **Standalone / plugin workspace (no Agent OS MCPs):** read `gh issue view <N> --comments`, sub-issues via `gh api repos/<owner>/<repo>/issues/<N>/sub_issues --paginate` (plus tasklist refs), local strategy/ADR docs (`ROADMAP.md`, `VISION.md`, `ARCHITECTURE.md`, `docs/adr/`), and `gh issue list --label epic --state all --search "<subject>"` (**note:** covers committed docs/public threads, not `get_context_frontier`/`query_summaries` memory vectors). Run §3's six-stage chain in chat; run `gh issue comment <N>` **only** on explicit user request.
+
 ## 1. When to Invoke
 
 Fire this skill when **either** condition holds:

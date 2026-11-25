@@ -1,0 +1,83 @@
+# Decision-substrate sweeps — arms `(iii)`, `(iv)` and `(v)` of §1a
+
+Declined predecessors carry decisions; read their reasons.
+
+## (iii) Memory Core rationale sweep
+
+Immediately before `create_issue`, run at least one `query_raw_memories` keyed on the **problem's nouns**: repo, package, file/symbol and existing failed mechanism, never the proposed solution.
+
+**Query the PROBLEM's nouns, never the SOLUTION's.** This is the distinction the arm turns on, and it is not "search harder":
+
+| | example | finds |
+|---|---|---|
+| ❌ the solution's nouns — the mechanism you are about to build | *"MC gate for ticket-create"* | only prior art that chose the same fix |
+| ❌ structural / boilerplate phrasing | *"should we add a gate for…"* | session boilerplate; Memory Core indexes artifacts |
+| ✅ the problem's nouns — the symptom as observed | *"vast amounts of additional tickets"*, *"different casualty each run"* | prior art that solved the same problem **differently** |
+
+Use the operator's symptom vocabulary; searching only your proposed mechanism hides other solutions.
+
+> **2026-08-31 anchors:** `neo-agent-skills#32` missed `neomjs/neo#16212` by querying the proposed mechanism instead of *"vast amounts of additional tickets"*. `neomjs/neo#18000` missed `neomjs/neo#17796` by querying a suite name instead of *"different casualty each run"*. Match the symptom across different solutions and suites.
+
+`query_summaries` and `explore_lane_landscape` widen the sweep when the first call returns only noise.
+
+## (iv) Own-assignment sweep
+
+```bash
+gh issue list --repo <r> --state open --assignee @me --json number,title
+```
+
+Read the **bodies** of the two or three same-surface hits, including tables and deferred clauses. Old open self-assignments escape `(i)`'s recency window and, worded differently, its noun searches; incidental discoveries need this check too.
+
+## (v) Epic-layer outcome-authority sweep
+
+Fires only on **epic-labeled** filings.
+
+```bash
+gh issue list --repo <r> --label epic --state open --json number,title
+gh issue list --repo <r> --label epic --state closed --search "<outcome nouns>" --limit 15
+```
+
+Compare **terminal predicates**, not titles: *what state of the world does this Epic declare finished?* Two Epics that finish the same sentence are one Epic, however differently they open.
+
+**Read every open predicate, then closed hits and ranked bodies.** `epic-create` puts `Terminal predicate:` first to keep the open read affordable:
+
+1. **Every open row + closed search hits:** read each open epic's `Terminal predicate:` line, plus the predicate or body opening of same-outcome hits from the closed `--search`.
+2. **Ranked bodies:** for missing or arguably overlapping predicates, run the semantic outcome-overlap query and read its ranked candidates. Retrieval proposes; the reader judges overlap.
+
+**Cost control:** read open predicates exhaustively, closed epics and bodies selectively. On 2026-09-02, 29 Engine epics implied ~290k characters for an all-body read; re-query populations rather than calling them small. Standing outcomes can predate `(i)`'s window and use different nouns, splitting ownership when missed.
+
+> **Anchor — `neomjs/neo-agent-brain#38` vs open `#54`, 2026-08-13.** Two roots, 17 and 16 children, the same two terminal predicates. The author's §1a sweep ran honestly and **passed**; a peer's epic review caught it after filing.
+
+## Attestation
+
+Record what ran, in the body, beside the live-open + closed attestation:
+
+```
+MC sweep: <queries>, <n> results, no prior decision found
+Own-assignment sweep: <n> open, none overlapping
+Epic sweep: <n> open predicates + closed search (<outcome nouns>) read, no shared terminal predicate    # epic-labeled filings only
+```
+
+Prose discipline that leaves no artifact cannot be checked; these arms exist because prose discipline failed.
+
+## Same-turn reconciliation
+
+If content belongs on a surviving parent, port it there in the same turn. An accepted direction-changing fold, graduation or successor publication must also reconcile the older work it replaces. A new exploratory option alone retires nothing.
+
+**The intent check (every not-planned close, issues and PRs alike):** an artifact's intent, the outcome it wanted, outlives its prescription, the way it proposed to get there. A changed architecture retires the prescription, not the intent. The closing comment names each still-valid intent and where it lives now: an open successor, or this artifact re-scoped instead of closed. Only an intent that is itself wrong closes with the artifact, and the comment says why. Closing your own artifact takes this check. Closing another author's takes two agreeing peers: you and its author, or a cross-family peer when the author is unreachable. Origin: the operator, 2026-10-28, after one seat closed a run of still-valid engine PRs.
+
+Reuse adjacency results and predecessor PR links: read affected tickets, open PRs (draft or ready), research recommendations, tool assumptions and active handovers/checklists. Find predecessors before filing; disposition them once successor IDs exist. Abandonment reconciles immediately against existing outcome/research owners:
+
+1. Cite the accepted decision and compare each recommendation with the **current outcome and required interactions**, not just its technical feasibility. A reusable reference does not authorize a superseded research/delivery path. Keep, narrow, transfer or retire each prescription; move unique obligations, evidence and dissent to a named surviving owner first. Existing research can own the remainder without another ticket.
+2. Update old entry heads and both sides' successor links. Retire obsolete instructions; preserve history. Close superseded PRs after the intent check, with decision/successor links, or retarget surviving scope. A finally rejected narrow implementation ticket closes `not_planned` per `ticket-intake` §4; unresolved outcomes stay open, and partial overlap leaves remaining obligations current. Epic closure uses `epic-resolution`.
+3. Apply own-authored or explicitly authorized changes. For foreign bodies/ACs, follow `ticket-create` §11: propose exact text and record the owner/application still owed. A pending proposal is not applied reconciliation.
+4. For immutable entries, put exact superseded IDs → current authority on the surviving owner's current entry and active handover. Preserve history. Read back bodies, links, states and mappings; mutable old heads must reveal disposition/owner. Report pending owner actions separately; unapplied cleanup is incomplete.
+
+## Empirical anchor
+
+- **`neomjs/neo#17997`, 2026-08-31:** Re-filed **row 3** of `#17868` — open, older than `(i)`'s window, and assigned to the filer — four hours after that filer's own `#17961` closing comment recorded row 3's blocker belonged **on `#17868`**.
+- **Why sweeps run LAST (`#12856`, 2026-06-10):** four agents raced one prompt into three duplicates; the one who re-checked immediately before `create_issue` produced none.
+
+## Sunset
+
+When `ticket-create` gains a mechanical pre-flight runner, arms `(i)`–`(iv)` collapse into it and this payload retires. `(v)` survives as a prompt: a runner can list open Epics and closed `--search` hits, but *"do these two finish the same sentence?"* is a reader's judgment.

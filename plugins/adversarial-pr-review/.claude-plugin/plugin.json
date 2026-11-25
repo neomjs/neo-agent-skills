@@ -1,7 +1,7 @@
 {
   "name": "adversarial-pr-review",
   "displayName": "Adversarial PR Review — Premise & Ticket-AC Gate",
-  "version": "2.8.4",
+  "version": "2.8.5",
   "description": "Review pull requests patch-blind against the linked GitHub issue's acceptance criteria, API/schema contracts, and real-state premise ('can the handled state exist in practice?') before reading the diff—catching wrong-premise, partial-AC, and architecture-drift PRs that pass green CI and style linters. Includes pre-commit PR reflection gates, git/gh technical-debt sweeps, and structured review templates via gh or chat.",
   "icon": "assets/icon.png",
   "author": {
