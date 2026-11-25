@@ -53,7 +53,7 @@
     },
     "epic-resolution": {
       "name": "epic-resolution",
-      "description": "Closeout exit-gate protocol for parent epics; use when the last required sub closes, a peer claims an epic is complete/substrate-complete, before closing an epic as COMPLETED, or on an epic-readiness broadcast."
+      "description": "Closeout exit-gate for parent issues; use when every sub of a parent is closed (close it or file the missing subs, same turn), a peer claims an epic is complete, or before closing one as COMPLETED."
     },
     "epic-review": {
       "name": "epic-review",
