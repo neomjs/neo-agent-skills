@@ -81,6 +81,23 @@
         "github-cli",
         "architecture-review"
       ]
+    },
+    {
+      "name": "verify-before-code",
+      "source": "./plugins/verify-before-code",
+      "description": "Before coding a GitHub issue, filing a bug or feature spec, or starting a multi-issue epic, falsify every assumption against live source, git history, and open/closed issues first so you never implement stale, duplicate, or wrong-premise tickets. Enforces pre-code prescription checks, explicit API/schema contracts, duplicate sweeps, and six-stage epic validation via gh and git.",
+      "version": "2.9.0",
+      "keywords": [
+        "github-issues",
+        "issue-intake",
+        "epic-review",
+        "spec-before-code",
+        "bug-triage",
+        "acceptance-criteria",
+        "contract-ledger",
+        "duplicate-detection",
+        "github-cli"
+      ]
     }
   ]
 }

@@ -1,0 +1,27 @@
+{
+  "name": "verify-before-code",
+  "displayName": "GitHub Issue & Epic Pre-Code Spec Gate",
+  "version": "2.9.0",
+  "description": "Before coding a GitHub issue, filing a bug or feature spec, or starting a multi-issue epic, falsify every assumption against live source, git history, and open/closed issues first so you never implement stale, duplicate, or wrong-premise tickets. Enforces pre-code prescription checks, explicit API/schema contracts, duplicate sweeps, and six-stage epic validation via gh and git.",
+  "icon": "assets/icon.png",
+  "author": {
+    "name": "Neo.mjs",
+    "url": "https://neomjs.com"
+  },
+  "homepage": "https://neomjs.com",
+  "repository": "https://github.com/neomjs/neo-agent-skills",
+  "documentationUrl": "https://github.com/neomjs/neo-agent-skills/tree/dev/plugins/verify-before-code",
+  "supportUrl": "https://github.com/neomjs/neo-agent-skills/issues",
+  "license": "MIT",
+  "keywords": [
+    "github-issues",
+    "issue-intake",
+    "epic-review",
+    "spec-before-code",
+    "bug-triage",
+    "acceptance-criteria",
+    "contract-ledger",
+    "duplicate-detection",
+    "github-cli"
+  ]
+}
