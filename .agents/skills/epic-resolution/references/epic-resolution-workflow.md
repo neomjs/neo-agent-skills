@@ -10,24 +10,16 @@ Sibling to `epic-review` (which is the *entry* gate at sub-creation time). `epic
 
 Trigger conditions (any one fires the workflow):
 
-1. **Last required sub closes.** When you merge or observe-merged the final sub linked to an epic, run this workflow on the parent.
+1. **Every sub is closed.** Any open parent issue, epic-labeled or not, whose sub-issues are all closed. The operator's rule (2026-11-24): it is closed, or it gets new subs, in the same turn.
 2. **Peer broadcasts epic-readiness.** Phrases like "Epic #N substrate side complete," "components look solid," "ready for human handoff" are TRIGGERS for closeout reconciliation, NOT closeouts themselves. Run the workflow before agreeing.
 3. **Team member claims completion.** A team member (operator or peer agent) directly states an epic is done.
 4. **Before closing an epic as COMPLETED.** Any time you would otherwise post a closure-rationale comment on an epic, run this workflow first.
 
-**Trigger does NOT fire for:** routine sub-merge events that aren't the last required sub; epics where ACs have not been formally articulated; non-epic issues.
+**Trigger does NOT fire for** a sub merging while other subs stay open.
 
-## 2. Concurrency guard (epic-closeout discipline-layer mutex)
+## 2. Concurrency guard
 
-Before populating the matrix, check whether another agent is already running the closeout for this epic.
-
-**Steps:**
-1. Read the recent comments on the epic. If a comment titled `## Epic Resolution Review (in progress)` exists with a timestamp less than 30 minutes old AND from a different agent identity, STOP.
-2. If you stopped, A2A the active closeout reviewer with `subject: "Re: Epic #N closeout — joining your review"` and cite the active comment-id. Do NOT post a parallel verdict.
-3. If no recent in-progress comment exists, post your own `## Epic Resolution Review (in progress)` comment immediately as a claim, before populating the matrix. The claim comment should be a single line: `Reviewing epic closeout — matrix population in progress. Started by @<your-identity> at <ISO-timestamp>.`
-4. Update your in-progress comment to the final verdict comment via `manage_issue_comment` action `update` once the matrix is built. The same comment evolves from claim → verdict.
-
-**Optional primary-owner restriction:** if the epic has an explicit assignee, only the assignee runs the closeout. Other agents detecting the trigger A2A-ping the assignee instead of running the workflow.
+The parent's assignee runs the closeout with no claim comment; on an assigned parent, anyone else A2As the assignee instead. On an unassigned parent, read the recent comments first. An `## Epic Resolution Review (in progress)` comment under 30 minutes old from another identity means STOP: A2A that reviewer (`Re: Epic #N closeout — joining your review`, with its comment-id). Otherwise post that heading with one line, `Reviewing epic closeout — started by @<you> at <ISO-timestamp>`, and later update the same comment into the verdict.
 
 ## 3. Populate the matrix
 
@@ -68,16 +60,16 @@ Before §4 verdict computation, run the exit pass of [`../audits/source-discussi
 2. **`judged` rows** (ownership, exclusions, sequencing, ADR boundaries): verify material delivery across §3 rows.
 3. **Residual / deferral:** `none — delivered via AC<N>`, `EXPLICITLY DEFERRED — <rationale>`, `CONVERTED TO FOLLOW-UP [#<followup-ticket>]`, or `LOST` (unmapped, folder-placeholder, or link/ID-only).
 
-**Verdict integration:** Any `LOST` row blocks `RECOMMEND_CLOSE_COMPLETED` even when all §3 Epic AC rows are green (`RECOMMEND_KEEP_OPEN` if recoverable in existing subs; `RECOMMEND_CREATE_MISSING_SUBS` if new sub needed; or file a retroactive `CONVERTED TO FOLLOW-UP [#N]` ticket if deferrable).
+**Verdict integration:** Any `LOST` row blocks `RECOMMEND_CLOSE_COMPLETED` even when all §3 Epic AC rows are green (`RECOMMEND_KEEP_OPEN` only while an open sub carries it; otherwise `RECOMMEND_CREATE_MISSING_SUBS`, or a retroactive `CONVERTED TO FOLLOW-UP [#N]` ticket if deferrable).
 
 ## 4. Compute the verdict
 
-Apply the verdict logic in this order (highest precedence first):
+Apply the verdict logic in this order (highest precedence first). When every sub is closed, `KEEP_OPEN` is not a verdict (operator, 2026-11-24): the parent closes, gets new subs, or retires.
 
 | Condition | Verdict |
 |---|---|
-| Any source Discussion criterion in `LOST` state per §3.5 Closeout Gate | `RECOMMEND_KEEP_OPEN` (if recoverable in existing subs) OR `RECOMMEND_CREATE_MISSING_SUBS` (if new sub needed) |
-| Any row has `BLOCKER` state | `RECOMMEND_KEEP_OPEN` |
+| Any source Discussion criterion in `LOST` state per §3.5 Closeout Gate | `RECOMMEND_KEEP_OPEN` while an open sub carries it, else `RECOMMEND_CREATE_MISSING_SUBS` |
+| Any row has `BLOCKER` state | `RECOMMEND_KEEP_OPEN` while the blocker sits in an open sub, else `RECOMMEND_CREATE_MISSING_SUBS` |
 | Any row has `RESIDUAL_L<N>` AND no follow-up ticket exists | `RECOMMEND_CREATE_MISSING_SUBS` |
 | All rows are `none — closed` OR `RESIDUAL_<X> [#<followup-ticket>]` (residuals tracked elsewhere) AND §3.5 Closeout Gate passes or is N/A | `RECOMMEND_CLOSE_COMPLETED` |
 | Epic's purpose has been superseded by another effort, later ADR / Decision Record authority, or the AC framing is no longer valid | `RECOMMEND_RETIRE_OR_SUPERSEDE` |
@@ -88,38 +80,20 @@ If an epic closeout hinges on ADR chronology, apply the ADR successor-risk audit
 
 - **`RECOMMEND_CLOSE_COMPLETED`** (zero unresolved residuals): close the epic with `gh issue close --reason completed`.
 - **`RECOMMEND_RETIRE_OR_SUPERSEDE`**: name what changed and what supersedes the epic, and run the [intent check](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation). Then close it as not planned with those links. Its open subs move to a live parent or close the same way.
-- **`RECOMMEND_CREATE_MISSING_SUBS`**: list each gap (which AC, what evidence is missing) with a proposed owner, or A2A the team to volunteer. An owner who accepts files via `/ticket-create`.
-- **`RECOMMEND_KEEP_OPEN`**: no terminal action. The review names the blockers and residuals for their owners.
+- **`RECOMMEND_CREATE_MISSING_SUBS`**: file each missing sub in the same turn via `/ticket-create`, owned or with an unowned-rationale, and link it with `update_issue_relationship`. A gap left in a comment is not a sub.
+- **`RECOMMEND_KEEP_OPEN`**: no terminal action; the review names the open sub that carries each residual.
 
 ## 5. Post the verdict comment
 
-Update your `## Epic Resolution Review (in progress)` comment to the final shape via `manage_issue_comment` action `update`:
+The verdict comment is the matrix plus one line of terminal action. After a §2 claim, update the claim comment into it (`manage_issue_comment` action `update`); otherwise post it.
 
 ```md
-## Epic Resolution Review
-
-**Reviewer:** @<your-identity>
-**Started:** <ISO-timestamp> (in-progress claim)
-**Completed:** <ISO-timestamp>
-**Verdict:** RECOMMEND_<CLOSE_COMPLETED | KEEP_OPEN | CREATE_MISSING_SUBS | RETIRE_OR_SUPERSEDE>
-
-### Matrix
+## Epic Resolution Review — RECOMMEND_<CLOSE_COMPLETED | CREATE_MISSING_SUBS | RETIRE_OR_SUPERSEDE | KEEP_OPEN>
 
 | Parent AC | Required evidence | Owning sub(s) | Delivered PR(s) | Achieved evidence | Residual state |
 |---|---|---|---|---|---|
-| ... | ... | ... | ... | ... | ... |
 
-### Rationale
-
-<2-4 paragraphs explaining the verdict. For KEEP_OPEN: which residuals/blockers + path to close. For CREATE_MISSING_SUBS: enumerate gaps + proposed owners. For RETIRE: superseding artifact. For CLOSE_COMPLETED: confirmation that all residuals are tracked elsewhere.>
-
-### Terminal action
-
-<What the review did: closed as completed; closed as not planned, with the superseding links; gaps offered to named owners; or none (keep open).>
-
-### A2A coordination
-
-<List peers A2A'd, with subject + commentId for the audit trail.>
+**Terminal action:** <closed as completed | closed as not planned, superseded by <links> | filed and linked #A, #B | none: open sub #N carries <residual>>
 
 Origin Session ID: <your session UUID>
 ```
@@ -130,7 +104,7 @@ After posting the verdict comment, A2A the relevant peers:
 
 - For `RECOMMEND_CLOSE_COMPLETED`: A2A all agents who had subs in the epic, FYI of the closure.
 - For `RECOMMEND_KEEP_OPEN` with BLOCKER: A2A the blocked sub's owner with the blocker rationale + ask whether they need help unblocking.
-- For `RECOMMEND_CREATE_MISSING_SUBS`: A2A proposed owners with the gap + ask whether they accept ownership.
+- For `RECOMMEND_CREATE_MISSING_SUBS`: A2A each filed sub's owner.
 - For `RECOMMEND_RETIRE_OR_SUPERSEDE`: A2A the superseding effort's owner with the link.
 
 Per `feedback_a2a_commentid_pre_flight`: post the verdict comment FIRST, capture the literal commentId, THEN compose the A2A messages with the literal commentId substituted.
