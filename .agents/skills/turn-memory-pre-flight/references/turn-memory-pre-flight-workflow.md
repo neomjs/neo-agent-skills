@@ -42,11 +42,9 @@ The rule is likely too narrow, tactical, or project-specific. Consider whether i
 
 ## Mechanical Pre-Flight Protocol
 
-Before mutating harness-loading files, verify how the substrate is loaded by running these commands to check empirical impact:
-1. `cat .codex/hooks.json`
-2. `cat .codex/hooks/codex-context.mjs`
-3. Verify harness MCP `context.fileName` checks.
-4. `readlink .claude/CLAUDE.md`
+Before mutating harness-loading files, verify how the substrate is loaded empirically:
+- **Agent OS maintainer workspaces:** inspect `.codex/hooks.json`, `.codex/hooks/codex-context.mjs`, harness MCP `context.fileName` checks, and `readlink .claude/CLAUDE.md`.
+- **Standalone / plugin workspaces (no Agent OS hooks):** measure always-loaded file sizes (`wc -c CLAUDE.md AGENTS.md` where present) before editing; keep root `CLAUDE.md` / `AGENTS.md` restricted to Step 1 universal invariants, route task-specific workflows (Step 2) to `.claude/skills/<name>/SKILL.md` (`7–12` line router) + `references/<payload>.md`, and keep rare troubleshooting/history behind one-line pointers (`compress-to-trigger`). Automated corpus byte-delta enforcement runs when `neo-agent-skills` lint is installed.
 
 ## Fallback Pattern
 

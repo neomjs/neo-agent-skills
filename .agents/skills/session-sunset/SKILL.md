@@ -1,6 +1,6 @@
 ---
 name: session-sunset
-description: "End a session without Zero-State Amnesia; use at >75% of the seat's own window, a quiet point before a distant lane, a macro-semantic pivot, or human directive (never task completion/wait)."
+description: "Write a structured session handover before ending a long session (>75% context window), before a quiet cross-lane or topic pivot, or on human wrap-up directive (never routine task completion/waits)."
 ---
 
 # Session Sunset Skill
@@ -13,4 +13,4 @@ description: "End a session without Zero-State Amnesia; use at >75% of the seat'
 
 Sunsets are strictly reserved for the workflow's §1 triggers: **Context Exhaustion or Cost**, **Macro-Semantic Pivots**, or **Explicit Human Directives**.
 
-If you meet a valid sunset condition, you MUST immediately use the `view_file` tool to read and strictly adhere to `.agents/skills/session-sunset/references/session-sunset-workflow.md` before terminating. This prevents Zero-State Amnesia.
+If you meet a valid sunset condition, you MUST immediately read and strictly adhere to `.agents/skills/session-sunset/references/session-sunset-workflow.md` before terminating. This prevents Zero-State Amnesia.

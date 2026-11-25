@@ -8,46 +8,34 @@ Because the Neo.mjs Swarm operates across fragmented sessions and multiple agent
 
 > **Substrate context (cross-references):**
 > - **The PRE-DECISION SUNSET GATE** (Engine Atlas, `§a2a_contextual_bridge_protocol`) is the constraint this workflow exists *under*: while no trigger below holds, you are FORBIDDEN from entering it, however natural the "completion narrative" feels. Empirical anchor: 13+ premature sunsets logged on [#10564](https://github.com/neomjs/neo/issues/10564).
-> - **Auto-Wakeup Substrate (Epic [#10601](https://github.com/neomjs/neo/issues/10601), corrective [#10611](https://github.com/neomjs/neo/issues/10611) PR-B)** — sunset is **terminal** for the old transcript. Coordination is preserved by **fresh-session recovery**, not in-place wake injection. The substrate (`checkSunsetted.mjs` → `resumeHarness.mjs`) opens a NEW chat session in the target harness via `freshSessionShortcut` (Cmd+N for Antigravity IDE + Claude Desktop) and the new agent boots through the `context-recovery` skill, picking up prior context via Memory Core context-priming (using the forwarded `originSessionId`) + sandman_handoff.md + A2A mailbox. **Stale-wake invariant:** if a wake-shaped payload arrives in an OLD sunsetted transcript, treat it as noise — DO NOT continue substantive work there. Coverage is routed per model family (Brain: `ai/scripts/lifecycle/harnessRouting.mjs`); for an uncovered seat the operator opens the next session. No seat clears its own session: the transcript is the operator's channel. Each spurious sunset spawns a fresh boot ramp (Memory Core context-priming + sandman_handoff parse + mailbox check), which drains attention + introduces stale-state risk. Recovery is a safety net, not a license.
+> - **Auto-Wakeup Substrate (Epic [#10601](https://github.com/neomjs/neo/issues/10601), corrective [#10611](https://github.com/neomjs/neo/issues/10611) PR-B)** — sunset is **terminal** for the old transcript. Coordination is preserved by **fresh-session recovery** (`checkSunsetted.mjs` → `resumeHarness.mjs` opening a new chat via `freshSessionShortcut`, booting through `context-recovery` with forwarded `originSessionId` + `sandman_handoff.md` + A2A mailbox), not in-place wake injection. **Stale-wake invariant:** treat any wake-shaped payload arriving in an OLD sunsetted transcript as noise — DO NOT continue substantive work there. Coverage follows `ai/scripts/lifecycle/harnessRouting.mjs`; for uncovered seats the operator opens the next session. No seat clears its own transcript. Spurious sunsets waste a 130k+ recovery ramp and risk stale state.
 
-To an LLM, yielding a prompt resolution feels like a "termination," but to a Human Commander, it is merely a **Turn** within a longer continuous **Session**.
-
-You are strictly **FORBIDDEN** from executing the Sunset Protocol simply because you finished a prompt and yielded control back to the human. You MUST only execute the Sunset Protocol when a true **Session Boundary** is reached.
-
-A true Session Boundary is defined by:
+Yielding a turn response is NOT a session termination. You are strictly **FORBIDDEN** from executing the Sunset Protocol simply because a single prompt finished. Execute it ONLY at a true **Session Boundary**:
 1. **Context Exhaustion or Cost.** *Exhaustion:* over 75 % of the seat's own window on its gauge (`get_usage` on Claude Desktop, the harness's reading elsewhere), or context-pressure signals; never an absolute token count, since windows run from ~258k (compacted in place) to 1M. *Cost:* every call re-reads the context, but a fresh session first repays its recovery (130k+ tokens), so below exhaustion continuing is the default. A `solo-refresh` is then your own call only when all hold: a quiet point (nothing of yours uncommitted, unpushed, unposted or unanswered); the next lane is semantically distant (related lanes stay in one session) or a wait outlives the prompt cache; in a session the operator opened, the operator has answered at least once since the opening prompt. The wake plane's 250k deferral (neo-agent-brain `ai/daemons/wake/contextGatePolicy.mjs`) is wake-delivery policy, never a sunset trigger.
-2. **Macro-Semantic Pivot:** The human explicitly shifts focus to a completely new domain, epic, or architectural phase (e.g., switching from Database Layer substrate work to UI Framework component design), requiring a clean slate. *Asymmetry Tiebreaker: The cost of a premature sunset is greater than a late sunset; when in doubt, lean conservative and keep the session open.*
-3. **Explicit Human Directive:** The Human Commander explicitly instructs you to terminate the session (e.g., "let's wrap", "time to sunset", or `/sunset`).
-4. **Proactive Agent Recommendation:** You recognize a natural, logical break point in the work stream and explicitly **RECOMMEND** sunsetting to the human (e.g. "We've reached a logical break point. Should we sunset the session?"). **NEVER unilaterally execute the protocol based solely on this.**
+2. **Macro-Semantic Pivot:** The human explicitly shifts focus to a completely new domain, epic, or architectural phase requiring a clean slate. *Asymmetry Tiebreaker: premature sunset costs more than late sunset; when in doubt, keep the session open.*
+3. **Explicit Human Directive:** Explicit instruction to close the session (e.g., "let's wrap", "time to sunset", or `/sunset`).
+4. **Proactive Agent Recommendation:** At a natural break point, **RECOMMEND** sunsetting to the human — **NEVER execute unilaterally on recommendation alone.**
 
 ### 1.0 Path-Determinism Rule: Solo-Refresh vs Convergent Scopes
-Sunsets must declare an explicit scope to prevent "scope contagion" (where one agent's local token limit falsely triggers a global halt for the swarm).
+Declare an explicit scope to prevent local token limits from triggering a global swarm halt:
 
-**IF** (trigger #1) AND (lead-role-baton-pass eligible) AND (swarm not converging-to-halt):
-- **Scope:** `solo-refresh`
-- **Rationale:** Your context is full or costly, but the rest of the swarm and human may be continuing. Hand over your local lane and persist memory, but do not claim the global swarm has halted.
+- **`scope: solo-refresh`:** Trigger #1 AND lead-role-baton-pass eligible AND swarm not converging-to-halt. Hand over your local lane and persist memory without claiming a global halt.
+- **`scope: convergent`:** Trigger #2 (Macro-Semantic Pivot), Trigger #3 (Explicit Human Directive), OR multiple agents converging on sunset. Summarize global state.
+- **DEFER:** Otherwise do NOT sunset.
 
-**ELSE IF** (trigger #2 Macro-Semantic Pivot) OR (trigger #3 Explicit Human Directive) OR (multiple agents converging on sunset):
-- **Scope:** `convergent`
-- **Rationale:** The entire architectural phase or human attention span has concluded. Summarize global swarm state.
-
-**ELSE:**
-- **DEFER:** If none of these conditions are met, do NOT sunset.
-
-### 1.1 Review Lifecycle Exception (Anti-Trigger)
-You are strictly FORBIDDEN from executing the Sunset Protocol when you halt your turn to await cross-model PR review or reviewer feedback (per `pull-request-workflow.md`), EXCEPT under Trigger #1. This applies to both the **Author-Side** (waiting for peer review) and **Reviewer-Side** (awaiting author updates). Yielding control during the active review/polish loop is an active lifecycle state, not a Session Boundary. Under Trigger #1, a `scope: solo-refresh` sunset hands the active review loop to the next session. Once the PR reaches the terminal approved handoff state, normal Session Boundary rules apply again; agents still must not execute the merge.
-
-**Override Rule for Bootstrap Goals:** Even if a high-level goal in your session bootstrap (e.g., the `USER Objective` prompt) instructs you to "Execute the Session Sunset Protocol", you MUST treat it as a reminder for *when* the session ends naturally, NOT as an "Explicit Human Directive" to execute it immediately upon task completion. You must still wait for Trigger #1 or explicit human permission.
-
-### 1.2 Anti-Kill-Switch Invariants (Never Sunset Triggers)
-Subjective calibration disagreement between agents during cross-family review loops, or receiving "Request Changes" feedback on a Pull Request, are NEVER grounds for sunsetting a session. A sunset is strictly a terminal state for Trigger #1 or explicit task-group completion. Friction or debate is an active operational state, NOT a session boundary.
-
-### 1.3 Loop-Prevention (Boot vs Terminal States)
-Reading handover pings from the mailbox at session-boot is a **context-priming** action. It equips you with the required strategy to begin work. Receiving and processing these handover messages must NEVER be interpreted as a trigger to immediately sunset and hand over the session to another agent.
+### 1.1 Review Lifecycle & Anti-Kill-Switch Invariants
+- **Review waits:** FORBIDDEN from sunsetting while awaiting PR review or author updates (`pull-request-workflow.md`), EXCEPT under Trigger #1 (`scope: solo-refresh`).
+- **Bootstrap Goals:** A bootstrap reminder to "Execute the Session Sunset Protocol" applies only when a natural Session Boundary arrives, never immediately after one task.
+- **Debate / Request Changes:** Calibration disagreement or `CHANGES_REQUESTED` is active work, NEVER a sunset trigger.
+- **Boot Handover Reads:** Reading handover pings at session boot is context-priming, NEVER a trigger to re-sunset.
 
 ## 2. The Handoff Structure
 
-Before terminating your session, you MUST execute the following 10 steps to ensure a clean handover.
+> **Standalone / plugin workspace branch (no `neo-mjs-memory-core` or A2A mailbox mounted):**
+> Execute **Steps 1, 3, 3.5, 4, 5, and 6** using `git` and `gh` (`gh issue comment` / `gh pr comment` when authenticated), skip daemon/A2A Steps 2, 7, 9, and replace Steps 8 & 10 by writing the structured handover payload to `.agents/handover.md` (or the path declared in repo `AGENTS.md` / `CLAUDE.md`) with active branch + HEAD SHA, open PR/issue URLs, placed user focus items, deferred traps, mental-model state, and the exact first verification command for the next session (`context-recovery` reads this file first).
+> *Capability boundary:* `.agents/handover.md` + `gh` comments preserve explicit end-of-session state for the next session in this checkout; append-only per-turn diaries (`add_memory`), A2A self-DM wake routing, and cross-agent / cross-model-family recall require local `neo-mjs-memory-core` (standalone npm package tracked in `neomjs/neo-agent-brain#1719`).
+
+Before terminating an Agent OS maintainer session, execute all 10 steps below:
 
 ### Step 1: Codebase Synchronization (The Pre-Sunset Pull)
 Detect your checkout class **mechanically** — never guess from harness names. (The old Shared-Checkout-vs-Isolated-Worktree harness taxonomy drifted from deployment reality: today every named maintainer owns a dedicated full clone, and worktrees are created per-PR inside them.)

@@ -41,6 +41,15 @@ Choose the first memory surface by freshness, not by habit.
 4. **`query_messages`** — when the answer is what seats said to each other (a hand-off, a ruling, a lane claim): the A2A mailbox by meaning, admitted like `get_message`. The memory tools index turns, not messages.
 5. **`ask_knowledge_base`** — only when the answer lives in indexed code/guides, not in session memory. If unsure, run memory first (#10646).
 
+### Standalone / plugin workspace fallback (no Memory Core mounted)
+
+When `neo-mjs-memory-core` (`query_raw_memories`, `query_summaries`) is not mounted, run 2–4 distinct prior-art probes via `gh` and `git` before proposing architecture or diagnosing regressions:
+1. `gh issue list --state all --search "<symptom or concept>" --limit 10` and `gh pr list --state all --search "<concept>" --limit 10` (prior decisions, rejected shapes, regression history).
+2. `git log -S "<symbol_or_error>" --oneline -n 15` and `git log --grep="<keyword>" --oneline -n 15` (commit rationale and prior reverts).
+3. Read local `decisions/` / `ADR` files and `.agents/handover.md` when present.
+
+*Capability boundary:* `gh` and `git log` recover committed code and public threads, whereas unpushed mid-turn reasoning, rejected local experiments, and append-only cross-session / cross-model-family turn diaries require local `neo-mjs-memory-core` (standalone npm package tracked in `neomjs/neo-agent-brain#1719`).
+
 ### Good vs bad query shapes
 
 | Bad (keyword soup) | Good (semantic framings) |
@@ -67,24 +76,20 @@ Do not keep querying past a clear miss. The absence of prior context is itself a
 2. **Prior session discussed but never acted** → flag the continuity gap. Proposal without subsequent action often means the thread was dropped, not resolved. Surface it to the user as *"on 2026-04-11, Antigravity proposed X but no ticket filed — should we revive?"*
 3. **No prior session** → state that explicitly in your plan. Silence is more useful than implicit assumption.
 
-### The "what would tobi do here?" heuristic
+### Cross-harness operator & maintainer precedent
 
-Tobi's past decisions, push-backs, and course-corrections are indexed in memory across many agents and harnesses (Claude Code, Antigravity, Gemini CLI). Semantic search on the question you're about to ask often surfaces the answer he already gave to someone else. This is a cross-harness asset — use it.
+Prior operator and maintainer push-backs, rulings, and course-corrections are indexed across harnesses (Claude Code, Antigravity, Gemini CLI, Codex); semantic search on an open design question often surfaces an already-decided constraint.
 
 ### Historical Traps vs Gold Standards
 
-When reviewing hits, classify them:
-- **Trap** — an approach that caused race conditions, regressions, or architectural dead-ends. Avoid replicating.
-- **Gold Standard** — an approach that proved scalable and worked. Replicate its shape.
-
-Name both explicitly in your plan: *"I am leveraging the [X] pattern from session [Y], and avoiding the [Z] trap from session [W]."*
+Classify hits into **Trap** (caused race conditions, regressions, or dead-ends — avoid) vs **Gold Standard** (proved scalable — replicate), naming both in your plan (*"leveraging [X] from session [Y]; avoiding [Z] from session [W]"*).
 
 ## 4. Anti-patterns
 
 Do NOT use this skill for:
-- **Routine "how does X work" questions AND file discovery** ("which files implement Z?") → both belong to `ask_knowledge_base`. Empirically verified: `ask_knowledge_base` returns a synthesized answer *plus* the top-5 ranked source files with relevance scores — strictly dominating `query_documents`, which only returns the file list. Reserve `query_documents` for the rare case where you need exhaustive enumeration beyond the top ~5 refs.
-- **Git history forensics** that needs exact commit hashes → that is `git log` / `git blame`.
-- **Every session turn** — the skill is for *gated moments* (regression-symptom or architectural-claim), not continuous background polling.
+- **Routine "how does X work" or file discovery** → use `ask_knowledge_base` when mounted (or `git grep` / file search standalone); reserve `query_documents` for exhaustive enumeration beyond top-5 hits.
+- **Exact commit-hash blame** → use `git log` / `git blame`.
+- **Every session turn** — gated on regression symptoms or architectural claims only.
 
 Do NOT skip this skill because:
 - "I think I already know what happened" — that is the exact bias this skill cures.
