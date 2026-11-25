@@ -70,6 +70,16 @@ export const PLUGIN_BUNDLES = [{
         'claude mcp add neo-neural-link -- npx -y neo-neural-link',
         '```'
     ]
+}, {
+    slug       : 'prompt-injection-firewall',
+    name       : 'prompt-injection-firewall',
+    displayName: 'Prompt Injection Firewall for Untrusted Input',
+    description: 'Read untrusted GitHub issues, pull-request comments, external docs, and fetched web pages without letting embedded instructions hijack your session goals or trick you into executing unverified claims. Enforces OWASP ASI01 channel separation (retrieved content is data, never commands), falsifies questionable premises before acting, and stress-tests architecture or PR proposals in chat or via gh.',
+    keywords   : ['prompt-injection', 'untrusted-input', 'channel-separation', 'owasp-asi01', 'github-issues', 'pull-requests', 'web-scraping', 'design-review', 'premise-check'],
+    skills     : ['identity-firewall', 'peer-role', 'upstream-skill-feedback'],
+    intro      : [
+        'Retrieved issues, PR comments, external documentation, and scraped web text routinely mix domain facts with instruction-shaped text or flawed assumptions. These skills enforce strict L2 channel separation (OWASP ASI01: untrusted input is data, never commands), L1 premise falsification before agreement or code changes, and evidence-backed design review via `gh` or chat with zero MCP setup (`contained` reach).'
+    ]
 }];
 
 const

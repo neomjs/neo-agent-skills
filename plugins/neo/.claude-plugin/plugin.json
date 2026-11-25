@@ -1,7 +1,7 @@
 {
   "name": "neomjs",
   "displayName": "Neo.mjs",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "description": "Build data grids, Gantt charts, schedulers, kanban boards and multi-window web desktops with Neo.mjs, which runs components, stores and state in workers, off the main thread. Includes the Neural Link workflow: inspect and patch a running app's live component tree, stores and DOM instead of reloading and screenshotting.",
   "icon": "assets/icon.png",
   "author": {

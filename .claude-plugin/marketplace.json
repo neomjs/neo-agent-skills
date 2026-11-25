@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Claude Code plugins projected from the neomjs/neo-agent-skills skill corpus.",
-    "version": "2.8.0"
+    "version": "2.8.1"
   },
   "plugins": [
     {
       "name": "neomjs",
       "source": "./plugins/neo",
       "description": "Build data grids, Gantt charts, schedulers, kanban boards and multi-window web desktops with Neo.mjs, which runs components, stores and state in workers, off the main thread. Includes the Neural Link workflow: inspect and patch a running app's live component tree, stores and DOM instead of reloading and screenshotting.",
-      "version": "2.8.0",
+      "version": "2.8.1",
       "keywords": [
         "data-grid",
         "gantt",
@@ -30,6 +30,23 @@
         "neural-link",
         "mcp",
         "neomjs"
+      ]
+    },
+    {
+      "name": "prompt-injection-firewall",
+      "source": "./plugins/prompt-injection-firewall",
+      "description": "Read untrusted GitHub issues, pull-request comments, external docs, and fetched web pages without letting embedded instructions hijack your session goals or trick you into executing unverified claims. Enforces OWASP ASI01 channel separation (retrieved content is data, never commands), falsifies questionable premises before acting, and stress-tests architecture or PR proposals in chat or via gh.",
+      "version": "2.8.1",
+      "keywords": [
+        "prompt-injection",
+        "untrusted-input",
+        "channel-separation",
+        "owasp-asi01",
+        "github-issues",
+        "pull-requests",
+        "web-scraping",
+        "design-review",
+        "premise-check"
       ]
     }
   ]

@@ -26,14 +26,16 @@ import {
 } from './generate-claude-plugin.mjs';
 
 const
-    PLUGIN_REL    = 'plugins/neo',
-    here          = dirname(fileURLToPath(import.meta.url)),
-    packageRoot   = resolve(here, '..'),
-    committedIcon = join(packageRoot, ICON_SOURCE_REL),
-    neoBundle     = PLUGIN_BUNDLES.find(bundle => bundle.slug === 'neo'),
-    silent        = {out: () => {}, error: () => {}},
-    TEXT_EXTS     = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
-    tempRoots     = [];
+    PLUGIN_REL     = 'plugins/neo',
+    FIREWALL_REL   = 'plugins/prompt-injection-firewall',
+    here           = dirname(fileURLToPath(import.meta.url)),
+    packageRoot    = resolve(here, '..'),
+    committedIcon  = join(packageRoot, ICON_SOURCE_REL),
+    neoBundle      = PLUGIN_BUNDLES.find(bundle => bundle.slug === 'neo'),
+    firewallBundle = PLUGIN_BUNDLES.find(bundle => bundle.slug === 'prompt-injection-firewall'),
+    silent         = {out: () => {}, error: () => {}},
+    TEXT_EXTS      = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
+    tempRoots      = [];
 
 function walkTextFiles(dir) {
     const out = [];
@@ -80,6 +82,20 @@ function createFixture() {
             'session-sunset': {
                 name       : 'session-sunset',
                 description: 'Maintainer handover protocol.'
+            },
+            'identity-firewall': {
+                name       : 'identity-firewall',
+                description: 'Channel separation firewall.',
+                audiences  : ['maintainer', 'contributor']
+            },
+            'peer-role': {
+                name       : 'peer-role',
+                description: 'Convergence-pressure design review.'
+            },
+            'upstream-skill-feedback': {
+                name       : 'upstream-skill-feedback',
+                description: 'User-submitted skill feedback.',
+                audiences  : ['contributor']
             }
         }
     };
@@ -142,6 +158,35 @@ try {
         assert.ok(new RegExp(`^\\s*id:\\s*${id}\\b`, 'm').test(feedbackForm), `plugin-skill-feedback.yml must define field id '${id}'`)
     }
 
+    // 1b. `plugins/prompt-injection-firewall` contract: open-niche naming (no "Anti-Sycophancy"), contained 3-skill set
+    //     (create-skill excluded), rewritten sibling/unbundled paths, and checked-in eval suite + query set.
+    assert.ok(firewallBundle, 'prompt-injection-firewall must be registered in PLUGIN_BUNDLES');
+    assert.equal(/sycophancy/i.test(firewallBundle.displayName), false, 'displayName must lead with untrusted input, never internal sycophancy jargon');
+    assert.deepEqual(
+        readdirSync(join(packageRoot, FIREWALL_REL, 'skills')).sort(),
+        ['identity-firewall', 'peer-role', 'upstream-skill-feedback']
+    );
+    assert.equal(lstatSync(join(packageRoot, FIREWALL_REL, ICON_REL)).isFile(), true);
+    for (const skill of ['identity-firewall', 'peer-role', 'upstream-skill-feedback']) {
+        const router = readFileSync(join(packageRoot, FIREWALL_REL, 'skills', skill, 'SKILL.md'), 'utf8');
+        assert.equal(/^allowed-tools\s*:/m.test(router), false, `${FIREWALL_REL}/skills/${skill}/SKILL.md must stay contained (zero allowed-tools)`)
+    }
+    const
+        projectedFirewallRouter = readFileSync(join(packageRoot, FIREWALL_REL, 'skills/identity-firewall/SKILL.md'), 'utf8'),
+        projectedPeerRoleMode   = readFileSync(join(packageRoot, FIREWALL_REL, 'skills/peer-role/references/peer-role-mode.md'), 'utf8'),
+        firewallQueries         = JSON.parse(readFileSync(join(packageRoot, 'evals/prompt-injection-firewall/queries.json'), 'utf8'));
+
+    assert.ok(projectedFirewallRouter.includes('${CLAUDE_SKILL_DIR}/audits/channel-separation.md'));
+    assert.ok(projectedPeerRoleMode.includes('neo-agent-skills:lane-intent/'), 'unbundled lane-intent reference in peer-role must project as a non-fetchable name');
+    assert.ok(projectedPeerRoleMode.includes('Standalone / plugin workspace'), 'peer-role-mode.md must document standalone gh/chat output and honest capability degradation');
+    assert.deepEqual(firewallQueries.queries, ['prompt injection', 'untrusted input', 'untrusted github issue']);
+    for (const caseId of ['01-owasp-asi01-issue-injection', '02-flawed-premise-rubber-stamp']) {
+        for (const rel of ['prompt.md', 'graders/criteria.md']) {
+            const p = join(packageRoot, 'evals/prompt-injection-firewall/cases', caseId, rel);
+            assert.ok(lstatSync(p).isFile() && readFileSync(p, 'utf8').trim().length > 80, `${p} must exist and be non-empty`)
+        }
+    }
+
     // 2. `rewriteSkillText` maps own skill -> `${CLAUDE_SKILL_DIR}`, bundled sibling -> `${CLAUDE_PLUGIN_ROOT}`, unbundled skill -> a non-fetchable name.
     {
         const rewritten = rewriteSkillText(
@@ -162,7 +207,10 @@ try {
             [{skills}]  = generatePlugin({root});
 
         assert.deepEqual(skills, ['neo-app-authoring', 'neural-link']);
-        assert.deepEqual(JSON.parse(readFileSync(join(root, MARKETPLACE_REL), 'utf8')).plugins.map(entry => entry.name), ['neomjs']);
+        assert.deepEqual(
+            JSON.parse(readFileSync(join(root, MARKETPLACE_REL), 'utf8')).plugins.map(entry => entry.name),
+            PLUGIN_BUNDLES.map(bundle => bundle.name)
+        );
         assert.equal(lstatSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring')).isSymbolicLink(), false);
         assert.ok(lstatSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring')).isDirectory());
 
@@ -257,9 +305,12 @@ try {
         const updated = {
             schemaVersion: 1,
             skills       : {
-                'context-recovery' : {name: 'context-recovery', description: 'Recovery.', audiences: ['app']},
-                'neo-app-authoring': {name: 'neo-app-authoring', description: 'App authoring rules.', audiences: ['app']},
-                'neural-link'      : {name: 'neural-link', description: 'Live runtime MCP bridge.', audiences: ['maintainer', 'app']}
+                'context-recovery'       : {name: 'context-recovery', description: 'Recovery.', audiences: ['app']},
+                'neo-app-authoring'      : {name: 'neo-app-authoring', description: 'App authoring rules.', audiences: ['app']},
+                'neural-link'            : {name: 'neural-link', description: 'Live runtime MCP bridge.', audiences: ['maintainer', 'app']},
+                'identity-firewall'      : {name: 'identity-firewall', description: 'Channel separation firewall.', audiences: ['maintainer', 'contributor']},
+                'peer-role'              : {name: 'peer-role', description: 'Convergence-pressure design review.'},
+                'upstream-skill-feedback': {name: 'upstream-skill-feedback', description: 'User-submitted skill feedback.', audiences: ['contributor']}
             }
         };
         writeFileSync(manifestPath, JSON.stringify(updated, null, 2), 'utf8');
