@@ -18,7 +18,7 @@ Run this catalog at the end of `pr-review-guide.md` §0, before the defect audit
 
 Graduated-decision reversal checks for the **record**, not the change. An ADR or Discussion amendment carrying a reopened graduation or consensus record passes the row; elections are amendable through reopened authority, and this is not an ADR-edit ban.
 
-Engine update path is the operator's rule of 2026-11-25 ([neo#22178](https://github.com/neomjs/neo/pull/22178#issuecomment-7157404019)): guides → ADR → code. Its paths: `src/vdom/**`, `src/util/vdom/**`, `src/worker/VDom.mjs`; Main's `src/main/DeltaUpdates.mjs` and the `src/Main.mjs` read/write queues; App-side `src/manager/VDomUpdate.mjs`, `src/mixin/VdomLifecycle.mjs` and the Container `needsVdomUpdate` cascade. Until the guides land (neo#22189), every such diff fires the row; then the path list moves into them and this note shrinks to their link.
+Engine update path is the operator's rule of 2026-11-25 ([neo#22178](https://github.com/neomjs/neo/pull/22178#issuecomment-7157404019)): guides → ADR → code. Its paths are the files [the engine guides](https://github.com/neomjs/neo/tree/dev/learn/guides/vdomengine) walk from collection to sync-back.
 
 ## Source-Ticket Currency Rule
 
