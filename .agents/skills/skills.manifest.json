@@ -190,6 +190,11 @@
       "name": "update-roadmap",
       "description": "Post-release roadmap planning protocol; use when a release merges to main, a maintainer asks to scope the next release/plan the roadmap/what's in vNext, or the post-release planning beat is neglected."
     },
+    "upstream-skill-feedback": {
+      "name": "upstream-skill-feedback",
+      "description": "Opt-in protocol to report reproducible skill or plugin misfires upstream; use when an installed neo-agent-skills skill or plugin bundle hits an unmapped standalone step, false gate, or broken instruction.",
+      "audiences": ["maintainer", "contributor", "app"]
+    },
     "video-create": {
       "name": "video-create",
       "description": "End-to-end workflow for narrated product films, demos, and campaign videos; use when planning, producing, revising, or delivering a video deliverable (not isolated images, media conversion, or app testing)."

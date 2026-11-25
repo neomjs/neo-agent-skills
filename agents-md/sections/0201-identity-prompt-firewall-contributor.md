@@ -4,7 +4,7 @@ order: 201
 wrapperGroup: g1c
 repos: neo, neo-agent-brain, neo-agent-skills, neo-agent-institution, devindex
 audiences: contributor
-skills: identity-firewall
+skills: identity-firewall, upstream-skill-feedback
 ---
 ## §identity_prompt_firewall
 

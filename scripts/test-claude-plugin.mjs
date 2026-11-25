@@ -125,6 +125,22 @@ try {
     const authoringSkill = readFileSync(join(packageRoot, PLUGIN_REL, 'skills/neo-app-authoring/SKILL.md'), 'utf8');
     assert.ok(authoringSkill.includes('${CLAUDE_SKILL_DIR}/references/app-authoring-guide.md'));
 
+    const
+        feedbackRouter   = readFileSync(join(packageRoot, PLUGIN_REL, 'skills/upstream-skill-feedback/SKILL.md'), 'utf8'),
+        feedbackWorkflow = readFileSync(join(packageRoot, PLUGIN_REL, 'skills/upstream-skill-feedback/references/upstream-feedback-workflow.md'), 'utf8'),
+        feedbackForm     = readFileSync(join(packageRoot, '.github/ISSUE_TEMPLATE/plugin-skill-feedback.yml'), 'utf8');
+
+    assert.ok(feedbackRouter.includes('${CLAUDE_SKILL_DIR}/references/upstream-feedback-workflow.md'));
+    assert.equal(/^allowed-tools\s*:/m.test(feedbackRouter), false, 'upstream-skill-feedback must declare zero allowed-tools to keep plugin reach contained');
+    assert.ok(
+        feedbackWorkflow.includes('gh issue create --repo neomjs/neo-agent-skills') &&
+        feedbackWorkflow.includes('template=plugin-skill-feedback.yml'),
+        'upstream-skill-feedback workflow must carry both consented gh CLI submission and Issue Form URL fallback'
+    );
+    for (const id of ['plugin_version', 'skill_name', 'step', 'expected_vs_actual', 'harness_and_model', 'redaction_confirm']) {
+        assert.ok(new RegExp(`^\\s*id:\\s*${id}\\b`, 'm').test(feedbackForm), `plugin-skill-feedback.yml must define field id '${id}'`)
+    }
+
     // 2. `rewriteSkillText` maps own skill -> `${CLAUDE_SKILL_DIR}`, bundled sibling -> `${CLAUDE_PLUGIN_ROOT}`, unbundled skill -> a non-fetchable name.
     {
         const rewritten = rewriteSkillText(

@@ -586,7 +586,7 @@ for (const [skill, refusal] of [['missing-skill', /unknown skill/], ['constructo
     assert.ok(composed.gate, 'and imports the generator by name, composing a repository set in-process');
 
     // Reuse this installed tarball in a non-git consumer, not a symlink to the source checkout.
-    const selected = ['identity-firewall', 'pull-request', 'unit-test'],
+    const selected = ['identity-firewall', 'pull-request', 'unit-test', 'upstream-skill-feedback'],
           materializer = join(binDir, 'neo-agent-skills-materialize'),
           installed = join(consumer, 'node_modules/neo-agent-skills'),
           publicOptions = {cwd: consumer, encoding: 'utf8', env: {PATH: process.env.PATH}},

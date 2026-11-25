@@ -5,7 +5,7 @@ repos: neo-app-workspace
 audiences: app
 ---
 ## §skills
-Three skills ship with this workspace, in `.agents/skills/` and `.claude/skills/`:
+Four skills ship with this workspace, in `.agents/skills/` and `.claude/skills/`:
 - **`neo-app-authoring`** — read it before writing or changing anything under `apps/`. It covers
   the class shape, reactive configs, stores and models, state providers and styles.
 - **`neural-link`** — use it to inspect and verify the running app. The Neural Link is already
@@ -14,6 +14,8 @@ Three skills ship with this workspace, in `.agents/skills/` and `.claude/skills/
   (`useAiClient` in `neo-config.json`).
 - **`context-recovery`** — read it immediately after context compaction or a summarized-session
   resume to reconstruct active state from local `git`, `gh`, and handover files before continuing.
+- **`upstream-skill-feedback`** — read it when one of these skills misfires or lacks a standalone
+  step; it drafts a redacted report and asks the user before filing an issue upstream.
 
 **"No active App Worker sessions found"** means the page loaded before the Neural Link started. The
 app stops dialing after five tries (about 15 seconds) and dials again only when its window is focused
