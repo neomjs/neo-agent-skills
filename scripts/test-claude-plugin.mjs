@@ -291,7 +291,33 @@ try {
             'utf8'
         );
 
-        assert.ok(checkPlugin({root}).some(line => line.includes('links a fetchable neo-agent-skills file')))
+        assert.ok(checkPlugin({root}).some(line => line.includes('links a fetchable neomjs file')));
+
+        writeFileSync(
+            join(root, PLUGIN_REL, 'skills/neo-app-authoring/references/guide.md'),
+            'See https://raw.githubusercontent.com/neomjs/neo-agent-brain/dev/learn/agentos/process/evidence-ladder.md.\n',
+            'utf8'
+        );
+        assert.ok(checkPlugin({root}).some(line => line.includes('links a fetchable neomjs file')), 'a cross-repo raw URL fails too')
+    }
+
+    // 15. Absolute neomjs blob/raw links project as non-fetchable names; an absolute link to a bundled skill resolves in the plugin.
+    {
+        const
+            text = [
+                'Ladder: https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md',
+                'Guide: [seats](https://github.com/neomjs/neo/blob/dev/learn/agentos/process/SeatEvidenceCapabilities.md#rows)',
+                'Raw: https://raw.githubusercontent.com/neomjs/neo/dev/learn/x.md',
+                'Sibling: https://github.com/neomjs/neo-agent-skills/blob/dev/.agents/skills/neural-link/SKILL.md'
+            ].join('\n'),
+            out  = rewriteSkillText(text, 'neo-app-authoring', new Set(['neo-app-authoring', 'neural-link']));
+
+        assert.equal(out, [
+            'Ladder: neomjs/neo-agent-brain:learn/agentos/process/evidence-ladder.md',
+            'Guide: [seats](neomjs/neo:learn/agentos/process/SeatEvidenceCapabilities.md#rows)',
+            'Raw: neomjs/neo:learn/x.md',
+            'Sibling: ${CLAUDE_PLUGIN_ROOT}/skills/neural-link/SKILL.md'
+        ].join('\n'))
     }
 
     // 13. A marketplace out of step with the registry or the package version fails closed.

@@ -14,6 +14,7 @@
  * - `.agents/skills/<bundled-sibling>/...` -> `${CLAUDE_PLUGIN_ROOT}/skills/<bundled-sibling>/...`
  * - `.agents/skills/<other-skill>/...`     -> `neo-agent-skills:<other-skill>/...`, a name, never a fetchable URL: the
  *   Software Directory Policy §2F forbids directing Claude to pull behavioral instructions from external sources.
+ * - `https://github.com/neomjs/<repo>/(blob|raw)/<ref>/<path>` -> `neomjs/<repo>:<path>`, for the same reason.
  *
  * Every `plugin.json` and the marketplace mirror root `package.json`'s `version` (bumped on every maintainer release,
  * enforced by `scripts/check-version-bump.mjs`, synced by the `npm version` lifecycle script) so Claude Code
@@ -77,7 +78,8 @@ const
     TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
     REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
     UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\//,
-    FETCHABLE_REF_RE  = /https:\/\/(?:github\.com\/neomjs\/neo-agent-skills\/(?:blob|raw)\/|raw\.githubusercontent\.com\/neomjs\/neo-agent-skills\/)/,
+    FETCHABLE_REF_RE  = /https:\/\/(?:github\.com\/neomjs\/[a-z0-9-]+\/(?:blob|raw)\/|raw\.githubusercontent\.com\/neomjs\/)/,
+    NEOMJS_URL_RE     = /https:\/\/(?:github\.com\/neomjs\/([a-z0-9-]+)\/(?:blob|raw)\/[^/\s)`"']+\/([^\s)`"']*)|raw\.githubusercontent\.com\/neomjs\/([a-z0-9-]+)\/[^/\s)`"']+\/([^\s)`"']*))/g,
     AUTHOR            = {name: 'Neo.mjs', url: 'https://neomjs.com'},
     REPOSITORY        = 'https://github.com/neomjs/neo-agent-skills',
     here              = dirname(fileURLToPath(import.meta.url)),
@@ -169,14 +171,22 @@ export function expectedMarketplace(bundles, version) {
 }
 
 /**
- * @summary Rewrites repo-relative `.agents/skills/` references for a standalone plugin installation.
+ * @summary Rewrites a plugin file so nothing in it is fetchable. Repo-relative `.agents/skills/` references resolve
+ * inside the plugin or become `neo-agent-skills:` names. Absolute neomjs `blob`/`raw` URLs become `neomjs/<repo>:<path>`
+ * names, except links to a skill in this repository, which take the skill-aware rewrite.
  * @param {String} text
  * @param {String} skillName
  * @param {Set<String>} bundleSkillSet
  * @returns {String}
  */
 export function rewriteSkillText(text, skillName, bundleSkillSet) {
-    return text.replace(REPO_SKILL_REF_RE, (_match, targetSkill, rest) => {
+    return text.replace(NEOMJS_URL_RE, (_match, blobRepo, blobPath, rawRepo, rawPath) => {
+        const
+            repo = blobRepo ?? rawRepo,
+            path = blobPath ?? rawPath;
+
+        return repo === 'neo-agent-skills' && path.startsWith('.agents/skills/') ? path : `neomjs/${repo}:${path}`
+    }).replace(REPO_SKILL_REF_RE, (_match, targetSkill, rest) => {
         if (targetSkill === skillName) {
             return `\${CLAUDE_SKILL_DIR}/${rest}`
         }
@@ -488,7 +498,7 @@ function checkBundle(root, bundle, manifest, version) {
             findings.push(`${rel}/${file}: contains unrewritten repo-relative .agents/skills/ path`)
         }
         if (FETCHABLE_REF_RE.test(text)) {
-            findings.push(`${rel}/${file}: links a fetchable neo-agent-skills file; Directory Policy §2F forbids pulling behavioral instructions from external sources`)
+            findings.push(`${rel}/${file}: links a fetchable neomjs file; Directory Policy §2F forbids pulling behavioral instructions from external sources`)
         }
     }
 
