@@ -100,6 +100,16 @@ export const PLUGIN_BUNDLES = [{
     intro      : [
         'Green CI and line-by-line style linters still approve pull requests that solve the wrong problem, handle states that never occur in production, or quietly drop acceptance criteria from the originating issue. These bundled skills build a patch-blind premise snapshot from the linked issue, Contract Ledger, and base source before inspecting the diff, audit real-state reachability and adjacent technical debt via `gh` and `git log`, and format actionable reviews with zero MCP setup (`contained` reach).'
     ]
+}, {
+    slug       : 'verify-before-code',
+    name       : 'verify-before-code',
+    displayName: 'GitHub Issue & Epic Pre-Code Spec Gate',
+    description: 'Before coding a GitHub issue, filing a bug or feature spec, or starting a multi-issue epic, falsify every assumption against live source, git history, and open/closed issues first so you never implement stale, duplicate, or wrong-premise tickets. Enforces pre-code prescription checks, explicit API/schema contracts, duplicate sweeps, and six-stage epic validation via gh and git.',
+    keywords   : ['github-issues', 'issue-intake', 'epic-review', 'spec-before-code', 'bug-triage', 'acceptance-criteria', 'contract-ledger', 'duplicate-detection', 'github-cli'],
+    skills     : ['ticket-intake', 'ticket-create', 'epic-review', 'upstream-skill-feedback'],
+    intro      : [
+        'Coding agents picking up GitHub issues or decomposing multi-issue epics routinely implement stale assumptions, prescribe fixes in the wrong architectural layer, or file duplicate specs. These bundled skills falsify issue claims against live source and open/closed `gh` history before branching, enforce six-stage prescription and Contract-Ledger specs when drafting issues, and gate multi-issue epics on roadmap fit, approach elegance, and sub-issue coherence (`contained` reach, zero MCP setup).'
+    ]
 }];
 
 const

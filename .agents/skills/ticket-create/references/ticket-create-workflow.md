@@ -2,7 +2,9 @@
 
 The authoritative protocol for creating Neo.mjs GitHub issues. Enforced before any `create_issue` MCP tool invocation. This is the creation-side dual of `ticket-intake` (which consumes existing tickets).
 
-Tickets are **A2A (Agent-to-Agent) memory bridges**, not just human tracking artifacts. A poorly-formed ticket loses architectural context the Swarm will re-derive every session. Every rule below exists because an earlier session re-derived the discipline and got it wrong.
+Tickets are **A2A (Agent-to-Agent) memory bridges**, not just human tracking artifacts. A poorly-formed ticket loses architectural context the Swarm will re-derive every session.
+
+> **Standalone / plugin workspace (no Agent OS MCP servers):** run §1a's duplicate/history sweeps via `gh issue list --state open --limit 20`, `gh issue/pr list --state all --search "<problem nouns>"`, `git grep`, and `git log -S "<symbol>" -n 20` (**capability note:** `gh` keyword and `git log` sweeps surface committed history and public threads, not cross-session semantic RAG via `ask_knowledge_base` / `query_raw_memories` or `AGENT:*` A2A in-flight claims). Apply §2's six-stage challenge chain against live source and §5's structured spec + Contract Ledger; present the drafted issue in chat by default, and run `gh issue create` (with labels verified via `gh label list`) **only** when the user explicitly asks to file it on GitHub (Directory Policy §2D; skip `ai:structure-map`, `Origin Session ID`, and `create_issue` MCP calls).
 
 ## §0 — Understand the intent before you write the ticket
 
@@ -99,50 +101,33 @@ defect-note: <surface> <broke | is wrong> <observed symptom>
 
 ## 2. Six-Stage Challenge Chain
 
-Apply the same importance weighting used by PR review at creation time: premise / right thing to build = 30%; substrate / what belongs where = 30%; deliverable correctness = 30%; AC and evidence checklist sanity = 10%. These are importance-to-verdict weights, not drafting effort budgets. A perfectly detailed AC list for the wrong work or wrong owning substrate still fails the ticket.
+Apply PR-review importance weights at creation time (30% premise / right work; 30% owning substrate; 30% deliverable correctness; 10% AC/evidence sanity — weights govern verdict, not drafting length). Every stage must pass before drafting:
 
-Apply at creation time — not just at intake. Every stage must pass before the ticket is drafted.
+1. **Premise** — is the problem real, reproducible, and independently verified rather than secondhand?
+2. **Prescription (`AGENTS.md` §verify_before_assert)** — does the fix target the owning substrate rather than a symptom? Run falsifying tool reads (`view_file` / `git grep` / `ask_knowledge_base`) before asserting a bug or prescribing a fix.
+3. **Substrate** — service layer, build script, CI workflow, core, or docs? When introducing or relocating a `.mjs` file, validate placement via `.agents/skills/structural-pre-flight/` first (Stage 0/1 fast-path or full Pre-Flight; anchors: PR `#11008`, `ai/daemons/wake/daemon.mjs`).
+4. **Consumer** — human developer, agent, Memory Core, Native Edge Graph, or Knowledge Base? Match output shape (prose vs. structured metadata vs. MCP payload) to the reader.
+5. **Service-Boundary** — avoid crossing service boundaries or placing config in a non-owning service.
+6. **Decision Record impact** — for architecture/substrate tickets, declare `none`, `aligned-with`, `depends-on`, `amends`, `supersedes`, or `challenges` an ADR; run [`../../ticket-intake/references/adr-successor-risk-audit.md`](../../ticket-intake/references/adr-successor-risk-audit.md) before challenging or superseding an accepted ADR.
 
-1. **Premise** — is the stated problem real and reproducible? Has the underlying symptom been independently verified, or is it secondhand?
-2. **Prescription** — is the stated fix the right substrate for the problem, or does it treat a symptom? Could a different layer (config, service, daemon, schema) solve it better?
-   **Verify-Before-Assert Integration:** Before making architectural claims or prescribing solutions in your Fat Ticket body (Stage 2 Prescription), you MUST apply the **Verify-Before-Assert Pre-Flight Check** (`AGENTS.md` §verify_before_assert). You cannot assert that a bug exists or a pattern is flawed without empirical confirmation (a falsifying tool call) prior to filing the ticket.
-3. **Substrate** — where does this work belong? Service layer? Build script? CI workflow? Framework core? Documentation? Match the fix to the substrate that owns the concern.
-   **Structural Pre-Flight Integration:** when the prescription introduces or relocates a `.mjs` file, validate the directory choice via `.agents/skills/structural-pre-flight/` before drafting the ticket body (Stage 0 mechanical trigger; Stage 1 30s sibling-match fast-path; full Pre-Flight for novel directory choices; anchors: PR `#11008` `orchestrator-daemon.mjs`, `ai/daemons/wake/daemon.mjs`).
-4. **Consumer** — who reads the output of this change? Human developer, agent, Memory Core, Native Edge Graph, Knowledge Base? Different consumers need different shapes (markdown prose vs structured metadata vs MCP payload).
-5. **Service-Boundary** — does the fix cross a service boundary it shouldn't? Config added to the wrong owning service creates future migration debt.
-6. **Decision Record impact** — for architecture/substrate tickets, declare whether the work is `none`, `aligned-with`, `depends-on`, `amends`, `supersedes`, or `challenges` an ADR. If it challenges or supersedes an accepted ADR, apply the ADR successor-risk audit in [`../../ticket-intake/references/adr-successor-risk-audit.md`](../../ticket-intake/references/adr-successor-risk-audit.md) before filing.
-
-A ticket that fails any stage should be reshaped OR rejected, not filed.
+Reshape or drop any ticket that fails a stage.
 
 ## 3. Title Hygiene
 
-**Titles describe the subject, not the category.** Category lives in labels.
-
-- ❌ `[enhancement] Add config for X`
-- ❌ `[bug] Y fails when Z`
-- ❌ `[epic] Modernize W`
-- ✅ `Add config for X`
-- ✅ `Y fails when Z`
-- ✅ `Modernize W`
-
-The `[enhancement]` / `[bug]` / `[epic]` prefix duplicates the label taxonomy — it also eats title budget. Use the budget for subject specificity instead.
-
-Keep titles under ~70 characters. PR titles derive from ticket titles; length discipline compounds.
+**Titles describe the subject, never `[enhancement]` / `[bug]` / `[epic]` prefixes** (category belongs in labels) and stay under ~70 characters (`Add config for X`, `Y fails when Z`, `Modernize W`).
 
 ## 4. Label Rules
 
 **Default for new non-critical standalone work: `good first issue` + `help wanted` + `ai`.**
-Keep curated labels off urgent/critical, unresolved, private-dependent or owned work; say why.
-First-time is not novice. Supply public context and checks (§5/§12) for features,
-fixes and refactors, not just trivial tests.
+Keep curated labels off urgent/critical, unresolved, private-dependent, or owned work and state why. Supply complete public context and checks (§5/§12).
 
-With either curated label, put this above Context on the first screen; keep the rationale:
+With either curated label, place this above Context on the first screen:
 “Please comment to claim before starting; check current assignees and linked PRs.”
 
-- **`ai` — required on agent-created tickets, including trivial ones.** Provenance, not difficulty or a maintainer claim.
-- **Primary — exactly one:** `epic`, `enhancement`, or `bug`. **Choosing it:** a standalone must be one-PR-resolvable — one `Resolves`, so a second PR closes it early or fails the lint. Bigger → **split**, or `epic` only when leaves coordinate toward one shared outcome (`epic-create` Procedure 1).
+- **`ai` — required on agent-created tickets** (provenance, not difficulty or ownership).
+- **Primary — exactly one:** `epic`, `enhancement`, or `bug`. Standalone issues must be one-PR-resolvable (one `Resolves #N`); split larger work, or use `epic` when leaves coordinate toward a shared outcome (`epic-create` Procedure 1).
 - **Secondary — as applicable:** `architecture`, `performance`, `regression`, `refactoring`, `documentation`, `testing`, plus domain labels (`core`, `grid`, `build`, etc.).
-- Before filing: call `list_labels` to confirm the labels exist. Do not invent label names.
+- Verify labels exist via `list_labels` (or `gh label list` standalone) before filing; never invent names.
 
 ## 5. Fat Ticket Body Structure
 

@@ -4,6 +4,8 @@ This document outlines the authoritative protocol for the **Pre-Execution Reflec
 
 If you blindly accept a ticket's premise, you risk injecting regressions into the Native Edge Graph.
 
+> **Standalone / plugin workspace (no Agent OS MCP servers):** execute §0–§2 via `gh` CLI and `git`: fetch the live issue and comments (`gh issue view <N> --comments`) plus blocker/sub-issue metadata (`gh api repos/<owner>/<repo>/issues/<N>`), then falsify every claim against current source (`git grep`, `git log -S "<symbol>" -p`) and open/closed history (`gh issue/pr list --state all --search "<nouns>"`) *before* branching (**capability note:** `gh` keyword and `git log` sweeps cover committed code and public threads, not cross-session semantic Knowledge Base or Memory Core turn diaries). Report the reality classification and `Prescription checked:` verdict in chat by default; run `gh issue edit <N> --add-assignee @me`, `gh issue comment`, or `gh issue close` **only** when the user explicitly asks to mutate GitHub (Directory Policy §2D; skip `signal_state_transition`).
+
 ## §0 — Understand the intent, and challenge the fix, before you accept
 
 Two questions before the validation sweep or branching. They fail differently, and **§0 sits outside the Hot Context Fast-Path** — both run even when §1 and §2 are skipped.
@@ -96,56 +98,48 @@ Before executing `git checkout`, interrogate the codebase and Memory Core to val
    | Wrong grounding assumption on a correctly-read rule | Verify the failure mode the rule prevents before assigning a motivation. If the substrate says "single task", do not project "token budget" or "fresh-session" unless the source actually establishes that grounding. |
 
    If the claim fails verification, do not "polish" it into substrate. Reclassify the ticket as `needs-narrowing`, `superseded`, or `invalid-or-negative-roi` as appropriate.
-11. **Empirical Proof (Test-Driven Discovery):** When validating hypotheses involving complex state, token boundaries, or engine logic, do not rely solely on mental modeling. Consult the `unit-test` skill (`view_file` on `.agents/skills/unit-test/SKILL.md`) and write a localized Playwright unit-test (or an isolated draft concept) to empirically reproduce the paradox *first*. This guarantees you are solving the explicit root cause before you modify live core architecture. Implementing a flawed directive simply because it was written in an Issue guarantees a Negative ROI.
+11. **Empirical Proof (Test-Driven Discovery):** For complex state, token boundaries, or engine logic, do not rely on mental modeling alone — consult `.agents/skills/unit-test/SKILL.md` (in Neo workspaces) or write a targeted failing test to reproduce the root cause before changing production code.
 
 ## 2. ROI (Return on Investment) Calculation
 
-Evaluate the ticket based on effort vs. architectural payoff. A ticket can yield a **Negative ROI**.
-- **Negative ROI:** High effort, introduces legacy anti-patterns, duplicates active work, or forces severe regressions to satisfy outdated constraints.
-
-If your calculation results in a Negative ROI, you MUST reject the ticket — proceed to **Section 4: The Rejection Protocol**.
+Evaluate effort vs. architectural payoff; high effort that introduces anti-patterns, duplicates active work, or forces regressions for outdated constraints yields **Negative ROI** and routes to **Section 4: The Rejection Protocol**.
 
 ## 3. Acceptance Protocol (Branch-Before-Code + Auto-Assign)
 
-If the ticket passes validation with positive ROI, execute both gates **before** modifying any files:
+When validation passes with positive ROI, execute both gates **before** modifying tracked files:
 
 ### 3a. Claim Ownership (Auto-Assign)
 
-Verify the ticket is not already owned by another active agent or human before assigning yourself:
-
-1. **Query Existing Assignee:** Read `assignees` via `mcp_neo-mjs-github-workflow_get_conversation`.
-2. **If Empty:** Assign via `manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])` (`@me` resolves to the authenticated GitHub user, preventing duplicate pickup).
-3. **If Assigned (The 7-Day Rule):** Per `CONTRIBUTING.md`, tickets are protected from hijack unless the assignee is stale:
-   - Compute `lastQualifyingActivity`: most recent comment from the assignee OR any `WRITE`+ maintainer (`@neo-opus-ada`, `@neo-gemini-pro`, etc.) acknowledging in-progress work (observer comments do NOT count).
-   - **If `now - lastQualifyingActivity < 7 days`:** BLOCK pickup. Post a comment requesting transfer or clarification, do NOT self-assign, and halt intake.
-   - **If `now - lastQualifyingActivity >= 7 days`:** Post *"Picking up per 7-day rule; previous assignee @X; last qualifying activity <ISO-8601 timestamp>."* then call `manage_issue_assignees` to add `@me`.
+1. **Query Existing Assignee:** Read `assignees` via `mcp_neo-mjs-github-workflow_get_conversation` (or `gh issue view <N> --json assignees,comments` standalone).
+2. **If Empty:** Assign via `manage_issue_assignees(action: 'add', issue_number: N, assignees: ['@me'])` (`@me` resolves to the authenticated user).
+3. **If Assigned (The 7-Day Rule):** Per `CONTRIBUTING.md`, tickets are protected unless stale:
+   - `lastQualifyingActivity` = most recent comment from the assignee OR a `WRITE`+ maintainer acknowledging active work (observer comments excluded).
+   - **`now - lastQualifyingActivity < 7 days`:** BLOCK pickup, post a transfer/clarification question, do NOT self-assign, and halt intake.
+   - **`now - lastQualifyingActivity >= 7 days`:** Post *"Picking up per 7-day rule; previous assignee @X; last qualifying activity <ISO-8601 timestamp>."* then self-assign `@me`.
 
 ### 3b. Branch-Before-Code Gate
 
-Create a feature branch **before** writing any code (`dev` must remain clean):
+Create a feature branch **before** writing code (`dev` and `main` remain untouched):
 
 ```bash
 git checkout -b agent/[ticket-id]-[descriptor]
 ```
 
-You are **FORBIDDEN** from executing `replace` / `replace_file_content` / `multi_replace_file_content`, `write_file` / `write_to_file`, or `git commit` on `dev` or `main`.
+Never edit files or commit directly on `dev` or `main`.
 
 ## 4. The Rejection Protocol (Handling Negative ROI)
 
-If you determine the ticket is stale or harmful, you MUST execute the Rejection Protocol instead of attempting to build it.
-
-For surviving obligations or stale entry points, use [same-turn reconciliation](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation) within this rejection step, without another sweep.
+When a ticket is stale, duplicate, or harmful, run the Rejection Protocol instead of implementing it. For surviving obligations or stale entry points, use [same-turn reconciliation](../../ticket-create/references/decision-substrate-sweeps.md#same-turn-reconciliation) within this step.
 
 **Close Policy:**
-- **Architecture Exploration / Epic Tickets:** **DO NOT close the ticket.** It must be preserved so the Swarm can formally evaluate the paradox. Record what it waits on via `update_issue_relationship(blocked_by)`. Not a label: `needs-re-triage` is for externally-authored tickets below the bar (see `ticket-triage`), so stamping it here pollutes that queue.
-- **1:1 Implementation Tickets (Including Substrate):** If the ticket is a narrow, final declined implementation task (e.g., `already-resolved`, `duplicate`, `invalid-or-negative-roi`), you MUST close the ticket as `not_planned` to prevent preserving bad payloads as future traps, even if the ticket prescribes substrate edits.
+- **Architecture Exploration / Epic Tickets:** **DO NOT close.** Record what it waits on via `update_issue_relationship(blocked_by)` (never stamp `needs-re-triage`, which belongs to external triage in `ticket-triage`).
+- **1:1 Implementation Tickets (Including Substrate):** Close final declined implementation tasks (`already-resolved`, `duplicate`, `invalid-or-negative-roi`) as `not_planned` so bad prescriptions do not survive as future traps.
 
 ### Autonomous Protocol (Headless)
-1.  **Blocker Declaration:** Use `update_issue_relationship(relationship_type: 'blocked_by')` to record what the ticket waits on. If you cannot name a blocker it is claimable — the honest outcome is the critique below, not a suppressed ticket.
-2.  **Architectural Feedback:** Use the `manage_issue_comment` MCP tool to post a detailed critique on the PR. You MUST use the `[ARCH_ALIGNMENT]` markdown tag to explain *why* the ROI is negative and why the premise is architecturally flawed.
-3.  **Hard Cut:** Terminate execution and trigger `signal_state_transition(state: 'TICKET_REJECTED', target: "[issue-number]")`.
+1. **Blocker Declaration:** Record blockers via `update_issue_relationship(relationship_type: 'blocked_by')`; if unblocked, post the critique directly.
+2. **Architectural Feedback:** Post a critique via `manage_issue_comment` with `[ARCH_ALIGNMENT]` explaining why the premise or ROI fails.
+3. **Hard Cut:** Stop execution and call `signal_state_transition(state: 'TICKET_REJECTED', target: "[issue-number]")`.
 
 ### Human-in-the-Loop Protocol (Frontier Models)
-1. **Interrupt Workflow:** Stop all operational execution. Do NOT run Git commands.
-2. **Present Findings:** Drop your complete Architectural Evaluation (including the `[ARCH_ALIGNMENT]` block and Negative ROI metric) directly into the chat response for the human Commander.
-3. **Collaboration:** Wait for the Human to discuss whether the ticket can be salvaged (e.g., pivot the goal) or if it commands formal rejection — which then follows the Close Policy above.
+1. **Interrupt Workflow:** Stop operational execution without running Git mutations.
+2. **Present Findings:** Share the Architectural Evaluation (`[ARCH_ALIGNMENT]` + Negative ROI rationale) in chat and align with the user before mutating issue state.

@@ -1,11 +1,10 @@
 ---
 name: epic-review
-description: "Pre-work review protocol for epics; use before picking up a first sub from an unreviewed peer epic, on an explicit epic-review request, when pre-validating a new epic, or via the Discussion-participant path."
+description: "Use before starting the first sub-issue of an unreviewed multi-issue epic, when asked to review or pre-validate an epic, or after its source RFC/Discussion: checks roadmap fit, prerequisites, and sub-issue overlap."
 ---
 # Epic Review Skill
 
-If you are about to pick up your first sub-issue from an epic that your model-identity has not yet reviewed (you never review your own epic), or when an epic review is requested or a freshly filed epic is pre-validated, you MUST immediately use the `view_file` tool to read and strictly adhere to `.agents/skills/epic-review/references/epic-review-workflow.md` (six-stage gating chain: roadmap fit, approach elegance, source discussion mapping, sub-structure coherence, prescription layer, avoided-traps completeness) before running `ticket-intake` or any sub-work steps.
+Before starting a sub-issue or approving an epic, run the gated six-stage check (roadmap fit, approach elegance, missing prerequisite subs/migrations, overlapping sub-issues, missing `blocked_by` ordering), halting sub-issue pickup (`Revisions Requested`) on gaps.
 
-Per-agent-per-epic one-shot: subsequent sub pickups from the same epic by the same model-identity cite the prior structured review comment by URL reference instead of re-running the skill.
-
-Authored this epic yourself, or participated in its source Discussion? The participant path narrows the chain and never exempts it — read `references/participant-path.md` first.
+- **Standalone / plugin workspace (`gh` + `git`):** read `.agents/skills/epic-review/references/epic-review-workflow.md` (`Standalone` block + §3), inspect sub-issues via `gh api repos/<owner>/<repo>/issues/<N>/sub_issues`, and deliver the review in chat unless asked to post on GitHub.
+- **Agent OS maintainer (`neo-mjs-memory-core`):** read `.agents/skills/epic-review/references/epic-review-workflow.md` (never review your own epic; one-shot per identity cites prior review URL; read `.agents/skills/epic-review/references/participant-path.md` if in source Discussion) and post the structured review comment.
