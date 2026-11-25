@@ -1,12 +1,10 @@
 ---
 name: ticket-intake
-description: "Pre-execution reflection gate for GitHub issues; use before branching or modifying code on any assigned/claimed ticket (full gate if peer-authored, or prescription/drift probe if self-authored)."
+description: "Use before branching or writing code for a GitHub issue or ticket: falsifies its claims and prescribed fix against live source, git log, ADRs, and open/closed issues (full gate, or drift check if self-authored)."
 ---
-
 # Ticket Intake Skill
 
-If you are an agent tasked with executing a ticket or issue whose authoring you did not see, you MUST NOT begin executing Git branch commands or writing code before running the Pre-Execution Reflection Gate (architectural validation, negative ROI calculation, and duplicate sweeps).
+Before branching or writing code for an issue, verify against live source, `git log`, ADRs, and open/closed issues that its problem still exists (`already-resolved`, `superseded`, `duplicate`, or open `blocked_by` halt coding) and challenge its prescribed fix (`Prescription checked:`).
 
-You MUST immediately use the `view_file` tool to read and strictly adhere to `.agents/skills/ticket-intake/references/ticket-intake-workflow.md` before proceeding. Or, if you already have the payload in context, proceed directly to its directives.
-
-Ticket you authored yourself: read `references/self-authored-carve.md` FIRST — a ticket authored this session is exempt EXCEPT the prescription check; one authored in an earlier session runs a cheap drift probe instead (never an exemption you judge for yourself).
+- **Standalone / plugin workspace (`gh` + `git`):** read `.agents/skills/ticket-intake/references/ticket-intake-workflow.md` (`Standalone` block + §0–§2), sweep `git grep`, `git log -S`, and `gh issue/pr list --state all`, and report the verdict in chat before mutating GitHub.
+- **Agent OS maintainer (`neo-mjs-memory-core`):** read `.agents/skills/ticket-intake/references/ticket-intake-workflow.md` (and `.agents/skills/ticket-intake/references/self-authored-carve.md` when self-authored: same-session runs Stage 2 prescription check; earlier-session runs `git log` drift probe), claim via `manage_issue_assignees`, and execute.
