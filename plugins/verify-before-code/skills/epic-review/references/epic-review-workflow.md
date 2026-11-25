@@ -56,7 +56,7 @@ Checks:
 **Question:** Is the main architectural decision load-bearing? Would a more elegant alternative serve the same goal?
 
 Checks:
-- **Ideation Sandbox Backstop (Mandatory for Discussion-origin Epics):** if this Epic emerged from a Discussion, verify that the Double Diamond divergence matrix was captured in the Discussion body **before** graduation per `ideation-sandbox-workflow.md` "Double Diamond Divergence Guard", and that ≥1 non-author peer review cycle happened after matrix insertion. **If the matrix is missing, lacks falsifying sources, or was retro-fitted directly into the Epic body, reject the Epic and route divergence back to the Discussion.** Rationale and #11077 anchor: [`../../ideation-sandbox/audits/double-diamond-divergence-guard.md`](../../ideation-sandbox/audits/double-diamond-divergence-guard.md).
+- **Ideation Sandbox Backstop (Mandatory for Discussion-origin Epics):** if this Epic emerged from a Discussion, verify that the Double Diamond divergence matrix was captured in the Discussion body **before** graduation per `ideation-sandbox-workflow.md` "Double Diamond Divergence Guard", and that ≥1 non-author peer review cycle happened after matrix insertion. **If the matrix is missing, lacks falsifying sources, or was retro-fitted directly into the Epic body, reject the Epic and route divergence back to the Discussion.** Rationale and #11077 anchor: [`neo-agent-skills:ideation-sandbox/audits/double-diamond-divergence-guard.md`](neo-agent-skills:ideation-sandbox/audits/double-diamond-divergence-guard.md).
 - Does the approach **reuse existing substrate**, or does it invent parallel substrate? (Parallel substrate is a strong warning sign — it usually means the author missed a reusable primitive.)
 - Is the main abstraction layer the right one? (Same substrate-boundary question as `ticket-intake` prescription challenge, elevated one scope level.)
 - Is there a known **Gold Standard** from prior sessions this epic diverges from without rationale? Query Memory Core for comparable epics.
@@ -72,11 +72,11 @@ Stage 2 is the most empirically valuable gate. A non-elegant approach that passe
 
 *(Runs only if stages 1-2 pass and the Epic cites a Discussion origin.)*
 
-<!-- trigger: Epic cites a Discussion origin, Signal Ledger, or [GRADUATED_TO_TICKET] → read ../../epic-resolution/audits/source-discussion-reconciliation-audit.md -->
+<!-- trigger: Epic cites a Discussion origin, Signal Ledger, or [GRADUATED_TO_TICKET] → read neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md -->
 
 **Question:** Do the Epic and its live leaf bodies carry every binding enumeration and judged contract from the source Discussion without needing the Discussion to implement or review?
 
-Run the entry pass of [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md):
+Run the entry pass of [`neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md`](neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md):
 - **Trigger:** If the Epic cites no Discussion origin, mark N/A and proceed to Stage 3.
 - **Enumerable rows first:** Run `node scripts/check-discussion-fidelity.mjs` against the source Discussion and the Epic + live leaf bodies. Every marked `binding-inventory` (exact paths/modules, schemas, API/wire vocabulary) must pass exact set equality; *"materially present"* or folder placeholders fail.
 - **Judged rows & Decision Record:** Verify every judged row (ownership, exclusions, sequencing, Decision Record `REQUIRED`/`OPTIONAL`/`NOT_NEEDED` authority) is materially present in the Epic intended solution or exact owning leaf. Link-only, criterion-ID-only, compressed-away, or orphan rows are `LOST`.
@@ -194,7 +194,7 @@ These citations belong in the `ticket-intake` reflection step for the sub, not a
 | `ticket-create` | Epic/sub birth | Creation-time | Produces the Fat Ticket body evaluated here. |
 | `ticket-intake` | Sub pickup | Sub-scope | Runs *after* epic-review on first sub pickup per identity. |
 | `pull-request` / `pr-review` | PR open / review | PR-scope | Catches execution drift *after* work; epic-review catches scope/approach drift *before*. |
-| `epic-resolution` | Epic closeout | Sub-closure | Exit-pass sibling; reconciles the Stage 3.1 matrix defined in the Brain-owned [Substrate Evidence Ladder](neomjs/neo-agent-brain:learn/agentos/process/evidence-ladder.md) and [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md). |
+| `epic-resolution` | Epic closeout | Sub-closure | Exit-pass sibling; reconciles the Stage 3.1 matrix defined in the Brain-owned [Substrate Evidence Ladder](neomjs/neo-agent-brain:learn/agentos/process/evidence-ladder.md) and [`neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md`](neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md). |
 
 ## 7. Anti-Patterns
 

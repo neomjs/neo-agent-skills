@@ -52,7 +52,7 @@ list_messages({ status: 'all', projection: 'compact', limit: 30 })  // ALL read-
 **(v) Epic-layer sweep (epic-labeled filings only, mandatory):** read every open `label:epic` issue's `Terminal predicate:` line, run `gh issue list --label epic --state closed --search "<outcome nouns>"` to read the predicate or body opening of same-outcome closed epics, body-read what an outcome-overlap query ranks, and attest beside `(i)`.
 
 <!-- trigger: filing a ticket, filing an EPIC, or a defect found while measuring something else -> read ./decision-substrate-sweeps.md (query shape, the epic sweep, attestation lines, same-turn porting, the #17997 / #12856 anchors) -->
-<!-- trigger: load-bearing population count or absence claim justifying premise, scope, or acceptance -> read ../../pr-review/references/reviewer-instrument-audit.md (role-triggered publish-safe instrument receipt; routine receipts and CI totals exempt) -->
+<!-- trigger: load-bearing population count or absence claim justifying premise, scope, or acceptance -> read neo-agent-skills:pr-review/references/reviewer-instrument-audit.md (role-triggered publish-safe instrument receipt; routine receipts and CI totals exempt) -->
 
 Semantic sweep: `ask_knowledge_base(query='...', type='ticket')` — surfaces conceptual duplicates that title scanning misses; its rows come from the `github-content-sync` tenant.
 Exact/historical sweep: `query_documents` (issues, archived issues, discussions) or a live `gh search issues --owner neomjs "<keyword>"`.
@@ -83,7 +83,7 @@ Before creating any Epic, architecture/substrate ticket, or ticket touching `ai/
 
 The shell also carries `[PROVISIONAL_UNGRADUATED: D#N]`, links the source Discussion, marks scope provisional, and omits final ACs; do not assign, claim, or start it. At quorum, promote the body/graduated-artifact ledger, record `[GRADUATED_TO_TICKET: #N]`, and remove the provisional marker; only then may a PR open.
 
-For source anchors (`#11078` / `#11082` / `#11083` / `#11084`), Discussion `#11091` authority context, and substrate-decay review, read [`../../ideation-sandbox/audits/double-diamond-divergence-guard.md`](../../ideation-sandbox/audits/double-diamond-divergence-guard.md).
+For source anchors (`#11078` / `#11082` / `#11083` / `#11084`), Discussion `#11091` authority context, and substrate-decay review, read [`neo-agent-skills:ideation-sandbox/audits/double-diamond-divergence-guard.md`](neo-agent-skills:ideation-sandbox/audits/double-diamond-divergence-guard.md).
 
 ### 1e. The Zero-Ceremony Defect Channel (capture exemption)
 
@@ -142,7 +142,7 @@ Skeleton tickets are forbidden — so are world atlases: sections complete, each
 - **Contract Ledger Matrix** *(when applicable)* — For any ticket introducing, modifying, or deprecating a surface consumed by humans, agents, or external systems (public methods, configs, MCP tools), include a formal Contract Ledger matrix (Target Surface, Source of Authority, Proposed Behavior, Fallback, Docs, Evidence). Rows naming existing surfaces must satisfy the row-level Surface-Anchor V-B-A discipline in the [Contract Ledger protocol](neomjs/neo-agent-brain:learn/agentos/process/contract-ledger.md) before the ticket asserts them.
 - **Decision Record impact** *(architecture/substrate tickets)* — the §2 step-6 declaration (`none` … `challenges <org>/<repo>#adr:<slug>` or same-repo `adr:<slug>`).
 - **Decision Record** *(Discussion-origin tickets)* — Preserve the source Discussion's ADR classification when present: `Not needed`, `Optional: <ADR/ticket/discussion anchor>`, or `Required: <org>/<repo>#adr:<slug> / PR #N / ticket #N` (records the graduation's authority target; `Decision Record impact` records what this ticket itself does to ADR authority).
-- **Discussion Criteria Mapping & Leaf Slice** *(when graduating from a Discussion)* — Reconciles the upstream Discussion's `[RESOLVED_TO_AC]` criteria and marked `binding-inventory` blocks per [`../../epic-resolution/audits/source-discussion-reconciliation-audit.md`](../../epic-resolution/audits/source-discussion-reconciliation-audit.md). Every Discussion-origin leaf MUST carry its exact binding slice (`inventory-id` entries, Contract Ledger rows, and ACs) in its own body so implementation and review never depend on reopening the Discussion.
+- **Discussion Criteria Mapping & Leaf Slice** *(when graduating from a Discussion)* — Reconciles the upstream Discussion's `[RESOLVED_TO_AC]` criteria and marked `binding-inventory` blocks per [`neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md`](neo-agent-skills:epic-resolution/audits/source-discussion-reconciliation-audit.md). Every Discussion-origin leaf MUST carry its exact binding slice (`inventory-id` entries, Contract Ledger rows, and ACs) in its own body so implementation and review never depend on reopening the Discussion.
 - **Acceptance Criteria** — bulleted checklist; each item independently verifiable, post-merge-only items flagged. **Epic exception:** for `epic`-labeled tickets, ACs live in the **SUB** tickets (author per `neo-agent-skills:epic-create/`: problem-scope + intended-solution; subs linked via `update_issue_relationship`, each one-PR-deliverable).
 - **Out of Scope** — what this ticket deliberately does NOT do.
 - **Avoided Traps** / **Gold Standards Rejected** *(when applicable)* — alternatives considered and rejected with rationale (especially generic LLM/React patterns that fail in Neo.mjs's multi-threaded architecture).
@@ -201,7 +201,7 @@ Minimize chained calls where possible — a well-formed `create_issue` call with
 When editing tickets:
 - **Your own:** correct the BODY, incl. ACs. A comment cannot supersede it — reviewers read the body for ACs.
 - **Someone else's:** propose via comment; never mutate their body or ACs.
-- **Reviewer-RA restatements:** read `../../pull-request/references/foreign-ticket-restatement.md` (comment-proposal default; claimer-authored in-body sections like intake-derived ledgers stay claimer-updatable).
+- **Reviewer-RA restatements:** read `neo-agent-skills:pull-request/references/foreign-ticket-restatement.md` (comment-proposal default; claimer-authored in-body sections like intake-derived ledgers stay claimer-updatable).
 
 *Why:* Rewriting someone else's prose causes attribution collapse and breaks Native Edge Graph ingestion.
 

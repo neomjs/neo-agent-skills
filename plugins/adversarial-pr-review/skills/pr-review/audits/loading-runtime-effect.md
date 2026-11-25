@@ -1,6 +1,6 @@
 # Loading-Runtime-Effect Substitution Audit
 
-Reviewer-side audit for substrate-load mistakes. The canonical file list, placement tree, mechanical pre-flight, and empirical anchors live in [`turn-memory-pre-flight`](../../turn-memory-pre-flight/references/turn-memory-pre-flight-workflow.md); do not duplicate them here.
+Reviewer-side audit for substrate-load mistakes. The canonical file list, placement tree, mechanical pre-flight, and empirical anchors live in [`turn-memory-pre-flight`](neo-agent-skills:turn-memory-pre-flight/references/turn-memory-pre-flight-workflow.md); do not duplicate them here.
 
 ## When this audit fires
 

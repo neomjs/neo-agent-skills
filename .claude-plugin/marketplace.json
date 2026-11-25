@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Claude Code plugins projected from the neomjs/neo-agent-skills skill corpus.",
-    "version": "2.9.2"
+    "version": "2.9.3"
   },
   "plugins": [
     {
       "name": "neomjs",
       "source": "./plugins/neo",
       "description": "Build data grids, Gantt charts, schedulers, kanban boards and multi-window web desktops with Neo.mjs, which runs components, stores and state in workers, off the main thread. Includes the Neural Link workflow: inspect and patch a running app's live component tree, stores and DOM instead of reloading and screenshotting.",
-      "version": "2.9.2",
+      "version": "2.9.3",
       "keywords": [
         "data-grid",
         "gantt",
@@ -36,7 +36,7 @@
       "name": "prompt-injection-firewall",
       "source": "./plugins/prompt-injection-firewall",
       "description": "Read untrusted GitHub issues, pull-request comments, external docs, and fetched web pages without letting embedded instructions hijack your session goals or trick you into executing unverified claims. Defends against OWASP ASI01 agent goal hijack via channel separation (retrieved content is data, never commands), falsifies questionable premises before acting, and stress-tests architecture or PR proposals in chat or via gh.",
-      "version": "2.9.2",
+      "version": "2.9.3",
       "keywords": [
         "prompt-injection",
         "untrusted-input",
@@ -52,7 +52,7 @@
       "name": "context-compaction-memory",
       "source": "./plugins/context-compaction-memory",
       "description": "After /compact or across fresh sessions, reconstruct exact branch, PR, issue, and decision state from structured git/gh and turn records instead of trusting lossy summaries. Includes session-sunset handovers to end long sessions without amnesia, prior-art mining before diagnosing regressions or proposing architecture, and Map-vs-Atlas byte-budget guards so CLAUDE.md and AGENTS.md never bloat or truncate.",
-      "version": "2.9.2",
+      "version": "2.9.3",
       "keywords": [
         "context-compaction",
         "after-compact",
@@ -69,7 +69,7 @@
       "name": "adversarial-pr-review",
       "source": "./plugins/adversarial-pr-review",
       "description": "Review pull requests patch-blind against the linked GitHub issue's acceptance criteria, API/schema contracts, and real-state premise ('can the handled state exist in practice?') before reading the diff—catching wrong-premise, partial-AC, and architecture-drift PRs that pass green CI and style linters. Includes pre-commit PR reflection gates, git/gh technical-debt sweeps, and structured review templates via gh or chat.",
-      "version": "2.9.2",
+      "version": "2.9.3",
       "keywords": [
         "pr-review",
         "code-review",
@@ -86,7 +86,7 @@
       "name": "verify-before-code",
       "source": "./plugins/verify-before-code",
       "description": "Before coding a GitHub issue, filing a bug or feature spec, or starting a multi-issue epic, falsify every assumption against live source, git history, and open/closed issues first so you never implement stale, duplicate, or wrong-premise tickets. Enforces pre-code prescription checks, explicit API/schema contracts, duplicate sweeps, and six-stage epic validation via gh and git.",
-      "version": "2.9.2",
+      "version": "2.9.3",
       "keywords": [
         "github-issues",
         "issue-intake",
