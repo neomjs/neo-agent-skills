@@ -66,7 +66,7 @@ Round 1 scores every metric explicitly in the full template. **Round 2 does not 
 The Round-1 scores stand as the PR's record. A metric only moves again on an exceptional verdict (Drop+Supersede), where the premise itself changed.
 
 ## 4. Graph Ingestion Tags
-Critical feedback carries regex-ingested tags (matched into Agent OS memory during REM sleep):
+Critical feedback MUST carry regex-ingested tags (matched into Agent OS memory during REM sleep):
 
 *   **`[KB_GAP]`**: missing concepts, core-logic misunderstandings, or undocumented behavior.
 *   **`[TOOLING_GAP]`**: workflow, test-runner, or MCP tool failures hit during the PR.

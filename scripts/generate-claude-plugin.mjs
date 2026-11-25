@@ -94,7 +94,7 @@ export const PLUGIN_BUNDLES = [{
     slug       : 'adversarial-pr-review',
     name       : 'adversarial-pr-review',
     displayName: 'Adversarial PR Review — Premise & Ticket-AC Gate',
-    description: 'Review pull requests patch-blind against the linked GitHub issue\'s acceptance criteria, Contract Ledger, and real-state premise (\'can the handled state exist in practice?\') before reading the diff—catching wrong-premise, partial-AC, and architecture-drift PRs that pass green CI and style linters. Includes canonical PR authoring gates, git/gh technical-debt sweeps, and structured review templates via gh or chat.',
+    description: 'Review pull requests patch-blind against the linked GitHub issue\'s acceptance criteria, API/schema contracts, and real-state premise (\'can the handled state exist in practice?\') before reading the diff—catching wrong-premise, partial-AC, and architecture-drift PRs that pass green CI and style linters. Includes pre-commit PR reflection gates, git/gh technical-debt sweeps, and structured review templates via gh or chat.',
     keywords   : ['pr-review', 'code-review', 'pull-request', 'acceptance-criteria', 'premise-check', 'contract-ledger', 'technical-debt', 'github-cli', 'architecture-review'],
     skills     : ['pr-review', 'pull-request', 'tech-debt-radar', 'upstream-skill-feedback'],
     intro      : [

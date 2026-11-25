@@ -135,7 +135,7 @@
     },
     "pr-review": {
       "name": "pr-review",
-      "description": "Use before reviewing a pull request, writing review feedback, or auditing PR evidence: checks the linked issue's ACs, Contract Ledger, and real-state premise against base source before reading the diff.",
+      "description": "Use before reviewing a pull request, writing review feedback, or auditing PR evidence: checks the linked issue's acceptance criteria, API/schema contracts, and real-state premise against base source first.",
       "perFilePayloadBudget": 33700
     },
     "pull-request": {

@@ -4,7 +4,7 @@ description: "Use when code changes are complete, before git commit, before open
 ---
 # Pull Request Skill
 
-Step back before `git commit`, opening/updating a PR, or answering review feedback: verify every linked-issue AC and Contract-Ledger row against production-path evidence, format `type(scope): summary (#N)` commits without `<noreply@*>` footers, and read `.agents/skills/pull-request/references/pull-request-workflow.md` first.
+Before committing, opening or updating a PR, or replying to review feedback, step back to verify every linked-issue AC and contract against real production-path evidence (never trust green CI over manufactured state or overclaim closing keywords), and read `.agents/skills/pull-request/references/pull-request-workflow.md`.
 
-- **Standalone / contributor workspace:** follow the public branch, test, canonical §9 body, and `gh pr` review-response path; never run `gh pr merge`.
-- **Agent OS maintainer workspace:** follow [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) claims, custom Playwright configs (never default `npx playwright test`), cross-family review, and §14 A2A handoff.
+- **Standalone / non-`neomjs` repository:** follow that repository's own commit format, attribution, PR template, and default branch (`CONTRIBUTING.md`, recent `git log`, `gh repo view --json defaultBranchRef`); deliver drafted PR/reply text in chat unless asked to run `gh pr`, and never run `gh pr merge` unasked.
+- **`neomjs` repository (`contributor` or `Agent OS maintainer`):** enforce `type(scope): summary (#N)` subjects, no `<noreply@*>` / harness backlinks, `--base dev`, canonical §9 body, custom Playwright configs (never default `npx playwright test`), and (maintainers) [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md), cross-family review, and §14 A2A handoff.
