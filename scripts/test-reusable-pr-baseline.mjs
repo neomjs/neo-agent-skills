@@ -5,7 +5,7 @@
  * GitHub validates YAML syntax when the branch is published; this suite protects the semantic
  * boundary that syntax cannot: one workflow-call entrypoint, read-only permissions, three jobs whose
  * boundary keeps pull-request code away from the shared guards, a caller's own guard list run whole on the
- * pull-request-code side, a caller held to a release tag, a release
+ * pull-request-code side with the base and the live body that side reads for itself, a caller held to a release tag, a release
  * version read from `package.json` and written nowhere in the workflow, stable step names, every check
  * running after an earlier red, caller-repository checkout, the explicit dev-base decision, immutable
  * guard execution, and the supported materializer command. Each negative fixture removes one property
@@ -144,6 +144,8 @@ export function validateReusablePrBaseline(source) {
           skillsJob       = jobSource(source, 'skills-materialized'),
           guardsJob       = jobSource(source, 'guards'),
           guardsRunStep   = stepSource(guardsJob, 'Run the declared guards'),
+          guardsBodyStep  = stepSource(guardsJob, 'Read the live pull-request body'),
+          guardsBaseStep  = stepSource(guardsJob, 'Base commit in history'),
           step            = name => stepSource(baselineJob, name),
           headStep        = step('Checkout exact caller head'),
           baseFetchStep   = step('Fetch pull-request base'),
@@ -272,7 +274,15 @@ export function validateReusablePrBaseline(source) {
               ['guards caller checkout', /uses: actions\/checkout@v\d+/, guardsJob],
               ['guards Node input', /node-version: \$\{\{ inputs\.node_version \}\}/, guardsJob],
               ['guards lockfile install', /run: npm ci/, guardsJob],
-              ['guards list through env', /^\s*GUARDS: \$\{\{ inputs\.guards \}\}\s*$/m, guardsRunStep]
+              ['guards list through env', /^\s*GUARDS: \$\{\{ inputs\.guards \}\}\s*$/m, guardsRunStep],
+              // Every guard reads the base and the live body, and the job holds nothing beyond read access to get them
+              ['guards pull-request grant', /^    permissions:\n      contents: read\n      pull-requests: read\n/m, guardsJob],
+              ['guards full history', /^\s*fetch-depth: 0\s*$/m, guardsJob],
+              ['guards checkout keeps no credential', /^\s*persist-credentials: false\s*$/m, guardsJob],
+              ['guards base check from the pull request', BASE_SHA, guardsBaseStep],
+              ['guards base in history', /^\s*run: git cat-file -e "\$\{BASE_SHA\}\^\{commit\}"\s*$/m, guardsBaseStep],
+              ['guards base SHA', BASE_SHA, guardsRunStep],
+              ['guards body file', /^\s*BODY_FILE: \$\{\{ runner\.temp \}\}\/pr-body\.md\s*$/m, guardsRunStep]
           ];
 
     required.forEach(([label, pattern, target = source]) => {
@@ -497,6 +507,16 @@ export function validateReusablePrBaseline(source) {
     // reporting that it did.
     if (/inputs\.guards/.test(baselineCode)) failures.push('PR baseline runs the declared guards');
 
+    // The guards' body is the same read as `PR baseline`'s, so the value-flow checks above cover this copy too. It runs
+    // before the caller's install, and the job waits on no other job: an output it waited for is the first attempt's.
+    const sameRead = text => text.replace(/^        if: .*\n/m, '');
+
+    if (!guardsBodyStep || sameRead(guardsBodyStep) !== sameRead(readBodyStep)) failures.push('guards body read differs from PR baseline');
+    if (guardsJob.indexOf('      - name: Read the live pull-request body\n') > guardsJob.indexOf('        run: npm ci\n')) {
+        failures.push('guards body read after the caller install')
+    }
+    if (/^    needs:/m.test(guardsJob)) failures.push('guards job waits on another job');
+
     const guardsRun    = guardsRunStep.match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '',
           guardsScript = guardsRun.match(/          node - <<'EOF'\n([\s\S]*?)\n          EOF\n/)?.[1] || '';
 
@@ -508,7 +528,7 @@ export function validateReusablePrBaseline(source) {
         const dir    = mkdtempSync(join(tmpdir(), 'neo-baseline-guards-')),
               ran    = join(dir, 'ran'),
               mark   = name => ({name, run: `printf '%s\\n' '${name}' >> ran`}),
-              runAll = list => {
+              runAll = (list, stepEnv = {}) => {
                   const summary = join(dir, 'summary.md');
 
                   rmSync(ran, {force: true});
@@ -518,7 +538,7 @@ export function validateReusablePrBaseline(source) {
                       cwd     : dir,
                       encoding: 'utf8',
                       input   : guardsScript,
-                      env     : {...process.env, GITHUB_STEP_SUMMARY: summary, GUARDS: typeof list === 'string' ? list : JSON.stringify(list)}
+                      env     : {...process.env, ...stepEnv, GITHUB_STEP_SUMMARY: summary, GUARDS: typeof list === 'string' ? list : JSON.stringify(list)}
                   });
 
                   return {status: result.status, ran: existsSync(ran) ? readFileSync(ran, 'utf8') : '', summary: readFileSync(summary, 'utf8')}
@@ -534,6 +554,16 @@ export function validateReusablePrBaseline(source) {
             if (!/^\| red \| \*\*fail\*\* \|$/m.test(mixed.summary) || !/^\| after \| pass \|$/m.test(mixed.summary)) {
                 failures.push('guards summary does not name each result')
             }
+
+            // A guard reads what the step hands it: the step's environment reaches every guard unchanged
+            const bodyFile = join(dir, 'pr-body.md');
+
+            writeFileSync(bodyFile, 'live body');
+
+            const inputs = runAll([{name: 'inputs', run: `[ "$(cat "$BODY_FILE")" = 'live body' ] && [ "$BASE_SHA" = 'base-sha' ] && printf '%s\\n' inputs >> ran`}],
+                {BASE_SHA: 'base-sha', BODY_FILE: bodyFile});
+
+            if (inputs.status !== 0 || inputs.ran !== 'inputs\n') failures.push('guards do not receive BASE_SHA and BODY_FILE');
 
             // Each list carries a guard that WOULD write, so a malformed list that runs anything shows in `ran`
             const malformed = ['', 'x', 'null', '{}', '[]', '[1]', [mark('a'), {name: 'b'}], [mark('a'), {...mark('b'), extra: 1}],
@@ -579,12 +609,21 @@ function expectMutationFailure(label, source, mutate, expectedFailure) {
 }
 
 /** @summary Replaces `from` inside one named step only, so a byte-identical line in a sibling step stays put. */
-function inStep(name, from, to) {
+function inStep(name, from, to, jobId = 'pr-baseline') {
     return value => {
-        const job  = jobSource(value, 'pr-baseline'),
+        const job  = jobSource(value, jobId),
               step = stepSource(job, name);
 
         return step ? value.replace(step, step.replace(from, to)) : value
+    }
+}
+
+/** @summary Replaces `from` inside one job only, so a byte-identical line in a sibling job stays put. */
+function inJob(jobId, from, to) {
+    return value => {
+        const job = jobSource(value, jobId);
+
+        return job ? value.replace(job, job.replace(from, to)) : value
     }
 }
 
@@ -1080,5 +1119,45 @@ expectMutationFailure('the guards list reaches PR baseline', source,
     value => value.replace('      - name: Reject a non-PR caller\n',
         '      - name: Reject a non-PR caller\n        env:\n          GUARDS: ${{ inputs.guards }}\n'),
     'PR baseline runs the declared guards');
+
+// The base and the live body every guard reads, and the read-only grant that fetches the body
+expectMutationFailure('guards lose the pull-request grant', source,
+    inJob('guards', '    permissions:\n      contents: read\n      pull-requests: read\n', '    permissions:\n      contents: read\n'),
+    'missing guards pull-request grant');
+expectMutationFailure('guards checkout keeps its credential', source,
+    inJob('guards', '          persist-credentials: false\n', ''),
+    'missing guards checkout keeps no credential');
+expectMutationFailure('guards check out a shallow history', source,
+    inJob('guards', '          fetch-depth: 0\n', ''),
+    'missing guards full history');
+expectMutationFailure('guards skip the base check', source,
+    inStep('Base commit in history', 'run: git cat-file -e "${BASE_SHA}^{commit}"', 'run: true', 'guards'),
+    'missing guards base in history');
+expectMutationFailure('guards run without the base', source,
+    inStep('Run the declared guards', '          BASE_SHA: ${{ github.event.pull_request.base.sha }}\n', '', 'guards'),
+    'missing guards base SHA');
+expectMutationFailure('guards run without the body', source,
+    inStep('Run the declared guards', '          BODY_FILE: ${{ runner.temp }}/pr-body.md\n', '', 'guards'),
+    'missing guards body file');
+expectMutationFailure('guards read the body from the event snapshot', source,
+    inStep('Read the live pull-request body', "writeFileSync(process.env.BODY_FILE, data.body ?? '')",
+        "writeFileSync(process.env.BODY_FILE, context.payload.pull_request.body ?? '')", 'guards'),
+    'guards body read differs from PR baseline');
+expectMutationFailure('guards read the body after the caller install', source,
+    value => {
+        const job     = jobSource(value, 'guards'),
+              body    = stepSource(job, 'Read the live pull-request body'),
+              install = stepSource(job, 'Install consumer dependencies');
+
+        return value.replace(job, job.replace(body, '').replace(install, install + body))
+    },
+    'guards body read after the caller install');
+expectMutationFailure('guards wait on PR baseline', source,
+    inJob('guards', '    runs-on: ubuntu-latest\n', '    runs-on: ubuntu-latest\n    needs: pr-baseline\n'),
+    'guards job waits on another job');
+expectMutationFailure('a guard runs without the step environment', source,
+    value => value.replace("spawnSync('bash', ['-e', '-o', 'pipefail', '-c', run], {stdio: 'inherit'})",
+        "spawnSync('bash', ['-e', '-o', 'pipefail', '-c', run], {stdio: 'inherit', env: {PATH: process.env.PATH}})"),
+    'guards do not receive BASE_SHA and BODY_FILE');
 
 console.log(`reusable-pr-baseline: canonical contract + ${mutationCount} negative mutations + the tracked-path collision control passed`);

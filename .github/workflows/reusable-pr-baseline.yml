@@ -84,6 +84,7 @@ on:
         description: >-
           JSON array of the caller's own guards, each {"name": "<label>", "run": "<command>"}. The `guards` job
           runs them from the repository root after `npm ci`, every one even after a red, and reports one context.
+          Each guard reads `BASE_SHA`, the pull request's base commit (in history), and `BODY_FILE`, its live body.
           Empty by default, and then the job is skipped.
         required: false
         type: string
@@ -108,8 +109,8 @@ jobs:
     name: PR baseline
     if: ${{ github.event.pull_request.merged != true }}
     runs-on: ubuntu-latest
-    # The top-level grant is `contents: read`; the PR-body steps also read the pull request itself.
-    # Granted on this job, which runs no pull-request code, and never on `skills-materialized`.
+    # The top-level grant is `contents: read`; the PR-body steps also read the pull request itself. No job holds more
+    # than read access to its own repository: `guards` reads the body too, and `skills-materialized` reads no PR.
     permissions:
       contents: read
       pull-requests: read
@@ -431,12 +432,44 @@ jobs:
   # A caller's own guards run its own scripts, so they are pull-request code and stay out of `PR baseline`. One
   # job runs the whole list, so a caller binds one context however many guards it declares, and a caller that
   # declares none skips the job and holds no runner slot for it.
+  #
+  # Every guard gets the base commit and the live body. The job reads the body itself on every run attempt: a job
+  # output or the event payload is the first attempt's, so "Re-run failed jobs" would judge a corrected body stale.
+  # That read grants `pull-requests: read` to a job that runs pull-request code. The code can reach this job's token
+  # anyway (a step can read the runner's memory), and the token stays read-only on its own repository.
   guards:
     name: guards
     if: ${{ inputs.guards != '[]' && github.event.pull_request.merged != true }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
+      # Full history holds the base; no credential stays in `.git/config` for the steps after this one.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The same read as `PR baseline`'s, written before any pull-request code runs.
+      - name: Read the live pull-request body
+        uses: actions/github-script@v9
+        env:
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
+        with:
+          script: |
+            const {data} = await github.rest.pulls.get({
+                owner      : context.repo.owner,
+                repo       : context.repo.repo,
+                pull_number: context.payload.pull_request.number
+            });
+
+            require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
+
+      - name: Base commit in history
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git cat-file -e "${BASE_SHA}^{commit}"
 
       - uses: actions/setup-node@v7
         with:
@@ -448,8 +481,11 @@ jobs:
 
       # The list reaches the script through `env:`, never a shell. A list that is not a non-empty JSON array of
       # {name, run} fails before any guard runs. Every guard runs, even after a red, and the job fails if one did.
+      # Each guard inherits the step's environment, `BASE_SHA` and `BODY_FILE` included.
       - name: Run the declared guards
         env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BODY_FILE: ${{ runner.temp }}/pr-body.md
           GUARDS: ${{ inputs.guards }}
         run: |
           node - <<'EOF'
