@@ -32,8 +32,9 @@ Declare an explicit scope to prevent local token limits from triggering a global
 ## 2. The Handoff Structure
 
 > **Standalone / plugin workspace branch (no `neo-mjs-memory-core` or A2A mailbox mounted):**
-> Execute **Steps 1, 3, 3.5, 4, 5, and 6** using `git` and `gh` (`gh issue comment` / `gh pr comment` when authenticated), skip daemon/A2A Steps 2, 7, 9, and replace Steps 8 & 10 by writing the structured handover payload to `.agents/handover.md` (or the path declared in repo `AGENTS.md` / `CLAUDE.md`) with active branch + HEAD SHA, open PR/issue URLs, placed user focus items, deferred traps, mental-model state, and the exact first verification command for the next session (`context-recovery` reads this file first).
-> *Capability boundary:* `.agents/handover.md` + `gh` comments preserve explicit end-of-session state for the next session in this checkout; append-only per-turn diaries (`add_memory`), A2A self-DM wake routing, and cross-agent / cross-model-family recall require local `neo-mjs-memory-core` (standalone npm package tracked in `neomjs/neo-agent-brain#1719`).
+> - **Step 1 (Codebase sync in any repository):** do **not** run the Agent OS `git switch dev` / `git pull origin dev` block below. Commit and push any ready work on your current working branch (or surface dirty state explicitly), and if clean, refresh the repository's default branch named by `git symbolic-ref --short refs/remotes/origin/HEAD` — or skip the refresh and record the current branch + `HEAD` SHA.
+> - **Steps 3, 3.5, 4, 5, and 6:** post active-work handovers via `gh issue comment` / `gh pr comment` when authenticated; for **Step 3.5** (the operator's focus items), extract priorities from the current session's own conversation transcript (since `query_recent_turns` is a Memory Core tool) and place each with an owner and date; skip daemon/A2A Steps 2, 7, 9; and replace Steps 8 & 10 by writing the structured handover payload to `.agents/handover.md` (or the path declared in repo `CLAUDE.md` / `AGENTS.md`) with active branch + `HEAD` SHA, open PR/issue URLs, placed focus items, deferred traps, mental-model state, and the exact first verification command for the next session (`context-recovery` reads this file at Step 1a).
+> - *Capability boundary:* `.agents/handover.md` + `gh` comments preserve explicit end-of-session state for the next session in this checkout; append-only per-turn diaries (`add_memory`), A2A self-DM wake routing, and cross-agent / cross-model-family recall require local `neo-mjs-memory-core` (standalone npm package tracked in `neomjs/neo-agent-brain#1719`).
 
 Before terminating an Agent OS maintainer session, execute all 10 steps below:
 
@@ -116,25 +117,18 @@ Summarize the scope of your session. How many PRs were merged? How many skills w
 - **For `scope: convergent`:** Report global metrics if known, or aggregate state.
 
 ### Step 7: Inbox Cleanup (`mark_read`)
-To preserve "hot" thread visibility across sessions (Option B), agents do NOT `mark_read` messages immediately during active processing. Now that handovers are drafted (and have read your inbox state), you MUST explicitly use the `mark_read` MCP tool on all processed messages in your inbox. This ensures the inbox is clean for the next agent session.
+To preserve "hot" thread visibility across sessions, do not `mark_read` messages mid-task; once handovers are drafted, call `mark_read` on all processed inbox items so the next session starts clean.
 
 ### Step 8: The A2A Continuity Ping & Reward Signal (Future-Self Routing)
 **No background task in flight:** before the ping, stop or finish every one this session started (Claude Code: `Agent`, `run_in_background`, `Monitor`, `ScheduleWakeup`); a late finish wakes this session beside its successor. Say so in the ping.
 
-You MUST use the `add_message` MCP tool to send an A2A message to your own agent identity (e.g., `to: '@me'` or your explicit handle). The body of this message MUST contain the **full Sunset Protocol markdown payload** (the output from Steps 1-6), alongside the `Origin Session ID`; the subject carries Step 3.5's count, `focus items: N, N placed` — the fresh session's first read.
+Send a self-DM via `add_message` (`to: '@me'` or your handle) containing the **full Sunset Protocol markdown payload** (Steps 1-6) + `Origin Session ID`, with Step 3.5's count in the subject (`focus items: N, N placed` — the fresh session's first read).
 
 Set `wakeSuppressed: true` and `taggedConcepts: ['sunset-protocol-handover']` on this self-DM: self-addressed, it is the one quiet agent-to-agent direct message the rule allows (a peer address always wakes, neo-agent-brain#1250) — mailbox-only, no `SENT_TO_ME` wake into the closing session. Do not mark this continuity ping read in the same sunset flow. Peer broadcasts may stay quiet for `scope: solo-refresh` unless a cross-peer handoff needs them. This self-DM is the sunset receipt neomjs/neo-agent-brain#1383 reads at the context gate before asking neomjs/neo-agent-institution#842 for the fresh session: at night the seat writes it and ends; by day the sunset stays its call. It reads the NEWEST self-DM: an addendum carries this tag too, or it cancels the rotation.
 
 **Seat memory layer — conditional mention only:** the seat's loader owns the boot/compaction load, so the ping does NOT routinely tell the next session to read the layer (that procedural fallback silently becomes the real path again). Name the layer in the ping ONLY when the load is known degraded — Kimi: the `<seat-memory-layer>` marker was absent this session (diagnosis route: seat `config.toml` `[[hooks]]` entries, emitted hook script, sentinel state dir); OpenCode: the boot files' content was absent (diagnosis route: the `instructions` array in `opencode.jsonc`) — or a seat memory migration is actively in progress.
 
-**Lead-role baton branch:** If the session currently holds `/lead-role`, this step
-also sends an A2A Baton Pass V1 DM to the next lead before the final memory
-persistence step. Compute the next lead from the fixed cycle documented in
-`.agents/skills/lead-role/references/lead-role-mode.md` §7 — that list is the
-single source of truth (it also carries the bench list); do NOT duplicate the
-roster here, a stale copy is how this exact line once drifted.
-
-The baton message MUST be targeted to that next identity, not broadcast:
+**Lead-role baton branch:** If the session currently holds `/lead-role`, also send a targeted A2A Baton Pass V1 DM (never broadcast) to the next lead before Step 10, computed from `.agents/skills/lead-role/references/lead-role-mode.md` §7 (single source of truth including the bench list — never duplicate the roster here):
 
 ```js
 add_message({
@@ -152,22 +146,15 @@ add_message({
 });
 ```
 
-If the next identity cannot be resolved or the send fails, do not self-elect a
-replacement lead and do not block the normal sunset handover. Preserve the
-standard self-DM continuity ping, then dispatch a targeted
-`lead-role-baton-missing` A2A alert to peers/operator with the failure reason.
-The next boot falls back to peer-role / normal mailbox triage until the operator
-or human-triggered recovery assigns lead.
+If `nextLead` cannot be resolved or send fails, do not self-elect or block sunset: preserve the standard self-DM continuity ping, then send a targeted `lead-role-baton-missing` A2A alert to peers/operator with the failure reason so the next boot falls back to peer-role / mailbox triage.
 
-Crucially, from an "LLM Psychology" perspective, this message must include a **Conceptual Priming / Reward Signal**. If you formulated new architectural concepts or achieved a major milestone, summarize the *actual content and value* of that breakthrough in the ping. Reading this high-density, successful content acts as a mathematical "dopamine hit" for your future self—it primes the next session's token probabilities for high-agency, expert-level continuity. This drastically improves the Model Experience (MX) by ensuring the agent wakes up not just with tasks, but with immediate, rich, "exciting" context.
+Include a **Conceptual Priming / Reward Signal** summarizing the concrete content and value of any architectural breakthrough or milestone achieved this session so the next session wakes primed for high-agency continuity rather than bare task lists.
 
 ### Step 9: Preserve Harness Wake Eligibility
-As the penultimate operational step, preserve the durable wake route unless the operator explicitly decommissions this harness or a replacement route is verified active. `manage_wake_subscription(action: 'unsubscribe')` is a decommission primitive, not the default sunset primitive: removing the subscription strands future heartbeat and A2A delivery for that identity after the old transcript terminates.
-
-False continuity is prevented by the old-transcript stale-wake invariant and the wake-suppressed continuity ping from Step 8. Any post-sunset wake-shaped payload delivered into the old transcript is noise; the canonical execution target is the fresh session that recovery spawns.
+Preserve the durable wake route unless the operator explicitly decommissions this harness or a replacement route is verified active (`manage_wake_subscription(action: 'unsubscribe')` is a decommission primitive, never a sunset default — removing it strands heartbeat and A2A delivery). Old-transcript stale-wake rules and Step 8's wake-suppressed self-DM prevent false continuity; post-sunset wakes into the old transcript are noise.
 
 ### Step 10: Memory Persistence (The Sandman Memory)
-This is the final memory checkpoint, and it closes the receipt's turn: save after Step 8, and again after any addendum. You MUST invoke `add_memory` to persist a rich "Sandman memory" node: the whole Sunset payload (Steps 1-10), the declared `scope` and the preserved/decommissioned wake-route state. The resulting `Origin Session ID` or `Memory ID` serves as the direct pointer for the next agent. Sandman persistence is REQUIRED for both scopes.
+Save after Step 8 (and after any addendum) via `add_memory` with the full Sunset payload (Steps 1-10), declared `scope`, and preserved/decommissioned wake-route state; its Session/Memory ID anchors the next session (required for both scopes).
 
 ## 3. Terminating the Session
 

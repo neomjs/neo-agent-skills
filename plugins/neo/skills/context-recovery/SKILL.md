@@ -5,6 +5,6 @@ description: "Reconstruct exact branch, PR, issue, and task state from live reco
 
 # Context Recovery Skill
 
-If you are recovering after `/compact`, context compression, or a summarized-session resume, immediately read the runbook matching your workspace before asserting state or asking the user to re-explain:
+If you are recovering after `/compact`, context compression, or a summarized-session resume, compare the summary against your handover file and live `git`/`gh` records and emit a recovery ledger before acting — read the runbook matching your workspace first:
 - **Standalone / plugin / `--audience app` workspaces (no `neo-mjs-memory-core`):** read `${CLAUDE_SKILL_DIR}/references/standalone-context-recovery.md`.
 - **Agent OS maintainer workspaces (`neo-mjs-memory-core` mounted):** read `${CLAUDE_SKILL_DIR}/references/context-recovery-workflow.md`.

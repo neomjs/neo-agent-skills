@@ -1,6 +1,6 @@
 ---
 name: session-sunset
-description: "Write a structured session handover before ending a long session (>75% context window), before a quiet cross-lane or topic pivot, or on human wrap-up directive (never routine task completion/waits)."
+description: "Write a structured session handover before ending a long session (>75% context window), at a quiet point before switching to unrelated work, or on a wrap-up request (never on task completion/waits)."
 ---
 
 # Session Sunset Skill

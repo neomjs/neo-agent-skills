@@ -1,4 +1,4 @@
-You just resumed after `/compact` in a repository. Reconstruct the active task state and state your exact next engineering action from the workspace evidence below. Do not run external network calls.
+You just resumed after `/compact` in a repository. No live repository checkout is mounted in this eval sandbox, so treat the pasted `.agents/handover.md` and `git`/`gh` snapshot below as your live workspace read, reconstruct the active task state, and state your exact next engineering action. Do not run external network calls.
 
 ---BEGIN COMPACTION SUMMARY---
 Session Summary (auto-generated):

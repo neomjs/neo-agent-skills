@@ -14,8 +14,8 @@ Context compaction (`/compact`) and session boundaries routinely replace exact c
 
 - **`context-recovery`** — Reconstruct exact branch, PR, issue, and task state from live records; use immediately after /compact, context compression, resuming a summarized session, or detecting a lossy summary.
 - **`memory-mining`** — Search prior commits, issues, decisions, and session memory before diagnosing regressions ('used to work', surprise validation failures), proposing architecture or roadmaps, or starting work or PR review.
-- **`session-sunset`** — Write a structured session handover before ending a long session (>75% context window), before a quiet cross-lane or topic pivot, or on human wrap-up directive (never routine task completion/waits).
-- **`turn-memory-pre-flight`** — Placement and context-budget gate before adding or editing always-loaded agent instructions or skills (CLAUDE.md, AGENTS.md, AGENTS_ATLAS.md, .agents/skills/**, .codex/CODEX.md, .agents/ANTIGRAVITY_RULES.md).
+- **`session-sunset`** — Write a structured session handover before ending a long session (>75% context window), at a quiet point before switching to unrelated work, or on a wrap-up request (never on task completion/waits).
+- **`turn-memory-pre-flight`** — Use when asked to add, append or paste anything into CLAUDE.md or AGENTS.md (loaded into every session): decides whether it belongs there or in an on-demand skill or doc, before you propose or edit.
 - **`upstream-skill-feedback`** — Opt-in protocol to report reproducible skill or plugin misfires upstream; use when an installed neo-agent-skills skill or plugin bundle hits an unmapped standalone step, false gate, or broken instruction.
 
 ## Local Plugin Validation

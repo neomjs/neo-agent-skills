@@ -1,10 +1,10 @@
 ---
 name: turn-memory-pre-flight
-description: "Placement and context-budget gate before adding or editing always-loaded agent instructions or skills (CLAUDE.md, AGENTS.md, AGENTS_ATLAS.md, .agents/skills/**, .codex/CODEX.md, .agents/ANTIGRAVITY_RULES.md)."
+description: "Use when asked to add, append or paste anything into CLAUDE.md or AGENTS.md (loaded into every session): decides whether it belongs there or in an on-demand skill or doc, before you propose or edit."
 ---
 
 # Turn Memory Pre-Flight
 
-Verify placement and context-budget impact before inserting or mutating always-loaded or skill-loaded instructions (`CLAUDE.md`, `AGENTS.md`, `AGENTS_ATLAS.md`, `.agents/skills/**`, `.codex/CODEX.md`, `.claude/CLAUDE.md`, `.agents/ANTIGRAVITY_RULES.md`).
+Keep `CLAUDE.md` and `AGENTS.md` strictly for every-turn universal rules (`trigger-frequency × failure-severity × enforceability`); route task workflows and rare runbooks to on-demand skills/docs and keep incident history in commits/issues. Applies before mutating `CLAUDE.md`, `AGENTS.md`, `AGENTS_ATLAS.md`, `.claude/skills/**`, `.agents/skills/**`, `.codex/CODEX.md`, or `.agents/ANTIGRAVITY_RULES.md`.
 
-**MANDATORY ACTION:** Read `.agents/skills/turn-memory-pre-flight/references/turn-memory-pre-flight-workflow.md` before mutating memory substrate.
+**MANDATORY ACTION:** Read `.agents/skills/turn-memory-pre-flight/references/turn-memory-pre-flight-workflow.md` before proposing or editing.

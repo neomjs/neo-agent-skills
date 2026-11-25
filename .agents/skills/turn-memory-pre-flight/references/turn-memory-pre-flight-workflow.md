@@ -26,7 +26,7 @@ Before committing ANY change to the agent memory substrate, you **MUST** evaluat
 
 ### Step 2: Does this rule govern a specific, identifiable agent lifecycle event or workflow?
 (e.g., creating a ticket, opening a PR, reviewing code, debugging a test)
-- **YES:** This is a **Skill**. It must be placed in a dedicated `.agents/skills/[skill-name]/SKILL.md` file. Add a 1-line trigger to the skills manifest so agents know *when* to invoke it. Follow `/create-skill` guidelines.
+- **YES:** This is a **Skill**. Place it in an on-demand skill router + reference payload (`.claude/skills/<skill-name>/SKILL.md` + `references/<payload>.md` in standalone Claude Code repositories; `.agents/skills/[skill-name]/SKILL.md` + `skills.manifest.json` in `neo-agent-skills` workspaces). Follow `/create-skill` guidelines when present.
 - **NO:** Proceed to Step 3.
 
 ### Step 3: Is this an edge-case, historical anchor, or detailed protocol for a rare scenario?
@@ -44,7 +44,7 @@ The rule is likely too narrow, tactical, or project-specific. Consider whether i
 
 Before mutating harness-loading files, verify how the substrate is loaded empirically:
 - **Agent OS maintainer workspaces:** inspect `.codex/hooks.json`, `.codex/hooks/codex-context.mjs`, harness MCP `context.fileName` checks, and `readlink .claude/CLAUDE.md`.
-- **Standalone / plugin workspaces (no Agent OS hooks):** measure always-loaded file sizes (`wc -c CLAUDE.md AGENTS.md` where present) before editing; keep root `CLAUDE.md` / `AGENTS.md` restricted to Step 1 universal invariants, route task-specific workflows (Step 2) to `.claude/skills/<name>/SKILL.md` (`7–12` line router) + `references/<payload>.md`, and keep rare troubleshooting/history behind one-line pointers (`compress-to-trigger`). Automated corpus byte-delta enforcement runs when `neo-agent-skills` lint is installed.
+- **Standalone / plugin workspaces (no Agent OS hooks):** evaluate every proposed addition on the **3-Axis Slot Rule** (`trigger-frequency × failure-severity × enforceability`) and measure always-loaded file sizes (`wc -c CLAUDE.md AGENTS.md` where present) before editing. Keep root `CLAUDE.md` / `AGENTS.md` restricted to Step 1 every-turn invariants; route conditional workflows and rare troubleshooting runbooks (Step 2) to `.claude/skills/<name>/SKILL.md` (`7–12` line router) + `references/<payload>.md` (with at most a 1-line `compress-to-trigger` pointer); and separate live operational commands from historical incident postmortems, keeping incident history in commit/issue provenance or a dedicated reference appendix rather than always-loaded instructions. Automated corpus byte-delta enforcement runs when `neo-agent-skills` lint is installed.
 
 ## Fallback Pattern
 
