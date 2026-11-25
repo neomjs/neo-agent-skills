@@ -57,7 +57,7 @@
     },
     "epic-review": {
       "name": "epic-review",
-      "description": "Pre-work review protocol for epics; use before picking up a first sub from an unreviewed peer epic, on an explicit epic-review request, when pre-validating a new epic, or via the Discussion-participant path."
+      "description": "Use before starting the first sub-issue of an unreviewed multi-issue epic, when asked to review or pre-validate an epic, or after its source RFC/Discussion: checks roadmap fit, prerequisites, and sub-issue overlap."
     },
     "goal-scoping": {
       "name": "goal-scoping",
@@ -167,11 +167,11 @@
     },
     "ticket-create": {
       "name": "ticket-create",
-      "description": "Protocol for authoring Neo.mjs GitHub issues (creation-side dual of ticket-intake); use immediately before calling the create_issue MCP tool."
+      "description": "Use before drafting or filing a GitHub issue, bug report, or feature spec (via gh issue create or create_issue): sweeps open/closed duplicates, challenges wrong-layer prescriptions, and structures ACs."
     },
     "ticket-intake": {
       "name": "ticket-intake",
-      "description": "Pre-execution reflection gate for GitHub issues; use before branching or modifying code on any assigned/claimed ticket (full gate if peer-authored, or prescription/drift probe if self-authored)."
+      "description": "Use before branching or writing code for a GitHub issue or ticket: falsifies its claims and prescribed fix against live source, git log, ADRs, and open/closed issues (full gate, or drift check if self-authored)."
     },
     "ticket-triage": {
       "name": "ticket-triage",
