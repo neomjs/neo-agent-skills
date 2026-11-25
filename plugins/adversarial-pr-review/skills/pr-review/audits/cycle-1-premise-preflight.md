@@ -14,8 +14,11 @@ Run this catalog at the end of `pr-review-guide.md` §0, before the defect audit
 | Better-existing-substrate | Does existing code, Memory Core, or KB evidence already solve the problem, making the PR reinvention? |
 | Source-ticket stale/currency-risk | Is the linked ticket stale, `no auto close`, or plausibly superseded, and did the reviewer prove its authority is still current rather than assume it? Procedure: §Source-Ticket Currency Rule. |
 | Graduated-decision reversal | Does the diff amend or reverse a graduated decision — an ADR election, a Discussion-ratified target, a merged authority model — without a reopened graduation or consensus record? Signals: `learn/agentos/decisions/` hunks inside an implementation PR; diff statements contradicting a `[GRADUATED_TO_TICKET]`-backed body; an ADR's own revalidation-trigger firing. |
+| Engine update path without guides and ADR | Does the diff change VDom update-path behavior without building on the engine guides (App worker, VDom worker, Main) and an accepted ADR built on them that states the researched update model, the measured hot-path cost, and a real app flow failing on `dev`? |
 
 Graduated-decision reversal checks for the **record**, not the change. An ADR or Discussion amendment carrying a reopened graduation or consensus record passes the row; elections are amendable through reopened authority, and this is not an ADR-edit ban.
+
+Engine update path is the operator's rule of 2026-11-25 ([neo#22178](https://github.com/neomjs/neo/pull/22178#issuecomment-7157404019)): guides → ADR → code. Its paths: `src/vdom/**`, `src/util/vdom/**`, `src/worker/VDom.mjs`; Main's `src/main/DeltaUpdates.mjs` and the `src/Main.mjs` read/write queues; App-side `src/manager/VDomUpdate.mjs`, `src/mixin/VdomLifecycle.mjs` and the Container `needsVdomUpdate` cascade. Until the guides land (neo#22189), every such diff fires the row; then the path list moves into them and this note shrinks to their link.
 
 ## Source-Ticket Currency Rule
 
