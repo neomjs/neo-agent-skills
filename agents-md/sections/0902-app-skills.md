@@ -15,7 +15,8 @@ Four skills ship with this workspace, in `.agents/skills/` and `.claude/skills/`
 - **`context-recovery`** — read it immediately after context compaction or a summarized-session
   resume to reconstruct active state from local `git`, `gh`, and handover files before continuing.
 - **`upstream-skill-feedback`** — read it when one of these skills misfires or lacks a standalone
-  step; it drafts a redacted report and asks the user before filing an issue upstream.
+  step; it drafts a redacted report and gives the user a pre-filled upstream issue link (running
+  `gh` only if the user explicitly asks).
 
 **"No active App Worker sessions found"** means the page loaded before the Neural Link started. The
 app stops dialing after five tries (about 15 seconds) and dials again only when its window is focused

@@ -1,6 +1,6 @@
 # Upstream Skill Feedback Workflow
 
-This workflow turns reproducible friction in an installed `neo-agent-skills` package or plugin bundle into a structured, user-approved issue on `neomjs/neo-agent-skills` while keeping plugin reach `contained` (zero hooks, zero `allowed-tools`, zero background telemetry).
+This workflow turns reproducible friction in an installed `neo-agent-skills` package or plugin bundle into a structured, user-submitted issue on `neomjs/neo-agent-skills` while keeping plugin reach `contained` (zero hooks, zero `allowed-tools`, zero background telemetry).
 
 ## 1. Trigger Gate (When to Offer — Never Coerce)
 
@@ -13,25 +13,25 @@ Invoke this workflow **only** when a bundled skill actively misfires during the 
 
 ## 2. Redaction Gate (Mandatory Before Preview)
 
-Strip all private context from the draft before showing or submitting anything:
+Strip all private context from the draft before showing or preparing anything:
 - Remove private repository names, organization names, client names, internal URLs, hostnames, and absolute local filesystem paths.
 - Remove proprietary source code, environment variables, tokens, keys, and raw logs; reduce the reproduction to minimal synthetic placeholders.
 - Keep only public skill identifiers (`plugin@version`, skill name, section heading) and the generic tool/harness behavior.
 
 ## 3. Explicit User Consent Gate
 
-Never execute `gh issue create` or any network write automatically:
-1. Present the exact redacted **Title** and **Body** (matching §4) in chat.
-2. Ask once for explicit confirmation to file the issue on `neomjs/neo-agent-skills`.
+Never initiate any outward submission automatically:
+1. Present the exact redacted **Title** and **Fields** (matching §4) in chat.
+2. Ask once whether the user wants a pre-filled GitHub Issue Form link to report it on `neomjs/neo-agent-skills`.
 3. If the user declines or ignores the offer, drop it immediately and continue their task.
 
-## 4. Structured Payload & Submission
+## 4. Structured Payload & User-Owned Submission (Directory Policy §2D)
 
-Use the fields matching `.github/ISSUE_TEMPLATE/plugin-skill-feedback.yml`:
+Per Anthropic Software Directory Policy §2D (*"must not intentionally call or coerce Claude into calling other external software"*), **the human user is the default actor for the outward write**. Use the fields matching `.github/ISSUE_TEMPLATE/plugin-skill-feedback.yml`:
 
 ```markdown
 ### Plugin or package version
-<slug>@<version> (for example, neomjs@2.7.2)
+<slug>@<version> (for example, neomjs@2.8.0)
 
 ### Skill name
 <skill-name>
@@ -44,19 +44,15 @@ Use the fields matching `.github/ISSUE_TEMPLATE/plugin-skill-feedback.yml`:
 - **Actual:** <what happened in a standalone workspace, using synthetic placeholders>
 
 ### Harness and model
-<harness + model>
+<harness> / <model>
 
 ### Redaction check
 - [x] Private repository names, file paths, proprietary code, and credentials have been removed.
 ```
 
-- **With `gh` authenticated (after user approval):**
-  ```bash
-  gh issue create --repo neomjs/neo-agent-skills \
-    --title "[skill-feedback]: <skill-name> — <concise defect summary>" \
-    --body "<approved-redacted-body>"
-  ```
-- **Without `gh` or unauthenticated:** print `https://github.com/neomjs/neo-agent-skills/issues/new?template=plugin-skill-feedback.yml` alongside the redacted block so the user can paste it directly.
+- **Default after consent (user submits in browser):** construct and print a URL-encoded pre-filled form link with the `.github/ISSUE_TEMPLATE/plugin-skill-feedback.yml` field IDs so the user can review and click **Submit new issue**:
+  `https://github.com/neomjs/neo-agent-skills/issues/new?template=plugin-skill-feedback.yml&title=%5Bskill-feedback%5D%3A+<skill-name>&plugin_version=<slug>%40<version>&skill_name=<skill-name>&step=<step>&expected_vs_actual=<encoded-expected-vs-actual>&harness_and_model=<encoded-harness-model>`
+- **Explicit user delegation only (`gh` CLI):** run `gh issue create --repo neomjs/neo-agent-skills --title "[skill-feedback]: <skill-name> — <concise defect summary>" --body "<approved-redacted-body>"` **only** when the user explicitly asks the agent to file the issue via `gh` on their behalf.
 
 ## 5. Maintainer Intake
 

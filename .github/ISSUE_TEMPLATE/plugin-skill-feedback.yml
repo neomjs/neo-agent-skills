@@ -12,7 +12,7 @@ body:
     attributes:
       label: Plugin or package version
       description: Installed plugin bundle or npm package version.
-      placeholder: "neomjs@2.7.2"
+      placeholder: "neomjs@2.8.0"
     validations:
       required: true
 
@@ -50,7 +50,7 @@ body:
     attributes:
       label: Harness and model
       description: Coding harness and model where the issue occurred.
-      placeholder: "Claude Code / Claude Sonnet 4.6"
+      placeholder: "<harness> / <model>"
     validations:
       required: true
 

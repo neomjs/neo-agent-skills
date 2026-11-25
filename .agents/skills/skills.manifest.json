@@ -193,7 +193,7 @@
     "upstream-skill-feedback": {
       "name": "upstream-skill-feedback",
       "description": "Opt-in protocol to report reproducible skill or plugin misfires upstream; use when an installed neo-agent-skills skill or plugin bundle hits an unmapped standalone step, false gate, or broken instruction.",
-      "audiences": ["maintainer", "contributor", "app"]
+      "audiences": ["contributor", "app"]
     },
     "video-create": {
       "name": "video-create",

@@ -133,9 +133,10 @@ try {
     assert.ok(feedbackRouter.includes('${CLAUDE_SKILL_DIR}/references/upstream-feedback-workflow.md'));
     assert.equal(/^allowed-tools\s*:/m.test(feedbackRouter), false, 'upstream-skill-feedback must declare zero allowed-tools to keep plugin reach contained');
     assert.ok(
-        feedbackWorkflow.includes('gh issue create --repo neomjs/neo-agent-skills') &&
-        feedbackWorkflow.includes('template=plugin-skill-feedback.yml'),
-        'upstream-skill-feedback workflow must carry both consented gh CLI submission and Issue Form URL fallback'
+        feedbackWorkflow.includes('Directory Policy §2D') &&
+        feedbackWorkflow.includes('template=plugin-skill-feedback.yml&title=') &&
+        feedbackWorkflow.includes('only** when the user explicitly asks'),
+        'upstream-skill-feedback workflow must default to user-submitted prefilled Issue Form link (§2D) and restrict gh issue create to explicit user delegation'
     );
     for (const id of ['plugin_version', 'skill_name', 'step', 'expected_vs_actual', 'harness_and_model', 'redaction_confirm']) {
         assert.ok(new RegExp(`^\\s*id:\\s*${id}\\b`, 'm').test(feedbackForm), `plugin-skill-feedback.yml must define field id '${id}'`)

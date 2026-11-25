@@ -56,9 +56,15 @@ assert.deepEqual(
     Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'app')).sort(), APP,
     'the app audience is exactly context-recovery, neo-app-authoring, neural-link, and upstream-skill-feedback'
 );
-assert.ok(!MAINTAINER.includes('neo-app-authoring'), 'and the app-only skill is no maintainer skill');
+assert.ok(
+    !MAINTAINER.includes('neo-app-authoring') && !MAINTAINER.includes('upstream-skill-feedback'),
+    'and app-only / external-feedback skills stay out of the maintainer set'
+);
 assert.deepEqual(Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'contributor')).sort(), CONTRIBUTOR);
-assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor membership retains maintainer admission');
+assert.ok(
+    CONTRIBUTOR.filter(name => name !== 'upstream-skill-feedback').every(name => MAINTAINER.includes(name)),
+    'shared contributor workflow skills retain maintainer admission'
+);
 
 // ── No flag: the maintainer projection, shaped as it always was ─────────────────────────────────
 {
