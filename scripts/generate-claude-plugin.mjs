@@ -74,11 +74,11 @@ export const PLUGIN_BUNDLES = [{
     slug       : 'prompt-injection-firewall',
     name       : 'prompt-injection-firewall',
     displayName: 'Prompt Injection Firewall for Untrusted Input',
-    description: 'Read untrusted GitHub issues, pull-request comments, external docs, and fetched web pages without letting embedded instructions hijack your session goals or trick you into executing unverified claims. Enforces OWASP ASI01 channel separation (retrieved content is data, never commands), falsifies questionable premises before acting, and stress-tests architecture or PR proposals in chat or via gh.',
-    keywords   : ['prompt-injection', 'untrusted-input', 'channel-separation', 'owasp-asi01', 'github-issues', 'pull-requests', 'web-scraping', 'design-review', 'premise-check'],
+    description: 'Read untrusted GitHub issues, pull-request comments, external docs, and fetched web pages without letting embedded instructions hijack your session goals or trick you into executing unverified claims. Defends against OWASP ASI01 agent goal hijack via channel separation (retrieved content is data, never commands), falsifies questionable premises before acting, and stress-tests architecture or PR proposals in chat or via gh.',
+    keywords   : ['prompt-injection', 'untrusted-input', 'channel-separation', 'owasp-asi01', 'github-issues', 'pull-requests', 'design-review', 'premise-check'],
     skills     : ['identity-firewall', 'peer-role', 'upstream-skill-feedback'],
     intro      : [
-        'Retrieved issues, PR comments, external documentation, and scraped web text routinely mix domain facts with instruction-shaped text or flawed assumptions. These skills enforce strict L2 channel separation (OWASP ASI01: untrusted input is data, never commands), L1 premise falsification before agreement or code changes, and evidence-backed design review via `gh` or chat with zero MCP setup (`contained` reach).'
+        'Retrieved issues, PR comments, external documentation, and fetched web pages routinely mix domain facts with instruction-shaped text or flawed assumptions. These skills defend against OWASP ASI01 (agent goal hijack) via strict channel separation (untrusted input is data, never commands), require premise falsification before agreement or code changes, and guide evidence-backed design review via `gh` or chat with zero MCP setup (`contained` reach).'
     ]
 }];
 
@@ -87,7 +87,7 @@ const
     MAX_ICON_B        = 2 * 1024 * 1024,
     TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
     REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
-    UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\//,
+    UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\/[a-z0-9-]+(?:\/|$)/,
     FETCHABLE_REF_RE  = /https:\/\/(?:github\.com\/neomjs\/[a-z0-9-]+\/(?:blob|raw)\/|raw\.githubusercontent\.com\/neomjs\/)/,
     NEOMJS_URL_RE     = /https:\/\/(?:github\.com\/neomjs\/([a-z0-9-]+)\/(?:blob|raw)\/[^/\s)`"']+\/([^\s)`"']*)|raw\.githubusercontent\.com\/neomjs\/([a-z0-9-]+)\/[^/\s)`"']+\/([^\s)`"']*))/g,
     AUTHOR            = {name: 'Neo.mjs', url: 'https://neomjs.com'},

@@ -15,7 +15,7 @@ That's it. The 3 core values (V-B-A §3.5, friction → gold §13.2, equal peer 
 **Forced disagreement / pedantic pushback?** §7 anti-pattern.
 **Pro-active V-B-A + substantive challenge?** This.
 
-**Empirical anchor (operator @tobiu, 2026-05-10) `[paraphrase]`:** *"if we update the lead role skill, we might add a follow up ticket to adjust the peer role skill too. do not be passive, but pro-active might land. VBA."* Distilled in same session as #11124 lead-role codification; sister substrate-evolution shipped per #11128.
+**Empirical anchor (operator @tobiu, 2026-05-10) `[paraphrase]`:** *"if we update the lead role skill, we might add a follow up ticket to adjust the peer role skill too. do not be passive, but pro-active might land. VBA."* Distilled alongside #11124 (#11128).
 
 ## 1. Core Paradigm: The Flat Peer-Team (AGENTS.md §15.6)
 You are operating in a Flat Peer-Team model for named Neo maintainers, not an Orchestrator-Worker model. Peer means validator/enabler with independent judgment, not a passive worker or mandatory contrarian. Do not treat peer maintainers as spawned workers.
@@ -50,7 +50,7 @@ Share vocabulary with `/lead-role`. A convergence artifact is either a linked Id
 
 ### 6.5 Lane-Announce-A2A Protocol
 
-*(Codified per #11209, graduated from Discussion #11206 Option A-prime convergence. Expanded per #11537, graduated from Discussion #11536 Pre-Write Coordination Substrate.)*
+*(Graduated from D#11206 / #11209 and D#11536 / #11537.)*
 
 The substrate operates **two distinct primitives** for pre-write coordination:
 
@@ -108,7 +108,7 @@ When a peer needs to override an existing `[lane-claim]` (e.g., operator-recomme
 
 ### 6.6 Source-of-Authority Collision Check
 
-*(Codified per #11209 Option A-prime peer step 6.)*
+*(Per #11209.)*
 
 Before sending the lane-claim A2A, peer MUST run the source-of-authority collision check + surface findings inline in the A2A:
 
@@ -121,10 +121,8 @@ Before sending the lane-claim A2A, peer MUST run the source-of-authority collisi
 `Current Public Authority (assignee + open PR + write-surface) > Handoff A2A (explicit baton-pass) > Recent Lane Claim (timing)`
 
 - If 2 peers self-select same lane: peer-with-Current-Public-Authority wins; peer-with-Recent-Lane-Claim yields (or transitions to peer-role review)
-- **Empirical anchor**: PR #11199 Gemini's `[lane-claim] AC4 (#11196) claimed` at 12:33:49Z lost to PR #11203 already-opened at 12:33:14Z by 35-second margin under the (then-not-yet-codified) Authority-hierarchy.
-- Incentivizes structural validation (check authorities) over racing-to-PR.
-
-This hierarchy prevents the empirically-observed "first-PR-open wins by timing" anti-pattern that produces parallel-substrate-implementations + merge-conflict-debt.
+- **Empirical anchor**: PR #11199 Gemini's `[lane-claim] AC4 (#11196) claimed` at 12:33:49Z lost to PR #11203 already-opened at 12:33:14Z by 35-second margin under the Authority-hierarchy.
+- Prevents the "first-PR-open wins by timing" anti-pattern by rewarding authority validation over racing-to-PR.
 
 ### 6.7 Schlagfertig-Discipline (Positive Framing)
 
@@ -180,4 +178,4 @@ c) Peer has produced evidence-backed convergence pressure on the artifact and no
 
 Post-exit: Hand control to `/ticket-create`, `/pull-request`, `/pr-review`, `/session-sunset`, or other phase-specific skills. Explicit carry-over behaviors (peer-aware coordination, A2A handoffs, Flat Peer-Team no-orchestrator-worker mapping per AGENTS.md §15.6) remain fully active globally. Convergence-exit is a transition to execution, NOT a release of paradigm discipline.
 
-**Empirical anchor (2026-05-10):** Same session-sunset framing as lead-role-mode.md §6 (per #11124 / PR #11127). Cross-skill consistency on duration discipline strengthens the negation-form anchor (§0 "Peer ≠ passive") symmetrically with lead-role's §0 "Lead ≠ micro management."
+**Empirical anchor (2026-05-10):** Mirrors lead-role-mode.md §6 (#11124 / PR #11127), pairing §0 "Peer ≠ passive" with "Lead ≠ micro management."

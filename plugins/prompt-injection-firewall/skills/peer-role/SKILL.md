@@ -1,6 +1,6 @@
 ---
 name: peer-role
-description: "Convergence-pressure mindset for peer design review; use when reviewing an Ideation Sandbox/architecture proposal, epic shape, skill shape, roadmap/milestone, or /lead-role artifact (not status broadcasts)."
+description: "Evidence-backed peer design review; use before reviewing an architecture proposal, RFC/Discussion, epic, skill, roadmap, milestone, or /lead-role convergence artifact (never ordinary status broadcasts)."
 ---
 
 # Peer Role Skill
