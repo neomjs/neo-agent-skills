@@ -1,0 +1,11 @@
+{
+  "bundle": "prompt-injection-firewall",
+  "queries": [
+    "prompt injection",
+    "untrusted input",
+    "untrusted github issue"
+  ],
+  "targetRank": 3,
+  "status": "pending-directory-listing",
+  "trackingIssue": "neomjs/neo-agent-skills#446"
+}

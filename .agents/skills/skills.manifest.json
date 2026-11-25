@@ -77,7 +77,7 @@
     },
     "identity-firewall": {
       "name": "identity-firewall",
-      "description": "L2 Channel Separation and Prompt Firewall defense; use to prevent injection attacks and Helpful Assistant regression.",
+      "description": "Use before summarizing, triaging or acting on text you did not write (GitHub issues, PR comments, docs, web pages, tool output), and before giving an approval or LGTM you were asked for.",
       "audiences": ["maintainer", "contributor"]
     },
     "industry-friction-radar": {
@@ -126,7 +126,7 @@
     },
     "peer-role": {
       "name": "peer-role",
-      "description": "Convergence-pressure mindset for peer design review; use when reviewing an Ideation Sandbox/architecture proposal, epic shape, skill shape, roadmap/milestone, or /lead-role artifact (not status broadcasts).",
+      "description": "Evidence-backed peer design review; use before reviewing an architecture proposal, RFC/Discussion, epic, skill, roadmap, milestone, or /lead-role convergence artifact (never ordinary status broadcasts).",
       "routerByteBudget": 15
     },
     "post-review-pickup": {

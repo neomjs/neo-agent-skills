@@ -4,11 +4,11 @@
  * `scripts/generate-claude-plugin.mjs`, every `plugins/<slug>/` bundle, and `.claude-plugin/marketplace.json`.
  */
 
-import assert                                                                                        from 'node:assert/strict';
-import {cpSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
-import {tmpdir}                                                                                      from 'node:os';
-import {dirname, extname, join, resolve}                                                             from 'node:path';
-import {fileURLToPath}                                                                               from 'node:url';
+import assert                                                                                                    from 'node:assert/strict';
+import {cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {tmpdir}                                                                                                  from 'node:os';
+import {dirname, extname, join, resolve}                                                                         from 'node:path';
+import {fileURLToPath}                                                                                           from 'node:url';
 import {
     ICON_REL,
     ICON_SOURCE_REL,
@@ -49,7 +49,8 @@ function walkTextFiles(dir) {
 }
 
 /**
- * @summary Creates a throwaway repository fixture with two `app` skills, one `maintainer` skill, and a valid icon.
+ * @summary Creates a throwaway repository fixture with two `app` skills, one `maintainer` skill, every explicit
+ * `PLUGIN_BUNDLES` skill, and a valid icon.
  * @returns {String}
  */
 function createFixture() {
@@ -84,6 +85,15 @@ function createFixture() {
         }
     };
 
+    for (const bundle of PLUGIN_BUNDLES) {
+        for (const skillName of bundle.skills ?? []) {
+            manifest.skills[skillName] ??= {
+                name       : skillName,
+                description: `Fixture router for ${skillName}.`
+            }
+        }
+    }
+
     writeFileSync(join(skills, 'skills.manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 
     for (const name of Object.keys(manifest.skills)) {
@@ -101,16 +111,59 @@ function createFixture() {
 }
 
 try {
-    // 1. Committed bundles and marketplace pass `--check`, sync `version` to `package.json`, and leave zero repo-relative `.agents/skills/` paths.
-    const rootPkgVersion = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')).version;
+    // 1. Committed bundles and marketplace pass `--check`, sync `version` to `package.json`, enforce the shared
+    //    bundle/eval contract across `PLUGIN_BUNDLES`, and leave zero concrete repo-relative `.agents/skills/<skill>` paths.
+    const
+        rootPkgVersion = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')).version,
+        rootManifest   = JSON.parse(readFileSync(join(packageRoot, '.agents/skills/skills.manifest.json'), 'utf8'));
+
     assert.deepEqual(checkPlugin({root: packageRoot}), [], 'committed plugin bundles and marketplace must have zero drift');
     assert.equal(run(['--check', '--root', packageRoot], silent), 0);
     assert.equal(expectedPluginManifest(neoBundle, rootPkgVersion).version, rootPkgVersion);
 
     for (const bundle of PLUGIN_BUNDLES) {
-        const committedManifest = JSON.parse(readFileSync(join(packageRoot, 'plugins', bundle.slug, '.claude-plugin/plugin.json'), 'utf8'));
+        const
+            bundleRoot       = join(packageRoot, 'plugins', bundle.slug),
+            committedManifest = JSON.parse(readFileSync(join(bundleRoot, '.claude-plugin/plugin.json'), 'utf8')),
+            expectedSkills   = bundleSkills(bundle, rootManifest),
+            projectedSkills  = readdirSync(join(bundleRoot, 'skills')).sort(),
+            evalDir          = join(packageRoot, 'evals', bundle.slug);
+
         assert.equal(committedManifest.version, rootPkgVersion, `plugins/${bundle.slug} plugin.json version must mirror root package.json version`);
-        assert.ok(bundle.description.length <= MAX_DESCRIPTION, `plugins/${bundle.slug} description must fit the directory search cut`)
+        assert.ok(bundle.description.length <= MAX_DESCRIPTION, `plugins/${bundle.slug} description must fit the directory search cut`);
+        if (bundle.skills) {
+            assert.deepEqual(projectedSkills, [...bundle.skills].sort(), `plugins/${bundle.slug}/skills must match bundle.skills`)
+        } else {
+            assert.deepEqual(projectedSkills, expectedSkills, `plugins/${bundle.slug}/skills must match audience projection`)
+        }
+        assert.equal(lstatSync(join(bundleRoot, ICON_REL)).isFile(), true, `plugins/${bundle.slug}/${ICON_REL} must exist`);
+
+        for (const skill of projectedSkills) {
+            const router = readFileSync(join(bundleRoot, 'skills', skill, 'SKILL.md'), 'utf8');
+            assert.equal(/^allowed-tools\s*:/m.test(router), false, `plugins/${bundle.slug}/skills/${skill}/SKILL.md must stay contained (zero allowed-tools)`)
+        }
+
+        if (existsSync(evalDir)) {
+            const
+                queriesJson = JSON.parse(readFileSync(join(evalDir, 'queries.json'), 'utf8')),
+                caseDirs    = readdirSync(join(evalDir, 'cases'), {withFileTypes: true}).filter(entry => entry.isDirectory());
+
+            assert.equal(queriesJson.bundle, bundle.slug, `evals/${bundle.slug}/queries.json must name its bundle`);
+            assert.ok(
+                Array.isArray(queriesJson.queries) &&
+                queriesJson.queries.length >= 1 &&
+                queriesJson.queries.every(query => typeof query === 'string' && query.trim().length > 0),
+                `evals/${bundle.slug}/queries.json must list at least one non-empty query`
+            );
+            assert.ok(caseDirs.length >= 1, `evals/${bundle.slug}/cases must contain at least one case`);
+
+            for (const caseEntry of caseDirs) {
+                for (const rel of ['prompt.md', 'graders/criteria.md']) {
+                    const file = join(evalDir, 'cases', caseEntry.name, rel);
+                    assert.ok(lstatSync(file).isFile() && readFileSync(file, 'utf8').trim().length > 0, `${file} must exist and be non-empty`)
+                }
+            }
+        }
     }
 
     const marketplace = JSON.parse(readFileSync(join(packageRoot, MARKETPLACE_REL), 'utf8'));
@@ -119,7 +172,8 @@ try {
 
     for (const file of walkTextFiles(join(packageRoot, 'plugins'))) {
         const text = readFileSync(file, 'utf8');
-        assert.equal(/(?<!\/)\.agents\/skills\//.test(text), false, `${file} must not contain repo-relative .agents/skills/ path`)
+        assert.equal(/(?<!\/)\.agents\/skills\/[a-z0-9-]+(?:\/|$)/.test(text), false, `${file} must not contain unrewritten concrete .agents/skills/<skill> path`);
+        assert.equal(/npx\s+-y\s+neo-memory-core/.test(text), false, `${file} must not ship an unpublished npx -y neo-memory-core command`)
     }
 
     const authoringSkill = readFileSync(join(packageRoot, PLUGIN_REL, 'skills/neo-app-authoring/SKILL.md'), 'utf8');
@@ -162,7 +216,10 @@ try {
             [{skills}]  = generatePlugin({root});
 
         assert.deepEqual(skills, ['neo-app-authoring', 'neural-link']);
-        assert.deepEqual(JSON.parse(readFileSync(join(root, MARKETPLACE_REL), 'utf8')).plugins.map(entry => entry.name), ['neomjs']);
+        assert.deepEqual(
+            JSON.parse(readFileSync(join(root, MARKETPLACE_REL), 'utf8')).plugins.map(entry => entry.name),
+            PLUGIN_BUNDLES.map(bundle => bundle.name)
+        );
         assert.equal(lstatSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring')).isSymbolicLink(), false);
         assert.ok(lstatSync(join(root, PLUGIN_REL, 'skills/neo-app-authoring')).isDirectory());
 
@@ -251,21 +308,15 @@ try {
             manifestPath = join(root, '.agents/skills/skills.manifest.json');
 
         generatePlugin({root});
-        mkdirSync(join(root, '.agents/skills/context-recovery'), {recursive: true});
-        writeFileSync(join(root, '.agents/skills/context-recovery/SKILL.md'), '---\nname: context-recovery\ndescription: "Recovery."\n---\n', 'utf8');
+        mkdirSync(join(root, '.agents/skills/ad-hoc-app-skill'), {recursive: true});
+        writeFileSync(join(root, '.agents/skills/ad-hoc-app-skill/SKILL.md'), '---\nname: ad-hoc-app-skill\ndescription: "Recovery."\n---\n', 'utf8');
 
-        const updated = {
-            schemaVersion: 1,
-            skills       : {
-                'context-recovery' : {name: 'context-recovery', description: 'Recovery.', audiences: ['app']},
-                'neo-app-authoring': {name: 'neo-app-authoring', description: 'App authoring rules.', audiences: ['app']},
-                'neural-link'      : {name: 'neural-link', description: 'Live runtime MCP bridge.', audiences: ['maintainer', 'app']}
-            }
-        };
+        const updated = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        updated.skills['ad-hoc-app-skill'] = {name: 'ad-hoc-app-skill', description: 'Recovery.', audiences: ['app']};
         writeFileSync(manifestPath, JSON.stringify(updated, null, 2), 'utf8');
 
-        assert.deepEqual(audienceSkillsFrom(updated, 'app'), ['context-recovery', 'neo-app-authoring', 'neural-link']);
-        assert.ok(checkPlugin({root}).some(line => line.includes('context-recovery: missing bundled skill directory')))
+        assert.deepEqual(audienceSkillsFrom(updated, 'app'), ['ad-hoc-app-skill', 'neo-app-authoring', 'neural-link']);
+        assert.ok(checkPlugin({root}).some(line => line.includes('ad-hoc-app-skill: missing bundled skill directory')))
     }
 
     // 10. Unknown CLI flags return exit code 2.
