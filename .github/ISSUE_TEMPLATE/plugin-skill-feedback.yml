@@ -1,0 +1,63 @@
+name: Plugin / Skill Feedback
+description: Report a reproducible defect, missing standalone step, or false gate in a Neo.mjs plugin bundle or skill.
+title: "[skill-feedback]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting friction from a live session. Please redact all private repository names, local paths, proprietary code, and credentials before submitting.
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plugin or package version
+      description: Installed plugin bundle or npm package version.
+      placeholder: "neomjs@2.8.0"
+    validations:
+      required: true
+
+  - type: input
+    id: skill_name
+    attributes:
+      label: Skill name
+      description: Name of the skill folder that misfired.
+      placeholder: "context-recovery"
+    validations:
+      required: true
+
+  - type: input
+    id: step
+    attributes:
+      label: Failing step or section
+      description: Section heading, command, or rule that failed.
+      placeholder: "Standalone recovery step 2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_vs_actual
+    attributes:
+      label: Expected vs. actual behavior
+      description: Minimal synthetic reproduction of what the skill instructed vs. what happened.
+      placeholder: |
+        - Expected: ...
+        - Actual: ...
+    validations:
+      required: true
+
+  - type: input
+    id: harness_and_model
+    attributes:
+      label: Harness and model
+      description: Coding harness and model where the issue occurred.
+      placeholder: "<harness> / <model>"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: redaction_confirm
+    attributes:
+      label: Redaction check
+      options:
+        - label: Private repository names, file paths, proprietary code, and credentials have been removed.
+          required: true

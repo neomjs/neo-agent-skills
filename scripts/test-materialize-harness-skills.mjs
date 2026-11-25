@@ -23,8 +23,8 @@ const
     roots     = [],
     // The v1 app set, named rather than derived, so a row that silently joins or leaves the
     // audience fails here instead of shipping into every app workspace.
-    APP       = ['context-recovery', 'neo-app-authoring', 'neural-link'],
-    CONTRIBUTOR = ['identity-firewall', 'pull-request', 'unit-test'],
+    APP       = ['context-recovery', 'neo-app-authoring', 'neural-link', 'upstream-skill-feedback'],
+    CONTRIBUTOR = ['identity-firewall', 'pull-request', 'unit-test', 'upstream-skill-feedback'],
     serves    = (row, audience) => (row.audiences ?? ['maintainer']).includes(audience),
     MAINTAINER = Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'maintainer')).sort();
 
@@ -54,11 +54,17 @@ const entries = dir => readdirSync(dir).filter(name => !name.startsWith('.')).so
 // ── The manifest declares the app audience on exactly the app set ───────────────────────────────
 assert.deepEqual(
     Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'app')).sort(), APP,
-    'the app audience is exactly context-recovery, neo-app-authoring, and neural-link'
+    'the app audience is exactly context-recovery, neo-app-authoring, neural-link, and upstream-skill-feedback'
 );
-assert.ok(!MAINTAINER.includes('neo-app-authoring'), 'and the app-only skill is no maintainer skill');
+assert.ok(
+    !MAINTAINER.includes('neo-app-authoring') && !MAINTAINER.includes('upstream-skill-feedback'),
+    'and app-only / external-feedback skills stay out of the maintainer set'
+);
 assert.deepEqual(Object.keys(manifest.skills).filter(name => serves(manifest.skills[name], 'contributor')).sort(), CONTRIBUTOR);
-assert.ok(CONTRIBUTOR.every(name => MAINTAINER.includes(name)), 'contributor membership retains maintainer admission');
+assert.ok(
+    CONTRIBUTOR.filter(name => name !== 'upstream-skill-feedback').every(name => MAINTAINER.includes(name)),
+    'shared contributor workflow skills retain maintainer admission'
+);
 
 // ── No flag: the maintainer projection, shaped as it always was ─────────────────────────────────
 {

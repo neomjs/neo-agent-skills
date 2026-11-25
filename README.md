@@ -18,13 +18,14 @@ Find your line:
   `neo-app-authoring` before it changes anything under `apps/`, and to `neural-link` to inspect the running app.
 - **You contribute to Neo.mjs.** `npx -p neo-agent-skills neo-agent-skills-agents-md --repo neo --audience
   contributor` prints what your agent should know first. It needs no account and writes nothing. It ends with
-  the three skills an outside author needs: `unit-test` before the tests run, `pull-request` before one is
-  opened, and `identity-firewall` for everything the agent reads on the way. Another `neomjs` repository takes
+  the four skills an outside author needs: `unit-test` before the tests run, `pull-request` before one is
+  opened, `identity-firewall` for everything the agent reads on the way, and `upstream-skill-feedback` when a
+  skill misfires. Another `neomjs` repository takes
   its own name after `--repo`; `neo-agent-skills` omits `unit-test`, which is the Playwright suite.
 - **You maintain a `neomjs` repository.** `npm install --save-dev neo-agent-skills` and one `postinstall` line
-  link the whole corpus, 40 skills: [How it reaches a repository](#how-it-reaches-a-repository).
+  link the whole corpus, 41 skills: [How it reaches a repository](#how-it-reaches-a-repository).
 - **Anyone else.** The same install links every rule into `.agents/skills/` and `.claude/skills/` of your own
-  repository, to read and to try. It is not a general skills product: 28 of the 40 skills name a tool of our
+  repository, to read and to try. It is not a general skills product: 28 of the 41 skills name a tool of our
   MCP servers (Memory Core, Knowledge Base, GitHub workflow) and assume it is there. The servers live in
   [neo-agent-brain](https://github.com/neomjs/neo-agent-brain).
 
@@ -59,15 +60,15 @@ this package exists to make unnecessary.
 
 **A workspace that is not ours projects one audience.** `neo-agent-skills-materialize --audience app`
 (and `--check --audience app`) links only the skills whose manifest row lists `app` — today
-`context-recovery`, `neo-app-authoring`, and `neural-link` — and both surfaces become per-skill links, because a directory
+`context-recovery`, `neo-app-authoring`, `neural-link`, and `upstream-skill-feedback` — and both surfaces become per-skill links, because a directory
 link would expose the maintainer corpus. `neo-app` passes the flag from the workspaces it creates; the
 audience is declared by the caller, never inferred. A row without `audiences` serves maintainers, so the
 projection without the flag is unchanged. The matching instruction file comes from
 `neo-agent-skills-agents-md --repo neo-app-workspace --audience app`.
 
 **Outside contributors can select the public author path.** `neo-agent-skills-materialize
---audience contributor` (and the matching `--check`) projects `unit-test`, `pull-request` and
-`identity-firewall` on both surfaces. It grants no institutional review role. Print its on-demand
+--audience contributor` (and the matching `--check`) projects `unit-test`, `pull-request`,
+`identity-firewall`, and `upstream-skill-feedback` on both surfaces. It grants no institutional review role. Print its on-demand
 guidance with `neo-agent-skills-agents-md --repo neo --audience contributor`; stdout configures
 nothing and is not a tracked contributor instruction variant.
 

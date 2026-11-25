@@ -23,6 +23,7 @@ claude mcp add neo-neural-link -- npx -y neo-neural-link
 - **`context-recovery`** — Post-compaction runbook for reconstructing active lane state; use immediately after context compaction/compression, resuming a summarized session, or detecting a lossy summary.
 - **`neo-app-authoring`** — Write app code in a neo.mjs workspace the engine's way: classes, reactive configs, stores, state providers, CSS. Triggers: before writing or changing anything under apps/ in a workspace built on neo.mjs.
 - **`neural-link`** — Tactical guide for Neural Link MCP tools on live Neo.mjs apps; use when asked to interact with the browser, inspect UI natively, patch live code, or use the Neural Link.
+- **`upstream-skill-feedback`** — Opt-in protocol to report reproducible skill or plugin misfires upstream; use when an installed neo-agent-skills skill or plugin bundle hits an unmapped standalone step, false gate, or broken instruction.
 
 ## Local Plugin Validation
 

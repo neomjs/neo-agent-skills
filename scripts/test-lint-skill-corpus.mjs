@@ -285,8 +285,8 @@ function padTo(work, total) {
     else if (need < 0) writeFileSync(target, readFileSync(target, 'utf8').slice(0, need))
 }
 
-/** @summary Add a valid 41st skill to both disk and manifest without touching README.md. */
-function addFortyFirstSkill(work) {
+/** @summary Add one valid extra skill to both disk and manifest without touching README.md. */
+function addExtraSkill(work) {
     const
         name = 'extra-fixture-skill',
         dir  = join(work, '.agents/skills', name),
@@ -303,6 +303,10 @@ function addFortyFirstSkill(work) {
     })
 }
 
+const
+    currentSkillCount = Object.keys(JSON.parse(readFileSync(join(repoRoot, '.agents/skills/skills.manifest.json'), 'utf8')).skills).length,
+    nextSkillCount    = currentSkillCount + 1;
+
 /** @summary Derive 1-based opening count line numbers from a README string so layout edits above the counts stay green. */
 function readmeCountLines(source = readFileSync(join(repoRoot, 'README.md'), 'utf8')) {
     const
@@ -310,8 +314,10 @@ function readmeCountLines(source = readFileSync(join(repoRoot, 'README.md'), 'ut
         firstHeading = /^## /m.exec(normalized),
         opening      = firstHeading ? normalized.slice(0, firstHeading.index) : normalized,
         lines        = opening.split('\n'),
-        totalLine    = lines.findIndex(line => /\b40\s+skills\b/.test(line) && !/\bof\s+the\s+40\s+skills\b/.test(line)) + 1,
-        subsetLine   = lines.findIndex(line => /\bof\s+the\s+40\s+skills\b/.test(line)) + 1;
+        totalRe      = new RegExp(`\\b${currentSkillCount}\\s+skills\\b`),
+        subsetRe     = new RegExp(`\\bof\\s+the\\s+${currentSkillCount}\\s+skills\\b`),
+        totalLine    = lines.findIndex(line => totalRe.test(line) && !subsetRe.test(line)) + 1,
+        subsetLine   = lines.findIndex(line => subsetRe.test(line)) + 1;
 
     return {totalLine, subsetLine}
 }
@@ -561,36 +567,36 @@ const cases = [
         {commitMessage: 'grow corpus\n\n[skill-growth-justified:]'}],
 
     // ── README opening skill counts ─────────────────────────────────────────────────────────────
-    ['41 skills in manifest with unchanged README fails naming README.md and both count lines', 1, addFortyFirstSkill,
+    [`${nextSkillCount} skills in manifest with unchanged README fails naming README.md and both count lines`, 1, addExtraSkill,
         'adding a skill without updating the README opening must fail and name README.md and the offending lines',
         {expectedOut: new RegExp(`README\\.md:${readmeTotalLine}\\b[\\s\\S]*README\\.md:${readmeSubsetLine}\\b`)}],
 
-    ['41 skills in manifest with only the first README count updated still fails naming the subset count line', 1, w => {
-        addFortyFirstSkill(w);
+    [`${nextSkillCount} skills in manifest with only the first README count updated still fails naming the subset count line`, 1, w => {
+        addExtraSkill(w);
         const readme = join(w, 'README.md');
-        writeFileSync(readme, readFileSync(readme, 'utf8').replace('40 skills:', '41 skills:'))
+        writeFileSync(readme, readFileSync(readme, 'utf8').replace(`${currentSkillCount} skills:`, `${nextSkillCount} skills:`))
     }, 'tying "28 of the N skills" to the manifest count forces recounting the MCP-coupled subset too',
         {expectedOut: new RegExp(`README\\.md:${readmeSubsetLine}\\b`)}],
 
-    ['41 skills in manifest with both README opening counts updated passes', 0, w => {
-        addFortyFirstSkill(w);
+    [`${nextSkillCount} skills in manifest with both README opening counts updated passes`, 0, w => {
+        addExtraSkill(w);
         const readme = join(w, 'README.md');
-        writeFileSync(readme, readFileSync(readme, 'utf8').replaceAll('40 skills', '41 skills'))
-    }, 'positive control proves the 41-skill fixture fails solely on the README count check'],
+        writeFileSync(readme, readFileSync(readme, 'utf8').replaceAll(`${currentSkillCount} skills`, `${nextSkillCount} skills`))
+    }, 'positive control proves the extra-skill fixture fails solely on the README count check'],
 
     ['removing a skill count from the README opening fails naming README.md', 1, w => {
         const readme = join(w, 'README.md');
-        writeFileSync(readme, readFileSync(readme, 'utf8').replace(', 40 skills', ''))
+        writeFileSync(readme, readFileSync(readme, 'utf8').replace(`, ${currentSkillCount} skills`, ''))
     }, 'removing the counts violates the opening-count contract',
         {expectedOut: /README\.md:1\b/}],
 
-    ['inserting lines above the README opening counts stays green at 40 skills', 0, w => {
+    [`inserting lines above the README opening counts stays green at ${currentSkillCount} skills`, 0, w => {
         const readme = join(w, 'README.md');
         writeFileSync(readme, readFileSync(readme, 'utf8').replace('# neo-agent-skills\n', '# neo-agent-skills\n<!-- layout shift -->\n\n'))
     }, 'layout edits above the counts must not trip hardcoded line numbers while counts stay true'],
 
-    ['inserting lines above the README opening counts shifts reported lines at 41 skills', 1, w => {
-        addFortyFirstSkill(w);
+    [`inserting lines above the README opening counts shifts reported lines at ${nextSkillCount} skills`, 1, w => {
+        addExtraSkill(w);
         const readme = join(w, 'README.md');
         writeFileSync(readme, readFileSync(readme, 'utf8').replace('# neo-agent-skills\n', '# neo-agent-skills\n<!-- layout shift -->\n\n'))
     }, 'the lint still reports the shifted 1-based lines when counts disagree after a header edit',
