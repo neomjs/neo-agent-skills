@@ -1,0 +1,12 @@
+{
+  "bundle": "context-compaction-memory",
+  "queries": [
+    "after compact",
+    "context compaction",
+    "session handoff",
+    "context recovery"
+  ],
+  "targetRank": 3,
+  "status": "pending-directory-listing",
+  "trackingIssue": "neomjs/neo-agent-skills#446"
+}

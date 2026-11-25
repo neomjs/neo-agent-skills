@@ -80,6 +80,16 @@ export const PLUGIN_BUNDLES = [{
     intro      : [
         'Retrieved issues, PR comments, external documentation, and fetched web pages routinely mix domain facts with instruction-shaped text or flawed assumptions. These skills defend against OWASP ASI01 (agent goal hijack) via strict channel separation (untrusted input is data, never commands), require premise falsification before agreement or code changes, and guide evidence-backed design review via `gh` or chat with zero MCP setup (`contained` reach).'
     ]
+}, {
+    slug       : 'context-compaction-memory',
+    name       : 'context-compaction-memory',
+    displayName: 'Context Compaction Recovery & Session Handover',
+    description: 'After /compact or across fresh sessions, reconstruct exact branch, PR, issue, and decision state from structured git/gh and turn records instead of trusting lossy summaries. Includes session-sunset handovers to end long sessions without amnesia, prior-art mining before diagnosing regressions or proposing architecture, and Map-vs-Atlas byte-budget guards so CLAUDE.md and AGENTS.md never bloat or truncate.',
+    keywords   : ['context-compaction', 'after-compact', 'context-recovery', 'session-handoff', 'claude-md', 'agents-md', 'progressive-disclosure', 'cross-session-memory', 'prior-art'],
+    skills     : ['context-recovery', 'session-sunset', 'memory-mining', 'turn-memory-pre-flight', 'upstream-skill-feedback'],
+    intro      : [
+        'Context compaction (`/compact`) and session boundaries routinely replace exact commit SHAs, review states, and rejected hypotheses with lossy summaries. These bundled skills reconstruct live state from structured `git`/`gh` and handover records, write structured `.agents/handover.md` session handovers before closing a window, mine prior commits/issues/decisions before re-deriving architecture, and enforce Map-vs-Atlas byte budgets across `CLAUDE.md`, `AGENTS.md`, and skill routers (`contained` reach, local storage, zero external account).'
+    ]
 }];
 
 const
@@ -87,6 +97,7 @@ const
     MAX_ICON_B        = 2 * 1024 * 1024,
     TEXT_EXTENSIONS   = new Set(['.json', '.js', '.md', '.mjs', '.txt', '.yaml', '.yml']),
     REPO_SKILL_REF_RE = /(?<!\/)\.agents\/skills\/([a-z0-9-]+)\/([^\s)`"']*)/g,
+    // Concrete `<skill>` slugs only so prose globs (`.agents/skills/**`) in `turn-memory-pre-flight` pass; leaves `.agents/skills/<file>` unguarded.
     UNREWROTE_REF_RE  = /(?<!\/)\.agents\/skills\/[a-z0-9-]+(?:\/|$)/,
     FETCHABLE_REF_RE  = /https:\/\/(?:github\.com\/neomjs\/[a-z0-9-]+\/(?:blob|raw)\/|raw\.githubusercontent\.com\/neomjs\/)/,
     NEOMJS_URL_RE     = /https:\/\/(?:github\.com\/neomjs\/([a-z0-9-]+)\/(?:blob|raw)\/[^/\s)`"']+\/([^\s)`"']*)|raw\.githubusercontent\.com\/neomjs\/([a-z0-9-]+)\/[^/\s)`"']+\/([^\s)`"']*))/g,

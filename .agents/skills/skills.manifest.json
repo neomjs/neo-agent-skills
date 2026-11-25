@@ -36,7 +36,7 @@
     },
     "context-recovery": {
       "name": "context-recovery",
-      "description": "Post-compaction runbook for reconstructing active lane state; use immediately after context compaction/compression, resuming a summarized session, or detecting a lossy summary.",
+      "description": "Reconstruct exact branch, PR, issue, and task state from live records; use immediately after /compact, context compression, resuming a summarized session, or detecting a lossy summary.",
       "audiences": ["maintainer", "app"]
     },
     "create-skill": {
@@ -95,7 +95,7 @@
     },
     "memory-mining": {
       "name": "memory-mining",
-      "description": "Protocol for querying Memory Core prior art; use when diagnosing regression/validation symptoms, proposing architectural claims/roadmaps/external comparisons, or starting an implementation or PR review."
+      "description": "Search prior commits, issues, decisions, and session memory before diagnosing regressions ('used to work', surprise validation failures), proposing architecture or roadmaps, or starting work or PR review."
     },
     "neo-app-authoring": {
       "name": "neo-app-authoring",
@@ -154,7 +154,7 @@
     },
     "session-sunset": {
       "name": "session-sunset",
-      "description": "End a session without Zero-State Amnesia; use at >75% of the seat's own window, a quiet point before a distant lane, a macro-semantic pivot, or human directive (never task completion/wait).",
+      "description": "Write a structured session handover before ending a long session (>75% context window), at a quiet point before switching to unrelated work, or on a wrap-up request (never on task completion/waits).",
       "routerByteBudget": 17
     },
     "structural-pre-flight": {
@@ -179,7 +179,7 @@
     },
     "turn-memory-pre-flight": {
       "name": "turn-memory-pre-flight",
-      "description": "Placement and load-impact gate for agent memory substrate; use before inserting or mutating AGENTS.md, AGENTS_ATLAS.md, .agents/skills/**, .codex/CODEX.md, .claude/CLAUDE.md, or .agents/ANTIGRAVITY_RULES.md."
+      "description": "Use when asked to add, append or paste anything into CLAUDE.md or AGENTS.md (loaded into every session): decides whether it belongs there or in an on-demand skill or doc, before you propose or edit."
     },
     "unit-test": {
       "name": "unit-test",

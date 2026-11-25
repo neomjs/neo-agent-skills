@@ -1,0 +1,27 @@
+{
+  "name": "context-compaction-memory",
+  "displayName": "Context Compaction Recovery & Session Handover",
+  "version": "2.8.3",
+  "description": "After /compact or across fresh sessions, reconstruct exact branch, PR, issue, and decision state from structured git/gh and turn records instead of trusting lossy summaries. Includes session-sunset handovers to end long sessions without amnesia, prior-art mining before diagnosing regressions or proposing architecture, and Map-vs-Atlas byte-budget guards so CLAUDE.md and AGENTS.md never bloat or truncate.",
+  "icon": "assets/icon.png",
+  "author": {
+    "name": "Neo.mjs",
+    "url": "https://neomjs.com"
+  },
+  "homepage": "https://neomjs.com",
+  "repository": "https://github.com/neomjs/neo-agent-skills",
+  "documentationUrl": "https://github.com/neomjs/neo-agent-skills/tree/dev/plugins/context-compaction-memory",
+  "supportUrl": "https://github.com/neomjs/neo-agent-skills/issues",
+  "license": "MIT",
+  "keywords": [
+    "context-compaction",
+    "after-compact",
+    "context-recovery",
+    "session-handoff",
+    "claude-md",
+    "agents-md",
+    "progressive-disclosure",
+    "cross-session-memory",
+    "prior-art"
+  ]
+}
