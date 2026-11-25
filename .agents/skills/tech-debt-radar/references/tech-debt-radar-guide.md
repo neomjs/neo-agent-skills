@@ -26,17 +26,24 @@ Use `ask_knowledge_base(type: 'ticket')` against the backlog's conversation rows
 Heavily use `query_raw_memories` and `query_summaries` for "abandoned loops" (an agent attempted X and rolled back; failed test hypotheses) — past thought-logs carry the *why* behind accrued debt.
 
 ### C. Codebase Vertical Slicing
-Dive where A/B point. Classify anomalies strictly against the §2 catalogs, never against this guide's own taste — the previous inline examples were canon-inverted by later ADRs; that is why §2 derives instead of stating.
+Dive where A/B point. Classify anomalies strictly against the §2 living catalogs, never against inline taste rules that decay as ADRs evolve.
 
 ### D. Brain-Structural Debt (measure → report → route; never prescribe)
-Across the two executable roots — `ai/` (Brain) vs `src/` (Body) — the Brain currently outweighs the Body in modules and LOC without its structural discipline: re-measure each sweep, never treat as frozen fact. Probes (*observation* producing *hypotheses*):
+Across `ai/` (Brain) vs `src/` (Body), re-measure module and LOC balance each sweep rather than treating past ratios as frozen fact. Probes (*observation* → *hypotheses*):
 
-- structure-map LOC outliers, using the Body's densest exemplary files as the comparison scale;
+- structure-map LOC outliers calibrated against the Body's densest exemplary files;
 - folder-shape consistency across `ai/daemons/*` (factored vs monolith vs ad-hoc flat);
-- concept↔code-home coherence: an Agent OS concept guide with no legible code home is a reportable CANDIDATE, calibrated against the Dream Pipeline specimen (a first-class guide smeared across 25+ files in five technical-layer buckets) — not a universal one-guide-one-home rule.
+- concept↔code-home coherence: an Agent OS concept guide lacking a legible code home is a reportable CANDIDATE (calibrated against the Dream Pipeline specimen across five layer buckets, not a rigid one-guide-one-home rule).
 
-**Two-layer rule:** findings in this class are REPORTS routed to the #14304 / D#14302 canon lane — a canon-hole is itself a reportable finding. Prescribing target module shapes or file moves pre-SSOT is out of scope by #14304's own deferred gates.
+**Two-layer rule:** route findings in this class as REPORTS to the #14304 / D#14302 canon lane (a canon-hole is itself reportable; prescribing target module moves pre-SSOT is out of scope).
 
 ## 4. Remediation Routing
 
-Findings become tickets through `/ticket-create` — duplicate sweep, Fat Ticket, six-stage challenge chain, and its live label rules (that skill owns the label taxonomy); no bypass. Cite provenance (Memory Core sessions, historical PRs) so the fixing agent understands the exact architectural ROI. Brain-structural findings route per §3.D, never to unilateral restructure tickets.
+Route findings into issues via `/ticket-create` (duplicate sweep, Fat Ticket, six-stage challenge chain, live label rules; no bypass) citing session/PR provenance so the implementer sees the exact ROI. Route Brain-structural findings per §3.D, never unilateral restructure tickets.
+
+## 5. Standalone / Plugin Workspace Fallback (No Agent OS MCPs)
+
+Without `neo-mjs-knowledge-base` or `neo-mjs-memory-core`:
+1. **Derive local canon (§2):** read `ARCHITECTURE.md`, `CONTRIBUTING.md`, `CLAUDE.md` / `AGENTS.md`, and `docs/adr/` or `decisions/`; measure LOC outliers via `git ls-files '*.ts' '*.js' '*.mjs' '*.py' '*.go' '*.rs' | xargs wc -l 2>/dev/null | sort -nr | head -n 25` (*observation*, never authority).
+2. **Sweep history (§3.A–B):** run `gh issue/pr list --state all --search "<concept>" --limit 30`, `git log -S "<symbol>" --oneline -n 30`, and `git log -i -E --grep="revert|rollback|workaround|fixme" --oneline -n 30` (**capability note:** surfaces committed churn and public threads, not semantic RAG over unmerged session diaries via `query_raw_memories` / `ask_knowledge_base`).
+3. **Report safely (§4):** present `authority`, `observation`, and `hypothesis` findings in chat with citations; run `gh issue create` **only** when explicitly asked (Directory Policy §2D).

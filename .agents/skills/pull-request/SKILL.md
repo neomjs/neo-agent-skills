@@ -1,11 +1,10 @@
 ---
 name: pull-request
-description: "Execution flow and templates for Pull Requests; use when code changes are complete, before git commit or opening/updating a PR, or when posting an author review-response handoff."
+description: "Use when code changes are complete, before git commit, before opening or updating a pull request, or when replying to PR review feedback: runs pre-commit reflection, AC/evidence checks, and structured handoff."
 ---
 # Pull Request Skill
 
-Before finalizing a ticket, committing, opening/updating a PR or answering review, read `.agents/skills/pull-request/references/pull-request-workflow.md` with your file reader; follow its declared-audience path.
+Before committing, opening or updating a PR, or replying to review feedback, step back to verify every linked-issue AC and contract against real production-path evidence (never trust green CI over manufactured state or overclaim closing keywords), and read `.agents/skills/pull-request/references/pull-request-workflow.md`.
 
-Do NOT commit or open a PR before that read. Both audiences use the canonical body and factual attribution; private identity, routing and lifecycle requirements apply to maintainers only.
-## What it enforces
-Reflection, ticketed commits, canonical body and honest [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) claims. Use custom Playwright configs, never default `npx playwright test`; maintainers also follow cross-family review and §14 A2A handoff.
+- **Standalone / non-`neomjs` repository:** follow that repository's own commit format, attribution, PR template, and default branch (`CONTRIBUTING.md`, recent `git log`, `gh repo view --json defaultBranchRef`); deliver drafted PR/reply text in chat unless asked to run `gh pr`, and never run `gh pr merge` unasked.
+- **`neomjs` repository (`contributor` or `Agent OS maintainer`):** enforce `type(scope): summary (#N)` subjects, no `<noreply@*>` / harness backlinks, `--base dev`, canonical §9 body, custom Playwright configs (never default `npx playwright test`), and (maintainers) [Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md), cross-family review, and §14 A2A handoff.
