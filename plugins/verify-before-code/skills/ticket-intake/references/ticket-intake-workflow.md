@@ -4,7 +4,7 @@ This document outlines the authoritative protocol for the **Pre-Execution Reflec
 
 If you blindly accept a ticket's premise, you risk injecting regressions into the Native Edge Graph.
 
-> **Standalone / plugin workspace (no Agent OS MCP servers):** execute §0–§2 via `gh` CLI and `git`: fetch the live issue and comments (`gh issue view <N> --comments`) plus blocker/sub-issue metadata (`gh api repos/<owner>/<repo>/issues/<N>`), then falsify every claim against current source (`git grep`, `git log -S "<symbol>" -p`) and open/closed history (`gh issue/pr list --state all --search "<nouns>"`) *before* branching (**capability note:** `gh` keyword and `git log` sweeps cover committed code and public threads, not cross-session semantic Knowledge Base or Memory Core turn diaries). Report the reality classification and `Prescription checked:` verdict in chat by default; run `gh issue edit <N> --add-assignee @me`, `gh issue comment`, or `gh issue close` **only** when the user explicitly asks to mutate GitHub (Directory Policy §2D; skip `signal_state_transition`).
+> **Standalone / plugin workspace (no Agent OS MCPs):** run §0–§2 via `gh` and `git`: read `gh issue view <N> --comments` and `gh api repos/<owner>/<repo>/issues/<N>`, then falsify claims against live source (`git grep`, `git log -S "<symbol>" -p`) and history (`gh issue/pr list --state all --search "<nouns>"`) *before* branching (**note:** covers committed code/public threads, not semantic KB or Memory Core diaries). Report reality classification and `Prescription checked:` in chat; run `gh issue edit/comment/close` **only** on explicit user request (skip `signal_state_transition`).
 
 ## §0 — Understand the intent, and challenge the fix, before you accept
 
@@ -141,5 +141,6 @@ When a ticket is stale, duplicate, or harmful, run the Rejection Protocol instea
 3. **Hard Cut:** Stop execution and call `signal_state_transition(state: 'TICKET_REJECTED', target: "[issue-number]")`.
 
 ### Human-in-the-Loop Protocol (Frontier Models)
-1. **Interrupt Workflow:** Stop operational execution without running Git mutations.
-2. **Present Findings:** Share the Architectural Evaluation (`[ARCH_ALIGNMENT]` + Negative ROI rationale) in chat and align with the user before mutating issue state.
+1. **Interrupt Workflow:** Stop all operational execution. Do NOT run Git commands.
+2. **Present Findings:** Drop your complete Architectural Evaluation (including the `[ARCH_ALIGNMENT]` block and Negative ROI metric) directly into the chat response for the human Commander.
+3. **Collaboration:** Wait for the Human to discuss whether the ticket can be salvaged (e.g., pivot the goal) or if it commands formal rejection — which then follows the Close Policy above.

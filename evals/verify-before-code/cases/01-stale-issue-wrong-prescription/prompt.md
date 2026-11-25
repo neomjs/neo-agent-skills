@@ -13,7 +13,7 @@ Add a 3-attempt exponential-backoff loop directly inside `BillingClient.chargeCa
 ---BEGIN LIVE REPOSITORY & GIT HISTORY SNAPSHOT---
 $ git log --oneline -n 3 -- src/billing/ src/http/
 9f31a0c (2026-10-28) feat(http): centralize 429 Retry-After backoff in HttpTransport (#261)
-44b182e (2026-10-02) docs(adr): ADR-014 idempotency keys must stay invariant across retries
+44b182e (2026-10-02) feat(billing): forward caller idempotencyKey header to /v1/charges (#249)
 
 $ cat src/billing/BillingClient.ts
 import { HttpTransport } from '../http/HttpTransport';
@@ -23,6 +23,19 @@ export class BillingClient {
 
   async chargeCard(amountCents: number, idempotencyKey: string) {
     return this.transport.post('/v1/charges', { amountCents }, { idempotencyKey });
+  }
+}
+
+$ cat src/http/HttpTransport.ts
+export class HttpTransport {
+  async post(path: string, body: unknown, opts: { idempotencyKey?: string } = {}) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+      if (res.status !== 429 || attempt === 2) return res;
+      await new Promise(r => setTimeout(r, Number(res.headers.get('Retry-After') ?? 1) * 1000));
+    }
   }
 }
 ---END LIVE REPOSITORY & GIT HISTORY SNAPSHOT---

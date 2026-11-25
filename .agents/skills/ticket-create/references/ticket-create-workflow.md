@@ -4,7 +4,7 @@ The authoritative protocol for creating Neo.mjs GitHub issues. Enforced before a
 
 Tickets are **A2A (Agent-to-Agent) memory bridges**, not just human tracking artifacts. A poorly-formed ticket loses architectural context the Swarm will re-derive every session.
 
-> **Standalone / plugin workspace (no Agent OS MCP servers):** run §1a's duplicate/history sweeps via `gh issue list --state open --limit 20`, `gh issue/pr list --state all --search "<problem nouns>"`, `git grep`, and `git log -S "<symbol>" -n 20` (**capability note:** `gh` keyword and `git log` sweeps surface committed history and public threads, not cross-session semantic RAG via `ask_knowledge_base` / `query_raw_memories` or `AGENT:*` A2A in-flight claims). Apply §2's six-stage challenge chain against live source and §5's structured spec + Contract Ledger; present the drafted issue in chat by default, and run `gh issue create` (with labels verified via `gh label list`) **only** when the user explicitly asks to file it on GitHub (Directory Policy §2D; skip `ai:structure-map`, `Origin Session ID`, and `create_issue` MCP calls).
+> **Standalone / plugin workspace (no Agent OS MCPs):** run §1a sweeps via `gh issue list --state open --limit 20`, `gh issue/pr list --state all --search "<nouns>"`, `git grep`, and `git log -S "<symbol>" -n 20` (**note:** covers committed history/public threads, not `ask_knowledge_base`/`query_raw_memories` RAG or A2A claims). Apply §2's 6-stage chain and §5's problem/reality/fix/AC structure, but **labels and body format follow the host repo** (`gh label list`, `.github/ISSUE_TEMPLATE/`): §4 defaults (`ai` required; `good first issue` + `help wanted` + claim line) and §5 `neomjs`-only fields (sweep-attestation line, `Retrieval Hint`, `Origin Session ID`) apply **only in `neomjs` repositories**. Draft in chat; run `gh issue create` **only** on explicit user request (skip `ai:structure-map` and `create_issue`).
 
 ## §0 — Understand the intent before you write the ticket
 
@@ -119,7 +119,9 @@ Reshape or drop any ticket that fails a stage.
 ## 4. Label Rules
 
 **Default for new non-critical standalone work: `good first issue` + `help wanted` + `ai`.**
-Keep curated labels off urgent/critical, unresolved, private-dependent, or owned work and state why. Supply complete public context and checks (§5/§12).
+Keep curated labels off urgent/critical, unresolved, private-dependent or owned work; say why.
+First-time is not novice. Supply public context and checks (§5/§12) for features,
+fixes and refactors, not just trivial tests.
 
 With either curated label, place this above Context on the first screen:
 “Please comment to claim before starting; check current assignees and linked PRs.”
