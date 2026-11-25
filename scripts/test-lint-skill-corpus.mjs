@@ -643,7 +643,25 @@ for (const [name, expected, mutate, because, options] of consumerCases) {
     console.log(`${ok ? '  ok  ' : '  FAIL'} ${name} → exit ${code} (expected ${expected}) — ${because}`)
 }
 
-const total = cases.length + consumerCases.length;
+const
+    packageTestSuites = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).scripts.test
+        .match(/node (scripts\/test-[\w-]+\.mjs)/g)?.map(command => command.slice(5)).sort() ?? [],
+    workflowTestSuites = readFileSync(join(repoRoot, '.github/workflows/skill-corpus.yml'), 'utf8')
+        .match(/node (scripts\/test-[\w-]+\.mjs)/g)?.map(command => command.slice(5)).sort() ?? [],
+    missingSuites     = packageTestSuites.filter(suite => !workflowTestSuites.includes(suite)),
+    extraSuites       = workflowTestSuites.filter(suite => !packageTestSuites.includes(suite)),
+    suiteParityOk     = missingSuites.length === 0 && extraSuites.length === 0;
+
+if (!suiteParityOk) {
+    failed++;
+    console.log('  FAIL package.json test suites and skill-corpus workflow suites must match');
+    for (const suite of missingSuites) console.log(`    missing from workflow: ${suite}`);
+    for (const suite of extraSuites) console.log(`    missing from package.json: ${suite}`);
+} else {
+    console.log('  ok  package.json test suites and skill-corpus workflow suites match')
+}
+
+const total = cases.length + consumerCases.length + 1;
 
 console.log(`\n${total - failed}/${total} passed`);
 process.exit(failed ? 1 : 0);
