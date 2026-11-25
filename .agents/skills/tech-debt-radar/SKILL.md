@@ -1,10 +1,10 @@
 ---
 name: tech-debt-radar
-description: "Semantic RAG sweep for architectural technical debt; use during architectural analysis, proactive debt searches, auditing for abandoned logical loops, ambient debt scan requests, or PR reviews of major shifts."
+description: "Use when asked to scan for technical debt, audit architectural drift, find abandoned workarounds or rollbacks in git/issue history, or check adjacent debt during a major refactor or PR review."
 ---
-
 # Tech Debt Radar
 
-If you need to sweep for ambient architectural debt, analyze historical epics, or mine the Memory Core for abandoned code flows, you MUST immediately use the `view_file` tool to read and strictly adhere to `.agents/skills/tech-debt-radar/references/tech-debt-radar-guide.md` before proceeding.
-## What it enforces
-Uses Frontier Model semantic RAG to sweep historical issues and Memory Core sessions during architectural analysis, proactive debt searches, repository audits for abandoned logical loops, or PR reviews of fundamental architectural shifts.
+Derive the living architecture canon from repo docs/ADRs before sweeping history (never invent taste-based rules), separate `authority` (canon), `observation` (current tree/LOC/churn), and `hypothesis` (candidate debt), and report findings in chat without filing issues unless asked.
+
+- **Standalone / plugin workspace (`gh` + `git`):** read `.agents/skills/tech-debt-radar/references/tech-debt-radar-guide.md` (§5 + §2) and sweep `git log -S` / `--grep="revert|rollback|workaround|FIXME"` + `gh issue/pr list --state all`.
+- **Agent OS maintainer (`neo-mjs-memory-core`):** read `.agents/skills/tech-debt-radar/references/tech-debt-radar-guide.md` (§1–§4) and sweep `ask_knowledge_base`, `query_raw_memories`, and `ai:structure-map`.

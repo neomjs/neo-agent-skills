@@ -135,12 +135,12 @@
     },
     "pr-review": {
       "name": "pr-review",
-      "description": "Guidelines and templates for Pull Request reviews; use when reviewing a PR (yours or a peer's), formulating review feedback, or auditing PR evidence.",
+      "description": "Use before reviewing a pull request, writing review feedback, or auditing PR evidence: checks the linked issue's ACs, Contract Ledger, and real-state premise against base source before reading the diff.",
       "perFilePayloadBudget": 33700
     },
     "pull-request": {
       "name": "pull-request",
-      "description": "Execution flow and templates for Pull Requests; use when code changes are complete, before git commit or opening/updating a PR, or when posting an author review-response handoff.",
+      "description": "Use when code changes are complete, before git commit, before opening or updating a pull request, or when replying to PR review feedback: runs pre-commit reflection, AC/evidence checks, and structured handoff.",
       "audiences": ["maintainer", "contributor"],
       "perFilePayloadBudget": 22000
     },
@@ -163,7 +163,7 @@
     },
     "tech-debt-radar": {
       "name": "tech-debt-radar",
-      "description": "Semantic RAG sweep for architectural technical debt; use during architectural analysis, proactive debt searches, auditing for abandoned logical loops, ambient debt scan requests, or PR reviews of major shifts."
+      "description": "Use when asked to scan for technical debt, audit architectural drift, find abandoned workarounds or rollbacks in git/issue history, or check adjacent debt during a major refactor or PR review."
     },
     "ticket-create": {
       "name": "ticket-create",

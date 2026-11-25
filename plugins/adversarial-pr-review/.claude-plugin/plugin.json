@@ -1,0 +1,27 @@
+{
+  "name": "adversarial-pr-review",
+  "displayName": "Adversarial PR Review — Premise & Ticket-AC Gate",
+  "version": "2.8.4",
+  "description": "Review pull requests patch-blind against the linked GitHub issue's acceptance criteria, Contract Ledger, and real-state premise ('can the handled state exist in practice?') before reading the diff—catching wrong-premise, partial-AC, and architecture-drift PRs that pass green CI and style linters. Includes canonical PR authoring gates, git/gh technical-debt sweeps, and structured review templates via gh or chat.",
+  "icon": "assets/icon.png",
+  "author": {
+    "name": "Neo.mjs",
+    "url": "https://neomjs.com"
+  },
+  "homepage": "https://neomjs.com",
+  "repository": "https://github.com/neomjs/neo-agent-skills",
+  "documentationUrl": "https://github.com/neomjs/neo-agent-skills/tree/dev/plugins/adversarial-pr-review",
+  "supportUrl": "https://github.com/neomjs/neo-agent-skills/issues",
+  "license": "MIT",
+  "keywords": [
+    "pr-review",
+    "code-review",
+    "pull-request",
+    "acceptance-criteria",
+    "premise-check",
+    "contract-ledger",
+    "technical-debt",
+    "github-cli",
+    "architecture-review"
+  ]
+}

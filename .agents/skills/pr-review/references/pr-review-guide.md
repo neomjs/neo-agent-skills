@@ -1,6 +1,8 @@
 # Pull Request Review Guide
 
 > **Measurement Trigger:** For review-density or skill-baggage work, use [Loaded-Surface Measurement Methodology](./measurement-methodology.md) and record `wc -c`; ordinary PR reviews do not load it.
+>
+> **Standalone / plugin workspace (no Agent OS MCP servers):** run §0–§9 via `gh` CLI and `git`: read the linked issue/Contract Ledger (`gh issue view <N> --comments`), PR state/files (`gh pr view <PR> --json state,mergedAt,baseRefName,headRefOid,files`), checks (`gh pr checks <PR>`), and base source (`git show <base>:<path>`) *before* inspecting `gh pr diff <PR>`. Sweep prior art via `git log -S "<symbol>" -p` and `gh pr/issue list --state all --search "<topic>"` (**capability note:** git/GitHub keyword search covers committed history and public threads, not cross-session semantic Memory Core diaries or Knowledge Base graph queries). Deliver the review in chat by default; run `gh pr review <PR> --approve|--request-changes|--comment --body-file <file>` **only** when the user explicitly asks to post on GitHub (Directory Policy §2D; skip `manage_pr_review`, `ai:structure-map`, Memory Core UUIDs, A2A hand-offs, and `post-review-pickup`).
 
 ## §0 — Patch-blind premise snapshot (BEFORE the diff)
 
@@ -29,23 +31,21 @@ If you write a GitHub PR review, step out of Driver mode and follow this reviewe
    - **Large result:** prefer tool-native scoping; for Claude-saved `tool-results/*.txt`, inspect per-file with `jq`/`Read`/`grep`, not a subagent. Policy/exception: `AGENTS.md §swarm_topology_anchor`; rationale: `.claude/settings.template.json`.
 2. **Exact-head evidence:** inspect source at exact `headRefOid`. Exact-head required CI is the default unit/integration evidence; run locally only for a named falsifier. Docs/template-only changes need no runtime evidence. Never score `[EXECUTION_QUALITY]` from static diff or author prose.
 3. **Self-review detection:** extract `Resolves #N`; query current-session Memory Core for `#N`. If you authored it this session, use first-person clinical self-review; otherwise standard peer-review.
-4. **Tech Debt Radar:** trigger `tech-debt-radar` for fundamental architecture shifts or `refactor(ai)` PRs.
+4. **Tech Debt Radar:** trigger `.agents/skills/tech-debt-radar/SKILL.md` for fundamental architecture shifts or `refactor(ai)` PRs.
 5. **Scope discipline:** polish minor misses inside the PR. A wrong shape the patch introduces or deepens is this PR's Required Action. Verified inherited debt beyond a safe repair gets a real issue in this review, whatever the verdict: link the existing one or file it, with evidence and an owner. It never blocks the safe fix, and out of scope routes the debt rather than waiving it. An unverified suspicion stays tagged `hypothesis — needs V-B-A before implementation` and mints no ticket.
 6. **Execution:** `manage_pr_review` is the sole fail-closed pre-submit budget gate. Direct `gh pr review` / UI is bypass-with-telemetry: run the meter and add `[review-budget-bypass] reason: ...`; post-submit lint cannot undo it.
 7. **Structure map:** before verdict, run `npm run ai:structure-map -- --files --loc` for PRs touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement; otherwise record N/A. Brain-hosted, so absent elsewhere — never add `--silent`, which hides npm's `Missing script` and leaves an empty exit-1 that reads as a pass.
 
 ## 3. Structural Evaluation Metrics
-Every PR review MUST score the work across the following categories on a scale of `0` to `100`:
+Score every Round-1 full review from `0` to `100` (**weights:** 30% premise / right thing; 30% architecture / placement; 30% diff correctness; 10% AC/evidence/close-target/CI/contract sanity — weights reflect importance-to-verdict, never effort budget; a tidy checklist over the wrong premise or folder still fails):
 
-**Verdict weights:** 30% premise / right thing; 30% architecture / placement; 30% diff correctness; 10% AC/evidence/close-target/CI/contract sanity. Weights are importance-to-verdict, not effort budget; a tidy checklist over the wrong premise or folder still fails.
-
-*   **`[ARCH_ALIGNMENT]`** (0-100): does this belong here — placement, cohesion, boundaries. Logic in definitions/config, provider specifics outside providers, or subsystem leakage into root surfaces caps the score (#14298: ~45, not 94).
-*   **`[CONTENT_COMPLETENESS]`** (0-100): Are all new or modified methods documented with 'Anchor & Echo' JSDoc? Is the body complete in anchors and economical in prose — each fact once, linked narratives not restated (#16528)? Duplication caps the score like absence.
-*   **`[EXECUTION_QUALITY]`** (0-100): Code flow, absence of bugs, race condition safety, VDOM syncing correctness, and testing coverage.
-*   **`[PRODUCTIVITY]`** (0-100): Were the primary goals of the linked ticket achieved?
-*   **`[IMPACT]`** (0-100): What is the significance of the change? (100 = critical core architecture, 10 = trivial typo fix).
-*   **`[COMPLEXITY]`** (0-100): Factor in file touchpoints, depth of changes (core vs. app-level), and cognitive load.
-*   **`[EFFORT_PROFILE]`**: Categorize the effort relative to the Impact/Complexity ratio to establish explicit Native Graph labels. Valid values are: `Quick Win` (High ROI/Low Complexity), `Heavy Lift` (High Complexity/High Impact), `Maintenance` (Routine tasks), or `Architectural Pillar` (Fundamental shifts).
+*   **`[ARCH_ALIGNMENT]`** (0-100): placement, cohesion, boundaries. Logic in definitions/config, provider specifics outside providers, or subsystem leakage into root surfaces caps the score (#14298: ~45, not 94).
+*   **`[CONTENT_COMPLETENESS]`** (0-100): 'Anchor & Echo' JSDoc on new/modified methods; complete anchors and economical prose — each fact once, linked narratives not restated (#16528). Duplication caps the score like absence.
+*   **`[EXECUTION_QUALITY]`** (0-100): control flow, bug/race safety, VDOM sync correctness, and test coverage.
+*   **`[PRODUCTIVITY]`** (0-100): delivery of the linked ticket's primary goals.
+*   **`[IMPACT]`** (0-100): change significance (100 = critical core architecture, 10 = trivial typo fix).
+*   **`[COMPLEXITY]`** (0-100): touchpoints, core-vs-app depth, and cognitive load.
+*   **`[EFFORT_PROFILE]`**: Impact/Complexity ratio label for the Native Graph — `Quick Win` (High ROI/Low Complexity), `Heavy Lift` (High Complexity/High Impact), `Maintenance` (Routine), or `Architectural Pillar` (Fundamental shifts).
 
 ### 3.1 Decile Anchors for Evaluative Metrics
 
@@ -66,22 +66,22 @@ Round 1 scores every metric explicitly in the full template. **Round 2 does not 
 The Round-1 scores stand as the PR's record. A metric only moves again on an exceptional verdict (Drop+Supersede), where the premise itself changed.
 
 ## 4. Graph Ingestion Tags
-Critical feedback MUST carry these tags; the Retrospective daemon regex-matches them into Agent OS memory during REM sleep:
+Critical feedback carries regex-ingested tags (matched into Agent OS memory during REM sleep):
 
-*   **`[KB_GAP]`**: Use this to document missing concepts, misunderstandings of neo core logic, or areas where the developer (or agent) clearly lacked documentation.
-*   **`[TOOLING_GAP]`**: Use this to document failures in the development workflow, broken test commands, or MCP tools that failed during the generation of the PR.
-*   **`[RETROSPECTIVE]`**: Use this for high-level takeaways or architectural praise.
+*   **`[KB_GAP]`**: missing concepts, core-logic misunderstandings, or undocumented behavior.
+*   **`[TOOLING_GAP]`**: workflow, test-runner, or MCP tool failures hit during the PR.
+*   **`[RETROSPECTIVE]`**: high-level architectural takeaways or durable praise.
 
-**Author-side response tags (`pull-request` §6):** The `.agents/skills/pull-request/references/review-response-protocol.md` document defines `[ADDRESSED]`, `[REJECTED_WITH_RATIONALE]`, and guarded `[SCOPE_TRANSFERRED]`. Accepted-but-unimplemented work remains OPEN. The shared taxonomy keeps the negotiation thread mineable without weakening the Required Action gate.
+**Author-side response tags (`pull-request` §6):** `.agents/skills/pull-request/references/review-response-protocol.md` defines `[ADDRESSED]`, `[REJECTED_WITH_RATIONALE]`, and guarded `[SCOPE_TRANSFERRED]`; accepted-but-unimplemented work stays OPEN.
 
 ### 4.1 Reference Hygiene
 
 Before review prose/tags, read the [reference-hygiene guide](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/reference-hygiene.md): structural tokens stay bare; descriptive tokens use backticks.
 
 ## 5. Required Actions & Cross-Linking
-*   **Related Graph Nodes:** Every PR review MUST list related graph nodes (e.g., `Target Epic ID`, `Issue ID`) to ensure the Native Edge Graph links the evaluation to the overarching goal.
-*   **Required Actions:** Clearly list a bulleted checklist of mandatory changes required before the PR can be accepted.
-*   **Zero-Issue PR Semantics:** If a PR has no required actions, replace the checkbox list with a single explicit sentence: *"No required actions — eligible for human merge."* (Note: this means eligibility, not an authorization for the reviewing agent to execute it). Never pre-tick placeholder items.
+*   **Related Graph Nodes:** list `Target Epic ID` / `Issue ID` so the Native Edge Graph links evaluation to goal.
+*   **Required Actions:** bulleted checklist of mandatory changes before acceptance.
+*   **Zero-Issue PR Semantics:** replace the checklist with *"No required actions — eligible for human merge."* (eligibility, never agent merge authorization; never pre-tick placeholders).
 
 ### 5.2 Close-Target Audit
 
@@ -274,14 +274,12 @@ For PRs that introduce new workflow primitives, skill files, architectural conve
 
 ### 8.2 Verification Checklist
 
-- [ ] Does any existing skill document a predecessor step that should now fire this new pattern? (E.g., if PR adds `epic-review`, does `ticket-intake` need to check for epic-review state as a prerequisite?)
-- [ ] Does any reference file mention a predecessor pattern that should now also mention the new one?
-- [ ] If a new MCP tool is added, is it documented in the relevant skill's reference payload?
-- [ ] If a new convention is introduced, is there documentation somewhere explaining when the convention applies and how it fires?
-- [ ] If a PR cites `Decision Record: REQUIRED`, does it verify ADR authority and name any merge-order gate?
-- [ ] If a wire format or substrate contract was changed, does the PR explicitly enumerate downstream consumers and verify they were updated to handle the new format?
+- [ ] Does any existing skill or reference file describe a predecessor step that should now invoke or mention the new pattern?
+- [ ] If a new MCP tool or workflow convention is added, is its trigger and usage documented in the owning skill payload?
+- [ ] If the PR cites `Decision Record: REQUIRED`, does it verify ADR authority and any merge-order gate?
+- [ ] If a wire format or substrate contract changed, does the PR enumerate downstream consumers and verify updates?
 
-If any check surfaces a miss, flag it in Required Actions. A PR that ships a new convention without the cross-skill references creates a **latent integration gap** — the convention exists but won't fire because no other skill knows to invoke it.
+Flag any miss in Required Actions: shipping a convention without cross-skill wiring creates a **latent integration gap**.
 
 ## 9. Strategic-Fit Step-Back
 

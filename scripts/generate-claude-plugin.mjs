@@ -90,6 +90,16 @@ export const PLUGIN_BUNDLES = [{
     intro      : [
         'Context compaction (`/compact`) and session boundaries routinely replace exact commit SHAs, review states, and rejected hypotheses with lossy summaries. These bundled skills reconstruct live state from structured `git`/`gh` and handover records, write structured `.agents/handover.md` session handovers before closing a window, mine prior commits/issues/decisions before re-deriving architecture, and enforce Map-vs-Atlas byte budgets across `CLAUDE.md`, `AGENTS.md`, and skill routers (`contained` reach, local storage, zero external account).'
     ]
+}, {
+    slug       : 'adversarial-pr-review',
+    name       : 'adversarial-pr-review',
+    displayName: 'Adversarial PR Review — Premise & Ticket-AC Gate',
+    description: 'Review pull requests patch-blind against the linked GitHub issue\'s acceptance criteria, Contract Ledger, and real-state premise (\'can the handled state exist in practice?\') before reading the diff—catching wrong-premise, partial-AC, and architecture-drift PRs that pass green CI and style linters. Includes canonical PR authoring gates, git/gh technical-debt sweeps, and structured review templates via gh or chat.',
+    keywords   : ['pr-review', 'code-review', 'pull-request', 'acceptance-criteria', 'premise-check', 'contract-ledger', 'technical-debt', 'github-cli', 'architecture-review'],
+    skills     : ['pr-review', 'pull-request', 'tech-debt-radar', 'upstream-skill-feedback'],
+    intro      : [
+        'Green CI and line-by-line style linters still approve pull requests that solve the wrong problem, handle states that never occur in production, or quietly drop acceptance criteria from the originating issue. These bundled skills build a patch-blind premise snapshot from the linked issue, Contract Ledger, and base source before inspecting the diff, audit real-state reachability and adjacent technical debt via `gh` and `git log`, and format actionable reviews with zero MCP setup (`contained` reach).'
+    ]
 }];
 
 const
