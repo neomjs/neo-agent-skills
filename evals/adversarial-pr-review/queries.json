@@ -1,0 +1,12 @@
+{
+  "bundle": "adversarial-pr-review",
+  "queries": [
+    "pr review acceptance criteria",
+    "pull request premise check",
+    "adversarial pr review",
+    "verify pr against issue"
+  ],
+  "targetRank": 3,
+  "status": "pending-directory-listing",
+  "trackingIssue": "neomjs/neo-agent-skills#446"
+}
