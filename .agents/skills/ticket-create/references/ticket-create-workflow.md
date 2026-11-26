@@ -6,7 +6,7 @@ Apply before drafting or filing. Preserve the evidence the next maintainer needs
 
 ## §0 — Understand the intent before you write the ticket
 
-Check the active roadmap outcome (for Brain and Skills, the line table in `neomjs/neo`’s `ROADMAP.md`). Recover design intent from the owning code, neighboring consumers, JSDoc and prior decisions (`memory-mining` / `ask_knowledge_base`). Missing intent can itself be a documentation gap.
+Does the work fit the architecture and active roadmap outcome? For Brain and Skills, use the Engine roadmap’s line table. Recover intent from the owner, consumers, JSDoc and prior decisions (`memory-mining` / `ask_knowledge_base`). Missing intent can be a documentation gap.
 
 A ticket that calls an existing behavior wrong carries its `Design authority:` line before The Fix exists — the rule: [`design-authority.md`](design-authority.md).
 
@@ -102,9 +102,9 @@ defect-note: <surface> <broke | is wrong> <observed symptom>
 Apply PR-review importance weights at creation time (30% premise / right work; 30% owning substrate; 30% deliverable correctness; 10% AC/evidence sanity — weights govern verdict, not drafting length). Every stage must pass before drafting:
 
 1. **Premise** — is the problem real, reproducible, and independently verified rather than secondhand?
-2. **Prescription** — verify the owning layer before proposing a fix. For Neo Engine, example and Learn tickets, **first try the native way to do the user's task**. Search the inventory and Knowledge Base (local guides and source in standalone mode). Trace the closest public API or config through its implementation and a shipped consumer. Follow inherited behavior, composition or global CSS where it owns the result. For a behavior claim, exercise the distinguishing case and a working case that must survive. If evidence is missing, keep the prescription open.
+2. **Prescription** — verify the owning layer. For Neo Engine, example and Learn tickets, **try the native approach before drafting**. Use the Engine’s [Structural Inventory](https://github.com/neomjs/neo/blob/dev/learn/benefits/ArchitectureOverview.md#structural-inventory) to find related packages. Query the Knowledge Base for usage (standalone: search the Engine’s `src/`, `examples/` and `learn/`). Trace the public API or config through its owner and a shipped consumer, including inheritance, composition or global CSS as relevant. Exercise the distinguishing behavior and a working case to preserve. Leave an unverified prescription open.
 3. **Substrate** — service layer, build script, CI workflow, core, or docs? When introducing or relocating a `.mjs` file, validate placement via `.agents/skills/structural-pre-flight/` first (Stage 0/1 fast-path or full Pre-Flight; anchors: PR `#11008`, `ai/daemons/wake/daemon.mjs`).
-4. **Consumer** — identify who uses the result and how. For reusable Engine work, show the import or declarative config another app will use with its own data or actions. Put shared behavior behind that public entry and domain wiring in the demo. When existing composition works, teach it in a guide or example if a reader gap remains. Drop the ticket if the outcome is already covered.
+4. **Consumer** — match the form (guide, metadata or tool response) to its consumer. For reusable Engine work, show the import or declarative config another app will use with its own data or actions. Put shared behavior behind that public entry and domain wiring in the demo. When existing composition works, teach it in a guide or example if a reader gap remains. Drop the ticket if the outcome is already covered.
 5. **Service-Boundary** — avoid crossing service boundaries or placing config in a non-owning service.
 6. **Decision Record impact** — for architecture/substrate tickets, declare `none`, `aligned-with`, `depends-on`, `amends`, `supersedes`, or `challenges` an ADR; run [`../../ticket-intake/references/adr-successor-risk-audit.md`](../../ticket-intake/references/adr-successor-risk-audit.md) before challenging or superseding an accepted ADR.
 
