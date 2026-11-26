@@ -30,7 +30,7 @@ user to restate context:
 | **2** | **Chronological recency** | `git status -sb`, `git log -n 10 --oneline`, `git diff --stat`, or the tail of the local harness transcript |
 | **3** | **Targeted recall** | `git log -S "<anchor>"` / `gh issue list --search "<anchor>"` using exact symbols or IDs from Step 2 |
 | **4** | **Session rollup** | Local session notes or linked parent issue/epic body |
-| **5** | **Live substrate check** | `gh pr view <n> --json state,mergedAt` + `gh pr checks <n>` / `gh issue view <n>` (summaries are hints; live Git/GitHub state is the gate) |
+| **5** | **Live substrate check** | `gh pr view <n> --json state,mergedAt` + `gh pr checks <n>` / `gh issue view <n>`; re-fetch `gh pr diff <n>` if compaction interrupted an unsubmitted review |
 | **5a** | **Direction check** | Read repository `VISION.md`, `ROADMAP.md`, and `AGENTS.md` when present |
 
 ## 4. Recovery Ledger & Routing
