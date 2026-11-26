@@ -66,35 +66,34 @@ that re-derives a fact the long path holds → log `defect-note` or on `neomjs/n
    before acting; summaries are hints, not work gates. Pass every PR believed
    open to `list_pull_requests({repo, believedOpen: [...]})` and act on
    `belief.falsified`. Compaction invalidates unsubmitted PR diff or code-audit
-   reads: re-fetch `get_pull_request_diff` at `headRefOid` in the active window
-   before `manage_pr_review`, never scoring or approving from a compaction
-   summary (`DISCIPLINE-ONLY`).
+   reads (`DISCIPLINE-ONLY`): capture `baseRefOid` and `headRefOid`, list
+   changed files (`files_only: true`), re-read `get_pull_request_diff` with
+   `sha: headRefOid` and `file` paths (verifying the relevant diff is complete —
+   or fall back to fetched `git diff <baseRefOid>...<headRefOid>` / `gh api
+   repos/<owner>/<repo>/compare/<baseRefOid>...<headRefOid>` when the MCP tool
+   or object is unavailable), and refresh evidence when either ref changes
+   before `manage_pr_review`; never score or approve from a compaction summary.
 
-5a. **Direction check:** if the recovered lane's target repository (including a
-   sibling checkout such as `../neo-stage` when the session is rooted in
-   `neomjs/neo`) carries a `VISION.md`, `ROADMAP.md`, or repo-local
-   `AGENTS.md`, read them before asserting lane state; a lane that contradicts
-   them is not resumed, it is re-planned against the roadmap.
+5a. **Direction check:** read `VISION.md`, `ROADMAP.md`, and repo-local
+   `AGENTS.md` when present in the target repo (including sibling checkouts
+   like `../neo-stage`) before asserting lane state; re-plan any lane that
+   contradicts them.
 
 **A recall miss never supports a "was never saved" claim.** A failed search is
 evidence about the index, not the store; read the primary artifact before
 asserting absence.
 
-6. **Identity quarantine (post-compaction prior):** the self-story is the
-   context most silently reconstructed after compaction. **Load-proof check
-   first, per harness:**
-   - **Kimi:** `<seat-memory-layer source="…" trigger="session-boot|post-compact-reload">` plus `MEMORY.md` / `identity.md` in context.
-   - **OpenCode:** `MEMORY.md` / `identity.md` content (e.g. the hot-index cap header) via `opencode.jsonc → instructions`.
-   Never read `turnPresence.fresh` as load proof — it belongs to the sibling
-   presence hook (`#15658`-class wiring) and can be green while the anchor
-   loader is broken. Proof present: the layer is loaded; the quarantine below
-   covers only facts outside it. Proof absent: read [`./seat-memory-loader-diagnostics.md`](./seat-memory-loader-diagnostics.md).
-   Before writing ANYTHING identity-bearing (memory files, biography prose,
-   self-description in posts or PRs), re-hydrate identity from own
-   origin/identity memories + the recency feed. Any identity fact about a named
-   agent (self OR peer) carries that bearer's record citation — mine your own
-   trail for self-claims; cite the peer's record or drop the name for
-   peer-claims (`neo-agent-skills:pr-review/audits/identity-claim-audit.md`).
+6. **Identity quarantine (post-compaction prior):** self-story is most silently
+   reconstructed after compaction. **Load-proof check first:**
+   - **Kimi:** `<seat-memory-layer source="…" trigger="session-boot|post-compact-reload">` + `MEMORY.md` / `identity.md` in context.
+   - **OpenCode:** `MEMORY.md` / `identity.md` via `opencode.jsonc → instructions`.
+   Never treat `turnPresence.fresh` as load proof (sibling presence hook, `#15658`
+   class). Proof present: quarantine covers only facts outside the loaded layer;
+   absent: read [`./seat-memory-loader-diagnostics.md`](./seat-memory-loader-diagnostics.md).
+   Before writing identity-bearing text (memory files, bio, self-description),
+   re-hydrate from own origin/identity memories + recency feed. Cite the bearer's
+   record for any self or peer identity claim, or drop the name
+   (`neo-agent-skills:pr-review/audits/identity-claim-audit.md`).
 
 ## 4. Lane Reconstruction
 

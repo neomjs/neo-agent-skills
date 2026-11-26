@@ -23,9 +23,12 @@ system spans hemispheres (`ai/` services and daemons are `Neo.setupClass` classe
    class name, or a host naming the class at its call site defeats replacement even inside a
    registered class: registration is not dispatch. Name the bypassed path and the unowned
    lifetime; a returned callback alone is no defect.
-6. **One class per `.mjs` file (`MACHINE-ENFORCEABLE-CANDIDATE`):** one top-level `ClassDeclaration`
-   per module matching `className` ↔ path (`check-class-module-scope.mjs` enforces `neomjs/neo`
-   `{src,apps,examples}` via `neomjs/neo#21737`; retire once shared-baseline covers consumer repos).
+6. **Module class count & naming:** at most one top-level `ClassDeclaration` per `.mjs` module
+   (`MACHINE-ENFORCEABLE-CANDIDATE`: `check-class-module-scope.mjs` enforces the count check in
+   `neomjs/neo` `{src,apps,examples}` via `neomjs/neo#21737`; retire the count clause once
+   shared-baseline covers consumer repos), and any declared class's `className` matches its
+   folder/file path (`MACHINE-ENFORCEABLE-CANDIDATE`: keep independently until a naming-to-path
+   guard covers it).
 7. **Extensible class maps (`DISCIPLINE-ONLY`):** consumer/subclass-extensible label, icon, or option
    maps use `static config` (`{[isDescriptor]: true, merge: 'shallow', value: {...}}`) or `static`
    fields, never module-scope `const` tables (reserved for immutable internal constants).
