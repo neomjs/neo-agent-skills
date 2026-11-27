@@ -8,7 +8,7 @@ Read authoritative engine contracts **before** trusting any sibling file (siblin
 1. **Guidelines & core primitives first:**
    - `.github/CODING_GUIDELINES.md` (class anatomy, JSDoc `@reactive`/`@protected`/multiline rules, member ordering, `let me = this`);
    - `src/core/Base.mjs` (reactive configs, `[isDescriptor]`, `set()` batching, `observeConfig`, `destroy`);
-   - `src/Neo.mjs` (`Neo.setupClass`, `Neo.create`, `Neo.get` / `Neo.getComponent`);
+   - `src/Neo.mjs` (`Neo.setupClass`, `Neo.create`) and `src/manager/{Instance,Component}.mjs` (`Neo.get`, `Neo.getComponent`);
    - `src/state/Provider.mjs` and `src/data/{Model,Store}.mjs` when managing view state or records.
 2. **One or two verified siblings:** inspect a nearby file under `src/`, `apps/`, or `examples/` (`src/app/content/Container.mjs` is the declarative composite exemplar) and verify its patterns match `Base.mjs`, `Neo.mjs`, and `.github/CODING_GUIDELINES.md` before reusing its shape.
 3. **VDOM Engine gate:** before modifying `src/vdom/**`, `src/util/vdom/**`, `src/worker/VDom.mjs`, `src/manager/VDomUpdate.mjs`, `src/mixin/VdomLifecycle.mjs`, or `src/main/DeltaUpdates.mjs`, read the [VDOM Engine Overview](neomjs/neo:learn/guides/vdomengine/Overview.md), [AppWorker](neomjs/neo:learn/guides/vdomengine/AppWorker.md), [VdomWorker](neomjs/neo:learn/guides/vdomengine/VdomWorker.md), [MainThread](neomjs/neo:learn/guides/vdomengine/MainThread.md), and [ADR 0043: VDOM Diff Placement](neomjs/neo:learn/agentos/decisions/0043-vdom-diff-placement.md). Plain docs index: `https://neomjs.com/llms.txt`.
@@ -35,6 +35,7 @@ class MainContainer extends Container {
         className: 'MyApp.view.MainContainer',
         /**
          * @member {Object} items
+         * @reactive
          */
         items: {
             [isDescriptor]: true,
@@ -66,7 +67,7 @@ export default Neo.setupClass(MainContainer);
 - **Extend the matching primitive & deduplicate defaults:** class suffix names its base family (`…Container`, `…Dialog`, `…List`, `…Store`, `…Controller`). Read the superclass `static config` chain and omit unchanged ancestor defaults (`MACHINE-ENFORCEABLE-CANDIDATE`: retire when `check-coding-guidelines.mjs` enforces).
 - **Declarative child hooks (`[isDescriptor]` + `[mergeFrom]`):** reusable composite components (`src/app/content/Container.mjs:29`) declare keyed `items` (`[isDescriptor]: true, clone: 'deep', merge: 'deep'`) and merge child overrides from `<child>Config_` descriptors via `[mergeFrom]`. Never override `mergeConfig()` or copy `createItems()` just to specialize children.
 - **Reactive configs (`foo_`):** trailing `_` generates getters/setters and `beforeGetFoo` / `beforeSetFoo(value, oldValue)` (`undefined` cancels) / `afterSetFoo(value, oldValue)` (`oldValue === undefined` on initial construct). Clear with `null`, never `undefined`. Batch multi-config updates in one `instance.set({...})`.
-- **Methods & JSDoc (`CODING_GUIDELINES.md §8, §12`):** keep logic on public or `@protected` class methods, never module-scope helpers or `#private` methods (which break subclassing, mixins, `Neo.overwrites`, and Neural Link `get_method_source`; reserve `#private` fields for internal handles like timer IDs). Expand multiline JSDoc whenever a `@member` has array/object defaults or `@reactive`/`@protected` tags (`MACHINE-ENFORCEABLE-CANDIDATE`: retire when `check-coding-guidelines.mjs` enforces). Cache `let me = this` when `this` is used `> 2` times in bundled code (`src/`, `apps/`, `examples/`). Set up in `construct(config)` / `onConstructed()`, never `constructor` or `new`.
+- **Methods, extensibility, & JSDoc (`.github/CODING_GUIDELINES.md` §5, §8, §12):** keep logic on public or `@protected` class methods rather than module-scope helpers. Avoid `#private` methods blocking subclass, mixin, `Neo.overwrites`, or Neural Link `get_method_source` seams ([Discussion #22305](https://github.com/orgs/neomjs/discussions/22305), [neomjs/neo#22307](https://github.com/neomjs/neo/issues/22307); reserve `#private` for internal fields or non-extensible lifecycle guards like `Base#preDestroyHook`). Tag reactive overrides with `@reactive` (§5) and expand multiline JSDoc whenever a `@member` has array/object defaults or `@reactive`/`@protected` tags (§12; `MACHINE-ENFORCEABLE-CANDIDATE`: retire when `check-coding-guidelines.mjs` enforces). Cache `let me = this` when `this` is used `> 2` times in bundled code (`src/`, `apps/`, `examples/`). Set up in `construct(config)` / `onConstructed()`, never `constructor` or `new`.
 
 ## 3. Data, StateProvider, and Styles
 

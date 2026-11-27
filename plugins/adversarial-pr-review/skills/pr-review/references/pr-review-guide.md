@@ -175,7 +175,7 @@ Authors own existing non-CI coverage for touched surfaces. Reviewers validate re
 
 ### 7.5.1 Core-Idiom Audit
 
-Diffs touching Neo classes, instances, reactive state, or stateful owners (any dir, including tests) MUST complete the template's `🏛️ Neo Class & Engine Idiom Audit` (line-1 pre-branch Contract Ledger timestamp check first) and load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
+Diffs touching Neo classes, instances, reactive state, stateful owners, or VDOM engine paths (any dir, including tests) MUST complete the template's `🏛️ Neo Class & Engine Idiom Audit` (line-1 pre-branch Contract Ledger timestamp check first) and load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
 
 ### 7.5.2 Identity-Claim Audit
 

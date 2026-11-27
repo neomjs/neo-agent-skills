@@ -18,7 +18,7 @@ Before `git commit` and `gh pr create`, step back as an Architect:
 - **Deliberate duplication:** duplicate only when importing is structurally impossible, pinned by a shared-fixture spec ([`deliberate-duplication-audit.md`](../../pr-review/audits/deliberate-duplication-audit.md)).
 - **Tier 2.5 foreign-authority:** if a change alters a named peer's contract/surface, send fork + recommendation + evidence and continue independent work without waiting.
 
-Declare §3.1's class before committing. Where hosted (Brain checkouts; never add `--silent` or call a separate checkout), run `npm run agent-preflight -- --change-class <class> --commit-subject "<subject>" [files...]` and add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>` (`--pr-base <ref>` off-dev) before handoff. Where absent, report `agent-preflight: not hosted here; baseline <jobs> ran`.
+Declare §3.1's class before committing. Where hosted (Brain checkouts; never add `--silent` or call a separate checkout), run `npm run agent-preflight -- --change-class <class> --commit-subject "<subject>" [files...]` and add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>` (`--pr-base <ref>` off-dev) before handoff. Where absent, report `agent-preflight: not hosted here; baseline <jobs> ran`. Retire this fallback when runner portability or hosting resolves.
 
 ### 1.1 The Substrate-Mutation Pre-Flight Gate
 
