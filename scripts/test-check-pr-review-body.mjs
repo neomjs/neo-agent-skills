@@ -16,8 +16,9 @@ import {tmpdir}                                                from 'node:os';
 import {dirname, join}                                         from 'node:path';
 import {fileURLToPath}                                         from 'node:url';
 import {
-    INVISIBLE_STRUCTURE_ANCHORS, PREMISE_ANCHORS, REMEDIES, REVIEW_TEMPLATES, SKELETON_ANCHORS, VISIBLE_METRIC_ANCHORS,
-    assertEnvelope, commentMarker, correctiveComment, judgeReview, reviewShape
+    EFFORT_PROFILES, INVISIBLE_STRUCTURE_ANCHORS, NUMERIC_METRIC_ANCHORS, PREMISE_ANCHORS, REMEDIES, REVIEW_TEMPLATES,
+    ROUND_2_FINAL_METRICS_HEADING, SKELETON_ANCHORS, VISIBLE_METRIC_ANCHORS, assertEnvelope, commentMarker,
+    correctiveComment, judgeReview, reviewShape
 } from './check-pr-review-body.mjs';
 
 const
@@ -46,6 +47,13 @@ function template(shape, base = root) {
 /** @summary Replaces a template's origin placeholder with a real Memory Core UUID line. */
 function withOrigin(body) {
     return body.replace(/^(\s*[*-]\s+\*\*Origin Session ID:\*\*)\s.*$/m, `$1 ${UUID}`)
+}
+
+/** @summary Replaces a template's 6 numeric `0-100` and 1 categorical `[EFFORT_PROFILE]` placeholders. */
+function withMetrics(body, profile = 'Maintenance') {
+    return body
+        .replaceAll('[0-100]', '92')
+        .replace('[Quick Win | Heavy Lift | Maintenance | Architectural Pillar]', profile)
 }
 
 /** @summary Replaces exactly one occurrence, failing the suite when the fixture no longer carries it. */
@@ -101,6 +109,9 @@ function bindingFailures(read) {
             .forEach(anchor => !read(shape).includes(anchor) && missing.push(`${shape}: ${anchor}`))
     });
 
+    [ROUND_2_FINAL_METRICS_HEADING, ...VISIBLE_METRIC_ANCHORS]
+        .forEach(anchor => !read('round-2').includes(anchor) && missing.push(`round-2: ${anchor}`));
+
     return missing
 }
 
@@ -115,15 +126,15 @@ assert.deepEqual(bindingFailures(shape => template(shape)), [], 'a shipped templ
 
 // ── Passing fixtures: each shipped template, filled only where it prints a placeholder ───────────────
 const
-    canonical  = withOrigin(template('canonical')),
-    followUp   = withOrigin(template('follow-up')),
+    canonical  = withMetrics(withOrigin(template('canonical'))),
+    followUp   = withMetrics(withOrigin(template('follow-up'))),
     micro      = template('micro'),
     microDelta = withOrigin(template('micro-delta')),
     round2     = [
         ['**Status:** [Approved / Approve+Follow-Up / Comment]', '**Status:** Approved'],
         ['**Round-1 Review ID:** [reviewId or URL]', '**Round-1 Review ID:** 5683341608'],
         ['| ADDRESSED / DEFENDED / STILL_OPEN |', '| ADDRESSED |']
-    ].reduce((body, [from, to]) => swap(body, from, to), withOrigin(template('round-2')));
+    ].reduce((body, [from, to]) => swap(body, from, to), withMetrics(withOrigin(template('round-2')), 'Maintenance'));
 
 [
     ['canonical', canonical], ['follow-up', followUp], ['micro', micro], ['micro-delta', microDelta], ['round-2', round2]
@@ -143,11 +154,23 @@ VISIBLE_METRIC_ANCHORS.forEach(tag => {
     mutate(`full review drops ${tag}`, canonical, body => body.replaceAll(tag, '[RENAMED]'), {}, 'TEMPLATE_INCOMPLETE', tag)
 });
 
+NUMERIC_METRIC_ANCHORS.forEach(tag => {
+    mutate(`full review writes 105 for ${tag}`, canonical, body => swap(body, `\`${tag}\`**: 92`, `\`${tag}\`**: 105`), {}, 'TEMPLATE_INCOMPLETE', `${tag}: an integer score from 0 to 100`)
+});
+
+EFFORT_PROFILES.forEach(profile => {
+    expect(`full review accepts effort profile ${profile}`, withMetrics(withOrigin(template('canonical')), profile), {}, 'REVIEW_SHAPE_VALID', null)
+});
+
+mutate('full review keeps metric placeholders', canonical, () => withOrigin(template('canonical')), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]: an integer score from 0 to 100');
+mutate('follow-up writes unchanged from prior review', followUp, body => swap(body, '`[ARCH_ALIGNMENT]`**: 92', '`[ARCH_ALIGNMENT]`**: unchanged from prior review'), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]: an integer score from 0 to 100');
+mutate('follow-up writes a numeric effort profile', followUp, body => swap(body, '`[EFFORT_PROFILE]`**: Maintenance', '`[EFFORT_PROFILE]`**: 85'), {}, 'TEMPLATE_INCOMPLETE', '[EFFORT_PROFILE]: Quick Win | Heavy Lift | Maintenance | Architectural Pillar');
+
 PREMISE_ANCHORS.forEach(({label, token}) => {
     mutate(`full review drops ${label}`, canonical, body => body.replaceAll(token, '**Renamed:**'), {}, 'TEMPLATE_INCOMPLETE', label)
 });
 
-mutate('full review keeps the origin placeholder', canonical, () => template('canonical'), {}, 'TEMPLATE_INCOMPLETE', 'Origin Session ID: a Memory Core UUID on its own line');
+mutate('full review keeps the origin placeholder', canonical, () => withMetrics(template('canonical')), {}, 'TEMPLATE_INCOMPLETE', 'Origin Session ID: a Memory Core UUID on its own line');
 mutate('full review writes a harness id for its origin', canonical, body => body.replace(UUID, 'claude-session-42'), {}, 'TEMPLATE_INCOMPLETE');
 
 INVISIBLE_STRUCTURE_ANCHORS.forEach(anchor => {
@@ -184,9 +207,21 @@ mutate('closure packet leaves a field unfilled', closure, body => swap(body, 'al
 mutate('closure packet drops its heading', closure, body => swap(body, '### RC2 Closure Packet', '### Packet'), {state: 'COMMENTED'}, 'TEMPLATE_INCOMPLETE', 'RC2 Closure Packet');
 
 // ── Round 2: shape, and the Status against its own table ─────────────────────────────────────────────
-const stillOpen = swap(swap(round2, '| ADDRESSED |', '| STILL_OPEN |'), '**Status:** Approved', '**Status:** Comment');
+const
+    round2MetricsBlock = new RegExp(`${ROUND_2_FINAL_METRICS_HEADING}[\\s\\S]*?(?=### 🔚 Verdict)`),
+    stillOpen          = swap(swap(round2, '| ADDRESSED |', '| STILL_OPEN |'), '**Status:** Approved', '**Status:** Comment'),
+    stillOpenNoMetrics = stillOpen.replace(round2MetricsBlock, ''),
+    round2MicroExempt  = round2.replace(round2MetricsBlock, `${ROUND_2_FINAL_METRICS_HEADING}\n\nN/A — Cycle 1 was Micro-Review\n\n`);
 
 expect('Round 2 with an open item, commented', stillOpen, {state: 'COMMENTED'}, 'REVIEW_SHAPE_VALID');
+expect('Round 2 with an open item and no metrics section, commented', stillOpenNoMetrics, {state: 'COMMENTED'}, 'REVIEW_SHAPE_VALID');
+expect('Round 2 Approve+Follow-Up with Maintenance metrics', swap(round2, '**Status:** Approved', '**Status:** Approve+Follow-Up'), {}, 'REVIEW_SHAPE_VALID');
+expect('Round 2 Approved with N/A — Cycle 1 was Micro-Review', round2MicroExempt, {}, 'REVIEW_SHAPE_VALID');
+mutate('Round 2 Approved omits final metrics', round2, body => body.replace(round2MetricsBlock, `${ROUND_2_FINAL_METRICS_HEADING}\n\n`), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]');
+mutate('Round 2 Approve+Follow-Up omits final metrics', swap(round2, '**Status:** Approved', '**Status:** Approve+Follow-Up'), body => body.replace(round2MetricsBlock, `${ROUND_2_FINAL_METRICS_HEADING}\n\n`), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]');
+mutate('Round 2 Approved drops Final Evaluation Metrics heading', round2, body => swap(body, ROUND_2_FINAL_METRICS_HEADING, '### Metrics'), {}, 'TEMPLATE_INCOMPLETE', null);
+mutate('Round 2 Approved writes numeric effort profile', round2, body => swap(body, '`[EFFORT_PROFILE]`**: Maintenance', '`[EFFORT_PROFILE]`**: 90'), {}, 'TEMPLATE_INCOMPLETE', '[EFFORT_PROFILE]: Quick Win | Heavy Lift | Maintenance | Architectural Pillar');
+mutate('Round 2 Approved writes out-of-range numeric metric', round2, body => swap(body, '`[ARCH_ALIGNMENT]`**: 92', '`[ARCH_ALIGNMENT]`**: 101'), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]: an integer score from 0 to 100');
 mutate('Round 2 declares no Status', round2, body => swap(body, '**Status:** Approved', 'Status: approved'), {}, 'ROUND_2_STATE_INCOHERENT', 'no `**Status:**` line');
 mutate('Round 2 declares Request Changes', round2, body => swap(body, '**Status:** Approved', '**Status:** Request Changes'), {}, 'ROUND_2_STATE_INCOHERENT', 'a `**Status:**` outside the legal Round-2 set');
 mutate('Round 2 approves an open item', stillOpen, body => swap(body, '**Status:** Comment', '**Status:** Approved'), {}, 'ROUND_2_STATE_INCOHERENT', 'a STILL_OPEN row under a Status other than Comment');
@@ -267,7 +302,7 @@ expect('no coordinate needs no creation time', `${canonical}\n[review-budget-man
 // ── Nothing invisible, and nothing the reviewer wrote, reaches a finding or the comment ──────────────
 {
     const
-        never   = [...INVISIBLE_STRUCTURE_ANCHORS, ...Object.values(SKELETON_ANCHORS).flat()],
+        never   = [...INVISIBLE_STRUCTURE_ANCHORS, ROUND_2_FINAL_METRICS_HEADING, ...Object.values(SKELETON_ANCHORS).flat()],
         canary  = 'CANARY-7f3a',
         planted = [
             judgeReview(envelope(swap(round2, '**Status:** Approved', `**Status:** ${canary}`))),

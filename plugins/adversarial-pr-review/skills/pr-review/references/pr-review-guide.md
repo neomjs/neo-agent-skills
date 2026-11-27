@@ -59,11 +59,9 @@ Every score needs a concrete, non-tautological reason.
 - **Evaluative metrics** (`[ARCH_ALIGNMENT]`, `[CONTENT_COMPLETENESS]`, `[EXECUTION_QUALITY]`, `[PRODUCTIVITY]`, `[IMPACT]`): sub-100 scores name the deduction; 100 names what failure modes were actively checked and cleared.
 - **Descriptive metrics** (`[COMPLEXITY]`, `[EFFORT_PROFILE]`): explain why the score/profile characterizes the work; do not frame it as praise or deduction.
 
-### 3.3 Metrics Are Scored Once
+### 3.3 Final Metrics on Approval
 
-Round 1 scores every metric explicitly in the full template. **Round 2 does not restate them** — its disposition table carries no metrics section, because re-scoring a delta invites a reviewer to justify a new number, and a number that wants justifying wants a new finding to justify it.
-
-The Round-1 scores stand as the PR's record. A metric only moves again on an exceptional verdict (Drop+Supersede), where the premise itself changed.
+Round 1 full reviews score all 7 metrics (`6` `0–100` integers + categorical `[EFFORT_PROFILE]`). Round-2 `Comment` (`STILL_OPEN`) omits metrics. Round-2 `Approved` / `Approve+Follow-Up` emits `### 📊 Final Evaluation Metrics` recording final post-fix values across all 7 tags (or `N/A — Cycle 1 was Micro-Review` when Cycle 1 used §6.4), without opening new findings.
 
 ## 4. Graph Ingestion Tags
 Critical feedback MUST carry regex-ingested tags (matched into Agent OS memory during REM sleep):
@@ -140,11 +138,11 @@ Use the full template from `${CLAUDE_SKILL_DIR}/assets/pr-review-template.md` wh
 
 Missing context, broadened scope or lost anchors earn the full template; a merely narrow delta never does.
 
-### 6.2 Round 2 Is Disposition-Only
+### 6.2 Round 2 Is Disposition + Final Approval Metrics
 
-Ordinary Round 2 uses `${CLAUDE_SKILL_DIR}/assets/pr-review-round-2-template.md`: a table over the Round-1 required actions, quoted verbatim, each marked `ADDRESSED`, `DEFENDED`, or `STILL_OPEN`.
+Ordinary Round 2 uses `${CLAUDE_SKILL_DIR}/assets/pr-review-round-2-template.md`: a verbatim table over the Round-1 required actions (`ADDRESSED` / `DEFENDED` / `STILL_OPEN`), plus `### 📊 Final Evaluation Metrics` on `Approved` / `Approve+Follow-Up` (§3.3).
 
-It carries no fresh premise snapshot, no new Depth Floor, no audit reruns, and no metrics restatement. Each of those invites a reviewer to find a defensible new concern, and a round that can always find one is not terminal. **Fresh findings at Round 2 are accepted risk** — a bounded cost, traded against an unbounded loop.
+It carries no fresh premise snapshot, no new Depth Floor, and no audit reruns — a round that hunts new findings is not terminal. **Fresh findings at Round 2 are accepted risk**, traded against an unbounded loop.
 
 Round 2 consumes the PR body, the exact delta, and the Round-1 action packet. Not the comment thread.
 

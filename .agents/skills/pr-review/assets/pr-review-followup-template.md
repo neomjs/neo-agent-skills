@@ -1,10 +1,8 @@
 # PR Review Follow-Up — exceptional verdicts only
 
-**Ordinary Round 2 does not use this template.** It uses `pr-review-round-2-template.md`, which is a
-disposition table over the Round-1 actions and nothing else. This asset is for the two cases that
-genuinely need full structure: a validated **Drop+Supersede**, or a guarded **repair-minted re-entry**
-whose four-field receipt has already been accepted. Reaching for it in an ordinary round re-opens the
-unbounded loop the terminal-round decision exists to close.
+**Ordinary Round 2 does not use this template.** It uses `pr-review-round-2-template.md` (prior-action
+disposition plus final metrics on approval). This asset is only for a validated **Drop+Supersede** or a
+guarded **repair-minted re-entry** whose four-field receipt has been accepted.
 
 **Status:** [Drop+Supersede / Request Changes (repair-minted re-entry)]
 
@@ -72,7 +70,7 @@ For each prior Required Action, mark the current state:
 
 ### 🔬 Delta Depth Floor
 
-Retained for exceptional verdicts only. Ordinary Round 2 drops it — a round that must find a new concern will find one — but retiring or re-routing someone's work is precisely where a depth floor earns its cost.
+*Retained for exceptional verdicts only.*
 
 *   **Delta challenge:** [the concern that makes this verdict exceptional]
 
@@ -84,7 +82,7 @@ OR
 
 ### 🔬 Premise Falsifiers
 
-A Drop+Supersede is a verdict about the PREMISE, so this section carries the evidence that the premise failed — not a fresh scan for new concerns.
+*For Drop+Supersede, record the premise-failure evidence and reusable salvage.*
 
 *   **Source-coordinate falsifiers:** [exact paths/lines/anchors, already listed under Strategic-Fit; restate only what a reader needs here]
 *   **What survives:** [the salvage, so the successor inherits it rather than rediscovering it]
@@ -93,15 +91,15 @@ A Drop+Supersede is a verdict about the PREMISE, so this section carries the evi
 
 ### 📊 Metrics Delta
 
-Retained deliberately. An exceptional verdict is a full-structure review — it retires or re-routes the work, so it owes the scoring surface that justifies doing so. Ordinary Round 2 is where metrics are *not* restated, and it has its own template.
+Self-contained values are required (never bare `unchanged from prior review`) so graph ingestion reads every follow-up review standalone.
 
-*   **`[ARCH_ALIGNMENT]`**: [unchanged from prior review, or previous -> current + reason]
-*   **`[CONTENT_COMPLETENESS]`**: [unchanged from prior review, or previous -> current + reason]
-*   **`[EXECUTION_QUALITY]`**: [unchanged from prior review, or previous -> current + reason]
-*   **`[PRODUCTIVITY]`**: [unchanged from prior review, or previous -> current + reason]
-*   **`[IMPACT]`**: [unchanged from prior review, or previous -> current + reason]
-*   **`[COMPLEXITY]`**: [unchanged from prior review, or previous -> current + reason]
-*   **`[EFFORT_PROFILE]`**: [unchanged from prior review, or previous -> current + reason]
+*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Current score + reason (e.g. `92 - up from 60: boundary fixed`)]
+*   **`[CONTENT_COMPLETENESS]`**: [0-100] - [Current score + reason]
+*   **`[EXECUTION_QUALITY]`**: [0-100] - [Current score + reason]
+*   **`[PRODUCTIVITY]`**: [0-100] - [Current score + reason]
+*   **`[IMPACT]`**: [0-100] - [Current score + reason]
+*   **`[COMPLEXITY]`**: [0-100] - [Current score + reason]
+*   **`[EFFORT_PROFILE]`**: [Quick Win | Heavy Lift | Maintenance | Architectural Pillar] - [Current profile + reason]
 
 ---
 
