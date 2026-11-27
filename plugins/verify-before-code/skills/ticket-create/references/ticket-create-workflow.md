@@ -1,14 +1,12 @@
 # Ticket Create Workflow
 
-The authoritative protocol for creating Neo.mjs GitHub issues. Enforced before any `create_issue` MCP tool invocation. This is the creation-side dual of `ticket-intake` (which consumes existing tickets).
-
-Tickets are **A2A (Agent-to-Agent) memory bridges**, not just human tracking artifacts. A poorly-formed ticket loses architectural context the Swarm will re-derive every session.
+Apply before drafting or filing. Preserve the evidence the next maintainer needs to decide whether to build.
 
 > **Standalone / plugin workspace (no Agent OS MCPs):** run §1a sweeps via `gh issue list --state open --limit 20`, `gh issue/pr list --state all --search "<nouns>"`, `git grep`, and `git log -S "<symbol>" -n 20` (**note:** covers committed history/public threads, not `ask_knowledge_base`/`query_raw_memories` RAG or A2A claims). Apply §2's 6-stage chain and §5's problem/reality/fix/AC structure, but **labels and body format follow the host repo** (`gh label list`, `.github/ISSUE_TEMPLATE/`): §4 defaults (`ai` required; `good first issue` + `help wanted` + claim line) and §5 `neomjs`-only fields (sweep-attestation line, `Retrieval Hint`, `Origin Session ID`) apply **only in `neomjs` repositories**. Draft in chat; run `gh issue create` **only** on explicit user request (skip `ai:structure-map` and `create_issue`).
 
 ## §0 — Understand the intent before you write the ticket
 
-Before the duplicate sweep or the Fat-Ticket body: is this the right work — does it fit the current architecture and current delivery outcome (the active rows of this repository's roadmap; for Brain and Skills, the line table in `neomjs/neo`'s `ROADMAP.md`)? Understand what it's *for* (from the affected files and their neighbors / imports — intent belongs in their JSDoc, `src/core/Base.mjs` is the bar — plus `memory-mining` / `ask_knowledge_base`) before you structure it. A perfectly-formed ticket for the wrong work is still the wrong work. If the intent it relies on is documented nowhere, that gap is itself worth a ticket.
+Does the work fit the architecture and active roadmap outcome? For Brain and Skills, use the Engine roadmap’s line table. Recover intent from the owner, consumers, JSDoc and prior decisions (`memory-mining` / `ask_knowledge_base`). Missing intent can be a documentation gap.
 
 A ticket that calls an existing behavior wrong carries its `Design authority:` line before The Fix exists — the rule: [`design-authority.md`](design-authority.md).
 
@@ -104,9 +102,9 @@ defect-note: <surface> <broke | is wrong> <observed symptom>
 Apply PR-review importance weights at creation time (30% premise / right work; 30% owning substrate; 30% deliverable correctness; 10% AC/evidence sanity — weights govern verdict, not drafting length). Every stage must pass before drafting:
 
 1. **Premise** — is the problem real, reproducible, and independently verified rather than secondhand?
-2. **Prescription (`AGENTS.md` §verify_before_assert)** — does the fix target the owning substrate rather than a symptom? Run falsifying tool reads (`view_file` / `git grep` / `ask_knowledge_base`) before asserting a bug or prescribing a fix.
+2. **Prescription** — verify the owning layer. For Neo Engine, example and Learn tickets, **try the native approach before drafting**. Use the Engine’s [Structural Inventory](neomjs/neo:learn/benefits/ArchitectureOverview.md#structural-inventory) to find related packages. Query the Knowledge Base for usage (standalone: search the Engine’s `src/`, `examples/` and `learn/`). Trace the public API or config through its owner and a shipped consumer, including inheritance, composition or global CSS as relevant. Exercise the distinguishing behavior and a working case to preserve. Leave an unverified prescription open.
 3. **Substrate** — service layer, build script, CI workflow, core, or docs? When introducing or relocating a `.mjs` file, validate placement via `neo-agent-skills:structural-pre-flight/` first (Stage 0/1 fast-path or full Pre-Flight; anchors: PR `#11008`, `ai/daemons/wake/daemon.mjs`).
-4. **Consumer** — human developer, agent, Memory Core, Native Edge Graph, or Knowledge Base? Match output shape (prose vs. structured metadata vs. MCP payload) to the reader.
+4. **Consumer** — match the form (guide, metadata or tool response) to its consumer. For reusable Engine work, show the import or declarative config another app will use with its own data or actions. Put shared behavior behind that public entry and domain wiring in the demo. When existing composition works, teach it in a guide or example if a reader gap remains. Drop the ticket if the outcome is already covered.
 5. **Service-Boundary** — avoid crossing service boundaries or placing config in a non-owning service.
 6. **Decision Record impact** — for architecture/substrate tickets, declare `none`, `aligned-with`, `depends-on`, `amends`, `supersedes`, or `challenges` an ADR; run [`../../ticket-intake/references/adr-successor-risk-audit.md`](../../ticket-intake/references/adr-successor-risk-audit.md) before challenging or superseding an accepted ADR.
 
@@ -137,7 +135,7 @@ Skeleton tickets are forbidden — so are world atlases: sections complete, each
 
 - **Context** — why this exists and its evidence. Incident tickets name the observed operation when known, mark unknowns, and separate observation from inference; quotations are leads, not causes. *(Retire with §8 once lint enforces this without syntax proxies.)*
 - **The Problem** — deep background, insights from recent Memory Core explorations, reproducer if applicable. Historical "why" for the agent picking up the ticket later.
-- **The Architectural Reality** — exactly which Neo.mjs patterns, class topologies, or service boundaries this issue interacts with. Cite file:line when known. Distinguishes intent-level framing (Problem) from structural specificity (Reality).
+- **The Architectural Reality** — cite the owner and record what the existing consumer can already do, the observed gap and how it determined scope (§2).
 - **The Fix** — concrete prescription: files, symbols, architectural primitives touched. What changes, and where.
 - **Contract Ledger Matrix** *(when applicable)* — For any ticket introducing, modifying, or deprecating a surface consumed by humans, agents, or external systems (public methods, configs, MCP tools), include a formal Contract Ledger matrix (Target Surface, Source of Authority, Proposed Behavior, Fallback, Docs, Evidence). Rows naming existing surfaces must satisfy the row-level Surface-Anchor V-B-A discipline in the [Contract Ledger protocol](neomjs/neo-agent-brain:learn/agentos/process/contract-ledger.md) before the ticket asserts them.
 - **Decision Record impact** *(architecture/substrate tickets)* — the §2 step-6 declaration (`none` … `challenges <org>/<repo>#adr:<slug>` or same-repo `adr:<slug>`).

@@ -292,6 +292,7 @@
                 "neo-identity-update",
                 "structural-pre-flight",
                 "tech-debt-radar",
+                "ticket-create",
                 "unit-test"
             ],
             "kinds": [
