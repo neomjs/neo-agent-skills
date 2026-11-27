@@ -2,13 +2,13 @@
 
 **Status:** [Approved / Approve+Follow-Up / Request Changes / Drop+Supersede / Comment]
 
-*Cycle-1 reviewers: run the §0 premise catalog BEFORE any defect audit. A firing row ends the review at one premise Required Action — **Drop+Supersede** by default — never an iteration list.*
+*Cycle-1 reviewers: run the §0 premise catalog AND line 1 of `🏛️` BEFORE any defect audit. A firing row ends the review at one premise Required Action — **Drop+Supersede** by default — never an iteration list.*
 
 ### 🪜 Strategic-Fit Decision
 
 Per §9 Strategic-Fit Step-Back:
 - **Decision**: [Approve / Approve+Follow-Up / Request Changes / Drop+Supersede]
-- **Rationale**: [The §0 catalog row that fired, or "no row fires"; then why this decision shape vs the others. Remember: Approve+Follow-Up is the worst normal outcome; debt-creating quick wins are Request Changes or Drop+Supersede, not follow-up-ticket fuel.]
+- **Rationale**: [Firing §0 catalog row or "no row fires", plus why this shape wins (`Approve+Follow-Up` is last resort; debt-creating shortcuts get `Request Changes` or `Drop+Supersede`).]
 
 **Required only when Decision is Drop+Supersede:**
 
@@ -18,100 +18,99 @@ Per §9 Strategic-Fit Step-Back:
 - **Successor landing pad:** [ticket / amended ticket / closure artifact]
 - **Successor map citation:** [successor URL or anchor that cites this salvage map]
 
-**Peer-Review Opening:** [Thanks, naming what this PR got right. For an external or first-time contributor, add the micro form's pointers into Neo, each linked at its canonical owner: what Neo is, the part this PR touched, how to run it, what to pick up next.]
+**Peer-Review Opening:** [Thanks naming what landed well. For external/first-time contributors, include canonical pointers: what Neo is, touched subsystem, how to run it, next pickup.]
 
-**Self-Review Opening:** [Clinical assessment. e.g., "Self-review of #[Ticket]. This implementation chose [approach] over [alternative] because [rationale]. Key trade-offs and gaps noted below."]
+**Self-Review Opening:** [Clinical first-person assessment: approach, rejected alternative, trade-offs, and gaps.]
 
-*(Use exactly one opening based on the self-review detection result from the guide.)*
+*(Use exactly one opening per guide §2.3.)*
 
 ---
 
 ### 🧭 Patch-Blind Premise Snapshot
 
-*Source this from the inputs below, not the PR's self-description.*
+*Source from substrate inputs below, never the PR's self-description.*
 
-*   **Inputs Read Before Patch:** [Ticket / issue (for a behavior change, its `Design authority:` line first), changed-file list, current `dev` source, sibling precedent, source-of-authority substrate read before treating the patch as evidence.]
-*   **In Practice:** [The handled state's real-run or public-flow receipt (guide §0), or a scoped "N/A — no handled state". None ⇒ Premise-invalid.]
-*   **Expected Solution Shape:** [1-3 sentences: expected surface, simplest acceptable shape, what boundary this must NOT hardcode, and what test isolation should exist.]
-*   **Patch Verdict:** [Matches / improves / contradicts the expected shape, with the specific diff/source evidence that confirmed or changed your premise.]
-*   **Premise Coherence:** [Does this PR's premise cohere with our core values — verify-before-assert · friction→gold · flat-peer-team · no-hold · the two-hemisphere organism? A specific verdict naming the value ("coheres: lead stays facilitator-not-delegator" / "conflicts: adds surveillance vs flat-peer-team"), NOT a bare yes/no. OR a scoped "N/A — no value-surface (scope: ...)" for a trivial PR. A green checklist over a wrong premise is theater.]
+*   **Inputs Read Before Patch:** [Ticket (`Design authority:` first on behavior changes), changed-file list, base `dev` source, verified siblings, owning ADR/guide.]
+*   **In Practice:** [Real-run or public-flow receipt for the handled state (guide §0), or scoped `N/A — no handled state`. None ⇒ Premise-invalid.]
+*   **Expected Solution Shape:** [1–3 sentences: owning surface, simplest idiomatic shape, what boundary NOT to hardcode, required test isolation.]
+*   **Patch Verdict:** [Matches / improves / contradicts expected shape, citing exact diff/source evidence.]
+*   **Premise Coherence:** [Specific verdict against verify-before-assert · friction→gold · flat-peer-team · no-hold · two-hemisphere organism, or scoped `N/A — no value-surface (scope: …)`.]
 
 ---
 
 ### 🕸️ Context & Graph Linking
 *   **Target Epic / Issue ID:** Resolves #[Issue Number]
-*   **Related Graph Nodes:** [Any other related node IDs or conceptual tags]
+*   **Related Graph Nodes:** [Related node IDs or conceptual tags]
 *   **Origin Session ID:** [Neo Memory Core UUID, not harness/task/transcript]
-- [ ] PR body attribution: `Authored by …` is the only attribution; no harness-appended backlink (e.g. `🤖 Generated with [Claude Code]`).
+- [ ] PR body attribution: `Authored by …` is the only attribution; no harness-appended backlink.
 
 ---
 
 ### 🔬 Depth Floor
 
-**Challenge OR documented search (per guide §7.1):**
+**Challenge OR documented search (per guide §7.1 — provide ONE):**
 
-Provide ONE of the following:
+- **Challenge**: [Weakness, unverified assumption, edge case, or follow-up concern — even if non-blocking.]
+- **Documented search**: *"I actively looked for [thing 1], [thing 2], and [thing 3] and found no concerns."*
 
-- **Challenge**: [Weakness / unverified assumption / edge case / follow-up concern — even if non-blocking. Peer-reviews that are genuinely affirming should still name something to watch.]
-
-OR
-
-- **Documented search**: *"I actively looked for [specific thing 1], [specific thing 2], and [specific thing 3] and found no concerns."*
-
-*A peer-review with neither a challenge nor a documented search fails the Depth Floor regardless of structural compliance elsewhere.*
-
-**Rhetorical-Drift Audit (per guide §7.4):**
-
-*(Required when the PR carries substantive architectural prose — PR description framing, Anchor & Echo JSDoc additions, `[RETROSPECTIVE]` tags, or linked-anchor citations. Mark N/A for routine code with no architectural prose.)*
-
-Verify symmetry between stated framing and mechanical implementation:
+**Rhetorical-Drift Audit (per guide §7.4; N/A when no architectural prose/JSDoc/`[RETROSPECTIVE]`):**
 
 - [ ] PR description: framing matches what the diff substantiates (no overshoot)
-- [ ] Anchor & Echo summaries: precise codebase terminology, no metaphor or source-code snapshot anchor (ticket/PR/lane/AC/cycle/line number) that overshoots durable intent
-- [ ] `[RETROSPECTIVE]` tag: accurately characterizes what shipped (no inflation of architectural significance)
-- [ ] Linked anchors: cited tickets/PRs actually establish the claimed pattern (no borrowed authority)
+- [ ] Anchor & Echo summaries: durable codebase terms; no ticket/PR/AC/line-number archaeology
+- [ ] `[RETROSPECTIVE]` tag & linked anchors: match shipped scope and cited authority
 
-**Findings:** [Pass / specific drift flagged with Required Action / N/A]
+**Findings:** [Pass / specific drift Required Action / N/A]
 
 ---
 
 ### 🧠 Graph Ingestion Notes
 
-*   **`[KB_GAP]`**: [If applicable, document any framework concepts misunderstood in this PR]
-*   **`[TOOLING_GAP]`**: [If applicable, document any issues with tooling, tests, or MCP execution that occurred during this PR's lifespan]
-*   **`[RETROSPECTIVE]`**: [High-level architectural takeaways or praise that should be permanently remembered]
+*   **`[KB_GAP]`**: [Framework concepts misunderstood or undocumented, or N/A]
+*   **`[TOOLING_GAP]`**: [Tooling, test-runner, or MCP friction hit, or N/A]
+*   **`[RETROSPECTIVE]`**: [Durable architectural takeaway or praise]
 
 ---
 
 ### 🧱 Conciseness Rule — Collapsed-N/A Audits
 
-When 2+ expanded audit dimensions below evaluate **N/A** for the PR scope, collapse only the N/A emoji subset (space-separated, single-space-emdash after `Audits`):
+When 2+ audit dimensions below evaluate **N/A**, collapse only the N/A emoji subset (expand every non-N/A audit individually):
 
 ```
-### N/A Audits — 📑 🪜 📡 🔗 🧪
+### N/A Audits — 🏛️ 📑 🪜 📡 🔗 🧪
 N/A across listed dimensions: <one-line PR-scope justification>.
 ```
 
-**Mixing rule (CRITICAL)**: expand any non-N/A audit dimension individually under its canonical header; never collapse a dimension with actual findings.
+---
+
+### 🏛️ Neo Class & Engine Idiom Audit
+
+*(Required per guide §7.5.1 when touching Neo classes, instances, reactive state, stateful owners, or VDOM engine paths in any dir; mark N/A for pure data-plane / non-class diffs.)*
+
+- [ ] **Pre-branch Class Contract Ledger (line-1 gate — halt immediately with 1 premise Required Action if missing or post-hoc):** for any new or newly public `src/**` class, the close-target ticket's `## Contract Ledger` defines its class contract (configs + reactivity rationale, declared child `[mergeFrom]` hooks, events, subclass customization seam), AND the issue revision timestamp (GraphQL `issue { createdAt userContentEdits { nodes { editedAt diff } } }`) that **introduced or last modified that class contract** precedes the branch's first commit (`git log --reverse --format=%aI origin/dev..HEAD | head -1`) — ignore later unrelated typo/prose edits elsewhere on the ticket (`N/A` when no new/promoted `src/**` class)
+- [ ] **`core.Base` / `Neo.mjs` & parent-default diff:** extends the matching primitive, omits unchanged ancestor `static config` defaults, batches multi-config live writes via `set({...})`, and resolves instances via `Neo.get`/`getReference` (`audits/core-idiom-audit.md`)
+- [ ] **`[isDescriptor]` / `[mergeFrom]` & `StateProvider` fitness:** composite components expose keyed `items` + `[mergeFrom]` child descriptors (`src/app/content/Container.mjs` exemplar) rather than custom `mergeConfig()`/`createItems()` overrides, and bind shared view state via `state.Provider`
+- [ ] **`.github/CODING_GUIDELINES.md` & extensibility:** logic lives on public/`@protected` class methods (no `#private` methods blocking subclass/`Neo.overwrites` seams; `let me = this` only when `this` > 2× in bundled code), and JSDoc expands multiline blocks for array/object defaults and `@reactive`/`@protected` tags (§12)
+- [ ] **VDOM engine gate:** diffs touching `src/vdom/**`, `src/util/vdom/**`, `src/worker/VDom.mjs`, `src/manager/VDomUpdate.mjs`, `src/mixin/VdomLifecycle.mjs`, or `src/main/DeltaUpdates.mjs` align with [VDOM Engine Overview](https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/Overview.md) ([AppWorker](https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/AppWorker.md), [VdomWorker](https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/VdomWorker.md), [MainThread](https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/MainThread.md)) and [ADR 0043](https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0043-vdom-diff-placement.md) (`N/A` when untouched)
+- [ ] **Two-operation consumer check:** a second app or subclass can (1) customize a declared child via config merging alone and (2) mutate its config on a mounted instance via `set()` with focus/state intact (`N/A` for non-UI classes)
+
+**Findings:** [Pass / halted at line-1 premise RA / specific idiom RAs / N/A]
 
 ---
 
 ### 🎯 Close-Target Audit
 
-*(Required per guide §5.2 when the PR body or commits contain `Closes #N` / `Resolves #N` / `Fixes #N`; binding on real overclaims, not a premise/placement substitute. Mark N/A without close-target keywords.)*
+*(Required per guide §5.2 when the PR body carries closing keywords; mark N/A otherwise.)*
 
-For every issue named as close-target, verify it does NOT carry the `epic` label:
+- [ ] Close-targets identified: [standalone `Resolves #N`, or "none"]
+- [ ] Confirmed leaf issue (not `epic`-labeled, no `Closes`/`Fixes` or prose-bundled targets)
 
-- [ ] Close-targets identified: [list of `#N` references, or "none"]
-- [ ] For each `#N`: confirmed not `epic`-labeled (or flagged as Required Action below)
-
-**Findings:** [Pass / specific epic flagged / N/A]
+**Findings:** [Pass / specific target flagged / N/A]
 
 ---
 
 ### 📑 Contract Completeness Audit
 
-*(Required per guide §5.4 when the PR introduces or modifies public/consumed surfaces; binding on real drift, not proof that the work belongs here. Mark N/A otherwise.)*
+*(Required per guide §5.4 when introducing or modifying consumed surfaces; mark N/A otherwise.)*
 
 - [ ] Originating ticket (or parent epic) contains a Contract Ledger matrix
 - [ ] Implemented PR diff matches the Contract Ledger exactly (no drift)
@@ -122,38 +121,21 @@ For every issue named as close-target, verify it does NOT carry the `epic` label
 
 ### 🪜 Evidence Audit
 
-*(Required when close-target ACs include observable runtime effect on a surface the CI/agent sandbox cannot reach — substrate / harness / wake / restart / UI-with-visual-AC / CLI-with-host-behavior PRs; binding on real evidence mismatch, not a replacement for architecture review. Mark N/A when ACs are covered by unit tests / static contract.)*
+*(Required when close-target ACs require runtime/host/visual observation beyond CI per the [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md); mark N/A when unit/static CI covers all ACs.)*
 
-Reference: the Brain-owned [Substrate Evidence Ladder](https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/process/evidence-ladder.md) for L1-L4 ladder + sandbox-vs-achievable ceiling distinction.
+- [ ] PR body contains a valid `Evidence:` line (`L<X> → L<Y>`, plus `Residual` + open non-close-target `Residual-Owner: #N` if deferred)
+- [ ] Achieved evidence ≥ required evidence, OR residuals are annotated in PR `## Post-Merge Validation` and on the close-target issue
+- [ ] Sandbox ceiling vs unprobed gap distinguished; L1/L2 not framed as L3/L4; pre-merge receipts come from this exact unmerged head
 
-The PR body must declare achieved evidence in 1-line greppable form:
-
-```md
-Evidence: L<X> (<sandbox-ceiling description>) → L<Y> required (<close-target ACs requiring it>). Residual: AC<N>, Residual-Owner: #<an EXISTING open ticket that is NOT the close target>.
-```
-
-- [ ] PR body contains an `Evidence:` declaration line (or N/A justified inline)
-- [ ] Achieved evidence ≥ close-target required evidence, OR residuals are explicitly listed in the PR's `## Residual / Post-Merge Validation` section
-- [ ] If residuals exist: close-target issue body has the residuals annotated as `[L<N>-deferred — operator handoff needed]`
-- [ ] Two-ceiling distinction: PR body distinguishes "shipped at L<X> because sandbox ceiling" from "shipped at L<X> because author didn't probe further"
-- [ ] Evidence-class collapse check: review language does NOT promote L1/L2 evidence to L3/L4 framing without explicit sandbox-ceiling caveat
-- [ ] Deployment causality: any external/runtime receipt used as a merge gate is reachable from this exact unmerged head through a verified branch-artifact route; otherwise it is Post-Merge Validation and failure creates a new ticket
-
-**Findings:** [Pass / evidence-AC mismatch flagged / N/A — close-target ACs fully covered by unit tests]
+**Findings:** [Pass / evidence-AC mismatch flagged / N/A]
 
 ---
 
 ### 📡 MCP-Tool-Description Budget Audit
 
-*(Required per guide §5.3 when the PR touches `ai/mcp/server/*/openapi.yaml` — adds a new `description:`, modifies an existing block-literal `description:`, or introduces a new tool path or operation. Mark N/A for PRs that don't touch OpenAPI surfaces.)*
+*(Required per guide §5.3 when touching `ai/mcp/server/*/openapi.yaml`; mark N/A otherwise.)*
 
-For every modified or added OpenAPI tool description:
-
-- [ ] Single-line preferred — block-literal (`|`) descriptions justified by content, not authorial habit
-- [ ] No internal cross-refs (no ticket numbers, Phase sequencing, session IDs, or memory anchor names in the description payload)
-- [ ] No architectural narrative — descriptions describe call-site usage (what + when-to-use + when-not-to-use)
-- [ ] External standard URLs OK — citing canonical specs (e.g., `https://a2a-protocol.org/...`) is acceptable
-- [ ] 1024-char hard cap respected — approaching it is a red flag (see `McpServerToolLimits` test)
+- [ ] Single-line preferred; call-site usage only (no ticket/phase/session refs or narrative); ≤ 1024 chars
 
 **Findings:** [Pass / specific descriptions flagged / N/A]
 
@@ -161,64 +143,55 @@ For every modified or added OpenAPI tool description:
 
 ### Conditional Audit Triggers
 
-Expand these audits only when their trigger fires; otherwise omit them rather than rendering default N/A sections:
-
-- **🛂 Provenance Audit:** PR introduces a major architectural abstraction or core subsystem.
-- **📜 Source-of-Authority Audit:** review cites operator or peer authority for a demand.
-- **🔌 Wire-Format Compatibility Audit:** PR alters JSON-RPC notification schemas, payload envelopes, native API wire formats, event payloads, tool signatures, or database schemas.
-- **🧠 Turn-Memory / Substrate-Load Audit:** PR modifies files in `/turn-memory-pre-flight` IN-SCOPE list. Verify the author documented the decision-tree application and load-effect audit in the PR body; if missing, load `audits/loading-runtime-effect.md` and use its Required Action template.
-- **📸 Before/After Audit:** PR changes what a rendered surface shows (Stage, Portal, an app, an example, a cover). Load `audits/rendered-surface-audit.md`: the whole surface as released and as changed, and for a new composition the verdict first.
+Expand only when triggered; omit otherwise:
+- **🛂 Provenance Audit:** novel core subsystem or external pattern abstraction (guide §7.3).
+- **📜 Source-of-Authority Audit:** review cites operator/peer authority for a demand.
+- **🔌 Wire-Format Compatibility Audit:** alters JSON-RPC, event, tool, or DB schemas.
+- **🧠 Turn-Memory / Substrate-Load Audit:** touches `/turn-memory-pre-flight` IN-SCOPE files (`audits/loading-runtime-effect.md`).
+- **📸 Before/After Audit:** changes rendered UI (`audits/rendered-surface-audit.md`).
 
 ---
 
 ### 🔗 Cross-Skill Integration Audit
 
-*(Required per guide §8.1 when the PR touches skill files, conventions, MCP tool surfaces, `AGENTS.md`, or architectural primitives. Mark N/A for routine code changes that don't introduce cross-substrate conventions.)*
+*(Required per guide §8.1 when touching skills, `AGENTS.md`, workflow conventions, or MCP tools; mark N/A otherwise.)*
 
-- [ ] Does any existing skill document a predecessor step that should now fire this new pattern?
-- [ ] Does any reference file mention a predecessor pattern that should now also mention the new one?
-- [ ] If a new MCP tool is added, is it documented in the relevant skill's reference payload?
-- [ ] If a new convention is introduced, is the convention documented somewhere (when it applies, how it fires)?
+- [ ] Predecessor skills/references wired to invoke or cite the new pattern
+- [ ] Owning skill payload and downstream consumers updated
 
-**Findings:** [Gaps surfaced by the checklist, or "All checks pass — no integration gaps." Any gap should also appear in Required Actions below.]
+**Findings:** [All checks pass — no integration gaps / specific gaps listed in Required Actions / N/A]
 
 ---
 
 ### 🧪 Test-Evidence & Location Audit
 
-*(Required per guide §7.5. Current-head CI is the default unit/integration evidence; reviewers run tests only as named falsifiers.)*
+*(Required per guide §7.5.)*
 
-- [ ] Execution evidence: exact-head required CI [green at `<SHA>` / N/A — docs-template] + author per-surface non-CI receipt [present and current-head-appropriate / obvious omission flagged / N/A — docs-template]
-- [ ] AC-table cross-read: each `## AC Evidence` row survives the body's own `## Test Evidence` and `## Post-Merge Validation` sections (no `CI-covered` row contradicted by `Outside-CI` / an unrun job; no blocking pre-merge gate filed as post-merge follow-up)
-- [ ] Reviewer falsifier: [N/A — no named behavioral concern / command + named concern + result]
-- [ ] Test location: [pass for added/moved tests / N/A]
+- [ ] Execution evidence: exact-head required CI [green at `<SHA>` / N/A — docs-template] + non-CI surface receipt [present / gap flagged / N/A]
+- [ ] AC-table cross-read: `## AC Evidence`, `## Test Evidence`, and `## Post-Merge Validation` agree
+- [ ] Reviewer falsifier & test location: [N/A / command + result; canonical spec path verified]
 
-**Findings:** [Pass / author evidence gap / AC-table contradiction flagged / falsifier failed / incorrect test placement]
+**Findings:** [Pass / gap or contradiction flagged]
 
 ---
 
 ### 📋 Required Actions
 
-**For PRs with required actions — use the checkbox list form:**
+**When changes are required:**
 
-To proceed with merging, please address the following:
+- [ ] Item 1
+- [ ] Item 2
 
-- [ ] Item 1 (e.g., Add missing JSDoc to `newMethod`)
-- [ ] Item 2 (e.g., Fix the race condition in `Store.js` loading)
-- [ ] Item 3
-
-**For zero-issue PRs — use the null-state sentence:**
+**When zero issues remain (never use pre-ticked `- [x]` placeholders):**
 
 No required actions — eligible for human merge.
-
-*Do NOT use pre-ticked placeholder items like `- [x] All checks pass and no required changes identified.` — that reads as box-checking, not genuine review. Per the guide's Zero-Issue PR Semantics and anti-patterns table.*
 
 ---
 
 ### 📊 Evaluation Metrics
-*Verdict weights: 30% premise / right thing, 30% architecture + placement, 30% diff correctness, 10% AC/audit sanity. These are importance-to-verdict weights, not effort budgets.*
+*Weights: 30% premise, 30% architecture/placement, 30% diff correctness, 10% AC/audit sanity.*
 
-*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Neo paradigms + placement fit; violations cap the score. Behavior or state-ownership change: `owner: <path> · primitive: <class, module or function, or n/a: reason> · retired: <mechanism> | kept: <reason>`; an unfillable field is the finding]
+*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Neo paradigms + placement fit. Behavior/state change: `owner: <path> · primitive: <class/module or n/a> · retired: <mechanism> | kept: <reason>`]
 *   **`[CONTENT_COMPLETENESS]`**: [0-100] - [Brief justification]
 *   **`[EXECUTION_QUALITY]`**: [0-100] - [Brief justification]
 *   **`[PRODUCTIVITY]`**: [0-100] - [Brief justification]

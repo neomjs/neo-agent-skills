@@ -126,6 +126,18 @@
             ]
         },
         {
+            "token": "learn/agentos/decisions/0043-vdom-diff-placement.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/agentos/decisions/0043-vdom-diff-placement.md",
+            "referencingSkills": [
+                "neo-app-authoring",
+                "pr-review"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
             "token": "learn/agentos/DreamPipeline.md",
             "canonicalOwner": "neomjs/neo-agent-brain",
             "resolution": "https://github.com/neomjs/neo-agent-brain/blob/dev/learn/agentos/DreamPipeline.md",
@@ -353,6 +365,54 @@
             "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/testing/WhiteboxE2E.md",
             "referencingSkills": [
                 "whitebox-e2e"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/guides/vdomengine/AppWorker.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/AppWorker.md",
+            "referencingSkills": [
+                "neo-app-authoring",
+                "pr-review"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/guides/vdomengine/MainThread.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/MainThread.md",
+            "referencingSkills": [
+                "neo-app-authoring",
+                "pr-review"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/guides/vdomengine/Overview.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/Overview.md",
+            "referencingSkills": [
+                "neo-app-authoring",
+                "pr-review"
+            ],
+            "kinds": [
+                "load"
+            ]
+        },
+        {
+            "token": "learn/guides/vdomengine/VdomWorker.md",
+            "canonicalOwner": "neomjs/neo",
+            "resolution": "https://github.com/neomjs/neo/blob/dev/learn/guides/vdomengine/VdomWorker.md",
+            "referencingSkills": [
+                "neo-app-authoring",
+                "pr-review"
             ],
             "kinds": [
                 "load"

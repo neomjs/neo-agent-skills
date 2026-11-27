@@ -12,31 +12,13 @@ maintainer-only steps below retain their force, and contributor completion retur
 
 ## 1. The "Stepping Back" Reflection Protocol (Pre-Commit Gate)
 
-Before the final `git commit` and `gh pr create`—an irreversible handoff—step back and act as an Architect.
+Before `git commit` and `gh pr create`, step back as an Architect:
+- **Minor gaps:** fix JSDoc/Anchor & Echo, edge cases, and test placement on the branch first.
+- **Major refactors:** keep the bounded fix and file a linked follow-up ticket.
+- **Deliberate duplication:** duplicate only when importing is structurally impossible, pinned by a shared-fixture spec ([`deliberate-duplication-audit.md`](../../pr-review/audits/deliberate-duplication-audit.md)).
+- **Tier 2.5 foreign-authority:** if a change alters a named peer's contract/surface, send fork + recommendation + evidence and continue independent work without waiting.
 
-**Scope Creep vs. Iteration:**
-- **Minor gaps:** repair JSDoc/Anchor & Echo, edge cases, tests, and test placement on the branch first.
-- **Major refactors:** keep the bounded solution; file a linked follow-up ticket for the superior architecture.
-- **Deliberate duplication (boundary- or cycle-forced):** duplicate only when importing is structurally impossible, and pin the copies with one shared-fixture spec rather than a comment ([`deliberate-duplication-audit.md`](../../pr-review/audits/deliberate-duplication-audit.md)).
-- **Tier 2.5 foreign-authority trigger:** If a repair would change a reviewer's contract or another named peer's consumer surface, send that owner the fork, recommendation, and evidence, then continue fork-independent author work. Named authority—not uncertainty—triggers this; the reply is never a wait gate.
-
-*If and only if* you pass this reflection phase, proceed to the Git execution sequence.
-
-Declare §3.1's class before committing. Where hosted, run
-`npm run agent-preflight -- --change-class <class> --commit-subject "<subject>" [files...]`;
-before handoff add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>`
-and `--pr-base <ref>` off-dev. `--help` lists options. It checks both subjects
-and stacked ticket references in `Resolves`/`Refs`/`Related`.
-
-The runner is Brain-hosted; a consumer without `ai/` has no such script.
-Never use `--silent`: require exit 0. If absent, keep the class declaration
-unverified and report `agent-preflight: not hosted here; baseline <jobs> ran`.
-Only actually executed shared-baseline checks count: §9 anchors in `PR baseline`,
-§1.1 in `Substrate size`; they block only when required contexts.
-
-Do not invoke a separate Brain checkout. Packaging remains blocked by
-`collectStaleOverlayFindings` reading `ai/config*.mjs` (inert without `ai/`).
-Retire this fallback when runner portability or hosting resolves.
+Declare §3.1's class before committing. Where hosted (Brain checkouts; never add `--silent` or call a separate checkout), run `npm run agent-preflight -- --change-class <class> --commit-subject "<subject>" [files...]` and add `--no-fix --pr-title "<title>" --pr-body <draft-body.md>` (`--pr-base <ref>` off-dev) before handoff. Where absent, report `agent-preflight: not hosted here; baseline <jobs> ran`. Retire this fallback when runner portability or hosting resolves.
 
 ### 1.1 The Substrate-Mutation Pre-Flight Gate
 
@@ -152,20 +134,7 @@ Rationale, the trade `unknown` makes, outside authors and the narrow exceptions:
 
 ### 6.1.1 The Consensus-Gate (PR-Merge-Gate for Discussion-Graduated Substrate)
 
-High-blast Discussion-graduated substrate PRs must satisfy both gates:
-- §6.1 Cross-Family Mandate: approval-before-merge.
-- Consensus-Gate: consensus-source-before-approval.
-
-Author obligation: include the family-keyed `## Signal Ledger`,
-`## Unresolved Dissent`, and `## Unresolved Liveness` sections from
-`ideation-sandbox-workflow.md §6.6`.
-
-Reviewer obligation: before `reviewDecision: APPROVED`, verify the cited
-Discussion, quorum/version binding, and any DEFERRED/VETO/liveness disposition
-against [`audits/consensus-gate-mirror.md`](../audits/consensus-gate-mirror.md).
-If the ledger is incomplete, Request Changes citing this section. PRs bypassing
-this gate remain human-merge blocked regardless of CI or ordinary cross-family
-approval.
+High-blast Discussion-graduated substrate PRs require §6.1 cross-family approval AND pre-approval Discussion consensus: authors include `## Signal Ledger`, `## Unresolved Dissent`, and `## Unresolved Liveness` (`ideation-sandbox-workflow.md §6.6`), and reviewers verify quorum/version/liveness against [`audits/consensus-gate-mirror.md`](../audits/consensus-gate-mirror.md) (`Request Changes` if incomplete; non-graduated substrate PRs remain human-merge blocked).
 
 ### 6.2 The Core Swarm A2A Notification Mandate (Review Routing Protocol)
 
