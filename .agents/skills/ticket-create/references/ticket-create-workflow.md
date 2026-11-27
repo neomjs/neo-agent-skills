@@ -61,6 +61,8 @@ If an equivalent ticket or a prior decision exists: do NOT file a duplicate. Com
 If the proposed ticket involves modifying any agent skill (i.e., any file within `.agents/skills/`), you MUST explicitly consult `.agents/skills/create-skill/SKILL.md` before finalizing the ticket body.
 **Pre-flight check:** *Have I verified this proposal adheres to the Progressive Disclosure routing pattern and does not bloat the top-level SKILL.md router?*
 
+**Content artifacts:** a ticket whose deliverable is release notes (`.github/RELEASE_NOTES/**`) or a blog, outbound or pitch text (`learn/blog/**`, social posts, `funding/**`) reads `.agents/skills/release-notes/SKILL.md` or `.agents/skills/blog-post/SKILL.md` before drafting. The body names that skill on its first screen, and its first ACs state the impact the artifact must have (release-notes §5's questions; blog-post §1's reader, want and action), so every later seat meets the skill in the ticket itself.
+
 ### 1c. Agent OS Structure Map Gate (Architecture-Creation Mandatory)
 
 Before creating any Epic, architecture/substrate ticket, or ticket touching `ai/`, Agent OS, MCP, Memory Core, orchestration, `.agents/skills`, or placement, run `npm run ai:structure-map -- --files --loc`; cite the owning folder/sibling precedent or record N/A. Brain-hosted; never `--silent` (empty exit-1 ≠ pass).

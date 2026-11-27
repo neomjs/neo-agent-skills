@@ -38,6 +38,11 @@ Anchor: `neomjs/neo#18460` → `#18473`, dropped after three review cycles. Prem
 old, prescription wrong — with `src/controller/Component.mjs` one open away the whole time. What
 survived three cycles was not an unread file but an unasked question.
 
+**A content ticket's governing skill is never exempt either.** Release notes read `release-notes`;
+blog, outbound and pitch text read `blog-post` (`ticket-create` §1b). Read it before the first edit of
+the artifact, also on a ticket you authored this session: the chain in your context tested the
+codebase, never the artifact's impact.
+
 ## The drift probe
 
 ```bash
