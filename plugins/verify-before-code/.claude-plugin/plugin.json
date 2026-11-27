@@ -1,7 +1,7 @@
 {
   "name": "verify-before-code",
   "displayName": "GitHub Issue & Epic Pre-Code Spec Gate",
-  "version": "2.11.1",
+  "version": "2.11.2",
   "description": "Before coding a GitHub issue, filing a bug or feature spec, or starting a multi-issue epic, falsify every assumption against live source, git history, and open/closed issues first so you never implement stale, duplicate, or wrong-premise tickets. Enforces pre-code prescription checks, explicit API/schema contracts, duplicate sweeps, and six-stage epic validation via gh and git.",
   "icon": "assets/icon.png",
   "author": {

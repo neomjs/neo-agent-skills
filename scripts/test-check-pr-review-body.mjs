@@ -54,6 +54,7 @@ function withMetrics(body, profile = 'Maintenance') {
     return body
         .replaceAll('[0-100]', '92')
         .replace('[Quick Win | Heavy Lift | Maintenance | Architectural Pillar]', profile)
+        .replace('[profile]', profile)
 }
 
 /** @summary Replaces exactly one occurrence, failing the suite when the fixture no longer carries it. */
@@ -222,6 +223,7 @@ mutate('Round 2 Approve+Follow-Up omits final metrics', swap(round2, '**Status:*
 mutate('Round 2 Approved drops Final Evaluation Metrics heading', round2, body => swap(body, ROUND_2_FINAL_METRICS_HEADING, '### Metrics'), {}, 'TEMPLATE_INCOMPLETE', null);
 mutate('Round 2 Approved writes numeric effort profile', round2, body => swap(body, '`[EFFORT_PROFILE]`**: Maintenance', '`[EFFORT_PROFILE]`**: 90'), {}, 'TEMPLATE_INCOMPLETE', '[EFFORT_PROFILE]: Quick Win | Heavy Lift | Maintenance | Architectural Pillar');
 mutate('Round 2 Approved writes out-of-range numeric metric', round2, body => swap(body, '`[ARCH_ALIGNMENT]`**: 92', '`[ARCH_ALIGNMENT]`**: 101'), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]: an integer score from 0 to 100');
+mutate('Round 2 keeps the metric tag and score in one table cell', round2, body => swap(body, '`[ARCH_ALIGNMENT]`**: 92', '`[ARCH_ALIGNMENT]`** | 92'), {}, 'TEMPLATE_INCOMPLETE', '[ARCH_ALIGNMENT]: an integer score from 0 to 100');
 mutate('Round 2 declares no Status', round2, body => swap(body, '**Status:** Approved', 'Status: approved'), {}, 'ROUND_2_STATE_INCOHERENT', 'no `**Status:**` line');
 mutate('Round 2 declares Request Changes', round2, body => swap(body, '**Status:** Approved', '**Status:** Request Changes'), {}, 'ROUND_2_STATE_INCOHERENT', 'a `**Status:**` outside the legal Round-2 set');
 mutate('Round 2 approves an open item', stillOpen, body => swap(body, '**Status:** Comment', '**Status:** Approved'), {}, 'ROUND_2_STATE_INCOHERENT', 'a STILL_OPEN row under a Status other than Comment');

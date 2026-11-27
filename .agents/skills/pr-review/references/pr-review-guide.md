@@ -61,7 +61,7 @@ Every score needs a concrete, non-tautological reason.
 
 ### 3.3 Final Metrics on Approval
 
-Round 1 full reviews score all 7 metrics (`6` `0–100` integers + categorical `[EFFORT_PROFILE]`). Round-2 `Comment` (`STILL_OPEN`) omits metrics. Round-2 `Approved` / `Approve+Follow-Up` emits `### 📊 Final Evaluation Metrics` recording final post-fix values across all 7 tags (or `N/A — Cycle 1 was Micro-Review` when Cycle 1 used §6.4), without opening new findings.
+Score the approved head for Brain ingestion using §3.1’s deciles. Revisit each deduction against the fixes. Round-2 `Approved` / `Approve+Follow-Up` records six integers and `[EFFORT_PROFILE]` under `### 📊 Final Evaluation Metrics`. After §6.4 use `N/A — Cycle 1 was Micro-Review`. `Comment` omits metrics.
 
 ## 4. Graph Ingestion Tags
 Critical feedback MUST carry regex-ingested tags (matched into Agent OS memory during REM sleep):
