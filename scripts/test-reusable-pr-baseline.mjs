@@ -145,7 +145,7 @@ export function validateReusablePrBaseline(source) {
           guardsJob       = jobSource(source, 'guards'),
           guardsRunStep   = stepSource(guardsJob, 'Run the declared guards'),
           guardsBodyStep  = stepSource(guardsJob, 'Read the live pull-request body'),
-          guardsBaseStep  = stepSource(guardsJob, 'Base commit in history'),
+          guardsBaseStep  = stepSource(guardsJob, 'Verify the guard checkout base'),
           step            = name => stepSource(baselineJob, name),
           headStep        = step('Checkout exact caller head'),
           baseFetchStep   = step('Fetch pull-request base'),
@@ -279,9 +279,10 @@ export function validateReusablePrBaseline(source) {
               ['guards pull-request grant', /^    permissions:\n      contents: read\n      pull-requests: read\n/m, guardsJob],
               ['guards full history', /^\s*fetch-depth: 0\s*$/m, guardsJob],
               ['guards checkout keeps no credential', /^\s*persist-credentials: false\s*$/m, guardsJob],
-              ['guards base check from the pull request', BASE_SHA, guardsBaseStep],
-              ['guards base in history', /^\s*run: git cat-file -e "\$\{BASE_SHA\}\^\{commit\}"\s*$/m, guardsBaseStep],
-              ['guards base SHA', BASE_SHA, guardsRunStep],
+              ['guards base step id', /^ {8}id: guard-base$/m, guardsBaseStep],
+              ['guards base check uses the event head', /^ {10}EVENT_PR_HEAD_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \}\}$/m, guardsBaseStep],
+              ['guards base in history', /^ {10}git cat-file -e "\$\{base_sha\}\^\{commit\}"$/m, guardsBaseStep],
+              ['guards base SHA', /^ {10}BASE_SHA: \$\{\{ steps\.guard-base\.outputs\.base_sha \}\}$/m, guardsRunStep],
               ['guards body file', /^\s*BODY_FILE: \$\{\{ runner\.temp \}\}\/pr-body\.md\s*$/m, guardsRunStep]
           ];
 
@@ -515,6 +516,9 @@ export function validateReusablePrBaseline(source) {
     if (guardsJob.indexOf('      - name: Read the live pull-request body\n') > guardsJob.indexOf('        run: npm ci\n')) {
         failures.push('guards body read after the caller install')
     }
+    if (guardsJob.indexOf(guardsBaseStep) > guardsJob.indexOf('        run: npm ci\n')) {
+        failures.push('guards base verified after the caller install')
+    }
     if (/^    needs:/m.test(guardsJob)) failures.push('guards job waits on another job');
 
     const guardsRun    = guardsRunStep.match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '',
@@ -652,6 +656,73 @@ assert.deepEqual(validateReusablePrBaseline(source), [], 'canonical reusable wor
         'pr-base bash step admits authorized release_base PR');
     assert.equal(execStep({ACTUAL_BASE: 'main', PR_AUTHOR: 'neo-gemini-maryam', RELEASE_ACTORS: '["tobiu"]'}).status, 1,
         'pr-base bash step refuses unauthorized release_base PR');
+}
+
+// A rerun compares the caller's synthetic merge checkout with its newer first parent.
+{
+    const guardsJob = jobSource(source, 'guards'),
+          baseStep  = stepSource(guardsJob, 'Verify the guard checkout base'),
+          script    = (baseStep.match(/        run: \|\n((?:          .*\n|\n)+)/)?.[1] || '').replace(/^ {10}/gm, ''),
+          dir       = mkdtempSync(join(tmpdir(), 'neo-guards-merge-base-')),
+          output    = join(dir, 'step-output'),
+          env       = {...process.env, GITHUB_OUTPUT: output};
+
+    try {
+        const git = (...args) => {
+            const result = spawnSync('git', args, {cwd: dir, encoding: 'utf8'});
+
+            assert.equal(result.status, 0, result.stderr);
+            return result.stdout.trim()
+        };
+
+        git('init', '-q');
+        git('config', 'user.name', 'Baseline fixture');
+        git('config', 'user.email', 'fixture@example.com');
+
+        const tree      = git('write-tree'),
+              eventBase = git('commit-tree', tree, '-m', 'Original event base'),
+              inherited = 'inherited.txt';
+
+        writeFileSync(join(dir, inherited), 'change already on base\n');
+        git('add', inherited);
+
+        const baseTree  = git('write-tree'),
+              base      = git('commit-tree', baseTree, '-p', eventBase, '-m', 'Newer base'),
+              head      = git('commit-tree', tree, '-p', eventBase, '-m', 'PR head'),
+              merge     = git('commit-tree', baseTree, '-p', base, '-p', head, '-m', 'PR merge'),
+              octopus   = git('commit-tree', baseTree, '-p', base, '-p', head, '-p', eventBase, '-m', 'Three parents'),
+              run       = (checkout, eventHead = head) => {
+                  git('update-ref', 'HEAD', checkout);
+                  writeFileSync(output, '');
+
+                  return spawnSync('bash', ['-e', '-o', 'pipefail', '-c', script], {
+                      cwd: dir, encoding: 'utf8', env: {...env, BASE_SHA: eventBase, EVENT_PR_HEAD_SHA: eventHead}
+                  })
+              };
+
+        const result = run(merge);
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(readFileSync(output, 'utf8'), 'base_sha=' + base + '\n', 'publish the first parent, even with a stale event base');
+        for (const sha of [merge, base, head]) assert.ok(result.stdout.includes(sha), 'log the checked-out commit and both parents');
+
+        const runner   = stepSource(guardsJob, 'Run the declared guards').match(/ {10}node - <<'EOF'\n([\s\S]*?)\n {10}EOF\n/)?.[1],
+              runGuard = baseSha => spawnSync(process.execPath, ['-'], {
+                  cwd: dir, encoding: 'utf8', input: runner,
+                  env: {...process.env, BASE_SHA: baseSha, GITHUB_STEP_SUMMARY: join(dir, 'summary.md'),
+                      GUARDS: JSON.stringify([{name: 'inherited growth', run: 'git diff --exit-code "$BASE_SHA" HEAD -- inherited.txt'}])}
+              });
+
+        assert.ok(runner, 'extract the consumer guard runner');
+        assert.equal(runGuard(readFileSync(output, 'utf8').trim().split('=')[1]).status, 0, 'consumer sees no growth inherited from base');
+        assert.equal(runGuard(eventBase).status, 1, 'stale event base would charge the PR for inherited growth');
+
+        for (const [checkout, eventHead] of [[merge, eventBase], [merge, ''], [head, head], [octopus, head]]) {
+            assert.equal(run(checkout, eventHead).status, 1, 'reject an unverified checkout');
+            assert.equal(readFileSync(output, 'utf8'), '', 'do not publish a base for an unverified checkout')
+        }
+    } finally {
+        rmSync(dir, {force: true, recursive: true})
+    }
 }
 
 // ── The guide lint receives the caller's skip list whole, or the step fails before it runs ──────
@@ -1131,10 +1202,11 @@ expectMutationFailure('guards check out a shallow history', source,
     inJob('guards', '          fetch-depth: 0\n', ''),
     'missing guards full history');
 expectMutationFailure('guards skip the base check', source,
-    inStep('Base commit in history', 'run: git cat-file -e "${BASE_SHA}^{commit}"', 'run: true', 'guards'),
+    inStep('Verify the guard checkout base', 'git cat-file -e "${base_sha}^{commit}"', 'true', 'guards'),
     'missing guards base in history');
-expectMutationFailure('guards run without the base', source,
-    inStep('Run the declared guards', '          BASE_SHA: ${{ github.event.pull_request.base.sha }}\n', '', 'guards'),
+expectMutationFailure('guards use the stale event base', source,
+    inStep('Run the declared guards', '          BASE_SHA: ${{ steps.guard-base.outputs.base_sha }}\n',
+        '          BASE_SHA: ${{ github.event.pull_request.base.sha }}\n', 'guards'),
     'missing guards base SHA');
 expectMutationFailure('guards run without the body', source,
     inStep('Run the declared guards', '          BODY_FILE: ${{ runner.temp }}/pr-body.md\n', '', 'guards'),

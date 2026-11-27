@@ -466,10 +466,24 @@ jobs:
 
             require('node:fs').writeFileSync(process.env.BODY_FILE, data.body ?? '');
 
-      - name: Base commit in history
+      # A body edit can rerun the same PR head against a newer synthetic merge than the event base.
+      - name: Verify the guard checkout base
+        id: guard-base
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git cat-file -e "${BASE_SHA}^{commit}"
+          EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          parents=$(git rev-list --parents -n 1 HEAD)
+          read -r checkout_sha base_sha head_sha extra_parents <<< "$parents"
+          printf 'Guard checkout %s with parents [%s %s %s]; event PR head %s\n' \
+            "$checkout_sha" "$base_sha" "$head_sha" "$extra_parents" "$EVENT_PR_HEAD_SHA"
+
+          if [[ -z "$base_sha" || -z "$head_sha" || "$head_sha" != "$EVENT_PR_HEAD_SHA" || -n "$extra_parents" ]]; then
+            echo '::error::Guard checkout must be a two-parent merge of the event PR head.'
+            exit 1
+          fi
+
+          git cat-file -e "${base_sha}^{commit}"
+          printf 'base_sha=%s\n' "$base_sha" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v7
         with:
@@ -484,7 +498,7 @@ jobs:
       # Each guard inherits the step's environment, `BASE_SHA` and `BODY_FILE` included.
       - name: Run the declared guards
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ steps.guard-base.outputs.base_sha }}
           BODY_FILE: ${{ runner.temp }}/pr-body.md
           GUARDS: ${{ inputs.guards }}
         run: |
