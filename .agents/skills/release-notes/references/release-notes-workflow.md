@@ -9,7 +9,7 @@ Release notes are a **public narrated release**, ingested twice: humans read the
 **Release notes are an EPIC with multiple iterations BY DESIGN — never a single-pass PR.** (Operator directive, 2026-07-02: "multiple iterations ARE needed"; the single-pass v13.1 first draft empirically carried environment errors, one-lens narration, and downplaying.)
 
 1. File the notes epic per `/epic-create` (problem + intended solution; leaves link incrementally). The authoring leaf, the cut-mechanics leaf, and refinement leaves are separate one-PR deliverables.
-2. **Iteration 1 merges deliberately early** with an explicit in-document banner: `> **Status: iteration 1 of N — a deliberately-early draft.** …` — the draft is a living staging document on dev.
+2. **Iteration 1 merges deliberately early** with an explicit in-document banner: `> **Status: iteration 1 of N — a deliberately-early draft.** …` — the draft is a living staging document on dev. The operator reads its TL;DR and chapter titles then, while direction is cheapest to change.
 3. Mining-driven refinement leaves (one per arc/chapter, §3) iterate until the §7 cut-readiness checklist passes. The final iteration removes the banner.
 4. **Do NOT downplay the release.** A window's headline arc is not its extent; scope framing that shrinks the release ("X is just a Y release") fails review. When the true magnitude is fuzzy (unfiled work, §2), say so honestly rather than rounding down.
 
@@ -42,16 +42,18 @@ Ticket titles do not tell stories; sessions do. Per candidate hero chapter, run 
 - A chapter without mining behind it is a candidate, not a chapter. The hero chapters are the arcs where the mining came back DEEP (real friction, real reversals, numbers) — not the arcs that sound impressive.
 - War-Story chapters additionally mine the incident's forensics tickets end-to-end (Symptom → Investigation → Culprit → Fix-the-class, §5).
 
-## §4 Per-claim V-B-A — `MACHINE-ENFORCEABLE-CANDIDATE` (review-side)
+## §4 Truth is the floor: anchors while drafting, one fact check at the end — `MACHINE-ENFORCEABLE-CANDIDATE` (review-side)
 
-Every factual claim in the notes carries a verifiable source (ticket, PR, commit, measurement artifact) — verified against the PRIMARY at writing time, not from memory. The v13.1 iteration-1 miss ledger is the empirical anchor for the claim classes that slip:
+Every factual claim in the notes carries a verifiable source (ticket, PR, commit, measurement artifact), copied from the PRIMARY while drafting, never from memory. The notes are pitch text, so V-B-A class (3) sets the cadence: a seat that did not draft the claims runs one consolidated fact check at the final version (`.agents/skills/blog-post/references/blog-authoring-guide.md` §2), never a sweep per revision (#438). The v13.1 iteration-1 miss ledger is the empirical anchor for the claim classes that slip:
 
 - **Environment claims:** the `#13999` incident was the LOCAL Agent OS deployment; the draft framed it cloud. Self-healing is cloud-MOTIVATED, not cloud-LIMITED. State deployment environments only from the incident's primary tickets.
 - **Scope claims:** "X is an <subsystem> release" / "Y unchanged" require a window-wide check, not a headline-epic check (§2).
 - **Designation claims:** `Release Type` / `Stability` lines are operator-confirmed, never inferred (v13.0 shipped as "Release Candidate"; the successor's designation is the operator's call).
 - Reviewer side: the cross-family review (§5) spot-verifies claims against their anchors; an unanchored claim is a Required Action, not a nit.
 
-## §5 The quality bar — the precedent SET — `DISCIPLINE-ONLY`
+## §5 The quality bar — impact first, then the precedent SET — `DISCIPLINE-ONLY`
+
+**Impact is the bar, and truth its floor (§4).** Before any structure, the draft answers the operator's questions (2026-11-23): does it sell us well; does it excite human and model readers; does it generate traction; which industry friction does it resolve; what do we stand for? The deciding one: **would a reader share it?** The whole-note verdict (`CONVERTS`, `ACCURATE_BUT_DEAD`, `OFF_AUDIENCE`), the cold read with its share question and the undersell flavors come from the blog bar (`blog-authoring-guide.md` §3–§4), applied to the note as a whole; a minor passes the same read at its scoped size.
 
 The measurable precedent is a **set, never one file** — majors AND minors both carry the bar (operator, 2026-07-02: the minors are "really really good quality too… I would not limit the bar to just one example"). Read them in the corpus (`neomjs/github-content-sync`, `neo/release-notes/chunk-N/`):
 
@@ -71,8 +73,8 @@ The measurable precedent is a **set, never one file** — majors AND minors both
 - **Named case studies with real timelines** — bug names as narrative hooks, actual clock-time, verbatim human moments in `> [!NOTE]` sidebars; Mermaid before/afters (render-verified before merge — `guide-authoring-bar` §3; a staging note renders at `#/news/releases/<id>` once a local `releases.json` lists it) and code-in-action where the story is architectural.
 - **Continuity / upgrade path** — what existing users do, what defers to the next release (minors use the drop-in-replacement idiom where true, per `v11.24.0.md`).
 - **Full Changelog tail** — the grouped enumeration closes the document (regenerated at cut boundary, §2), after the narrative, never instead of it.
-- **Bans:** changelog-dump structure (grouped appendices SUPPORT the story via the §2 script, never replace it); unsourced superlatives; scope-shrinking framings (§1, rule 4).
-- **Cross-family review before every iteration merges** — same rule as blog posts; authority-adjacent claims reviewed LAST per the blog bar.
+- **Bans:** changelog-dump structure (grouped appendices SUPPORT the story via the §2 script, never replace it); a link ledger woven through the chapters (anchors gather in the Full Changelog tail; a chapter links what a reader would open); caveats scattered across chapters (they sit in Honest bounds); unsourced superlatives; scope-shrinking framings (§1, rule 4).
+- **Cross-family review before every iteration merges** — same rule as blog posts: it opens with the whole-note verdict, read beside the previous major, and answers the impact questions; authority-adjacent claims reviewed LAST per the blog bar.
 
 ## §6 Publish-flow mechanics — the staging-file lifecycle — `MACHINE-ENFORCEABLE-CANDIDATE`
 
@@ -90,10 +92,11 @@ The authoring surface is **`.github/RELEASE_NOTES/v{version}.md`** in the engine
 
 The notes epic's final iteration passes when:
 
-- [ ] Iteration banner removed; content reviewed cross-family at final head
+- [ ] The operator read the TL;DR and chapter titles at iteration 1 (§1, rule 2)
+- [ ] Iteration banner removed; content reviewed cross-family at final head, the review opening with `CONVERTS` read beside the previous major (§5)
 - [ ] `Release Type` / `Stability` designations operator-confirmed (§4)
 - [ ] Scope numbers regenerated at the cut boundary (§2 re-run) and reconciled in-document
-- [ ] Every claim anchor-verified (§4); the numbers-verify sweep (the `#14327` class, "sequence LAST") has run against the final text
+- [ ] Every claim anchored (§4); the one consolidated fact check, the numbers-verify sweep included (the `#14327` class, "sequence LAST"), has run once against the final text
 - [ ] Read at `#/news/releases/<id>` beside the previous note: it renders and keeps that note's sections; a dropped one is a decision on the notes epic (13.4.0 lost `What you can try`)
 - [ ] The staging note is `.github/RELEASE_NOTES/v{version}.md` for the version passed to `--version`
 - [ ] `publish.mjs prepare --version <semver> --rehearse --ticket <prep leaf> --body-file <body>` passes
