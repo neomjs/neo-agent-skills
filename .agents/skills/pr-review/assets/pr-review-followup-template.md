@@ -91,15 +91,17 @@ OR
 
 ### 📊 Metrics Delta
 
-Self-contained values are required (never bare `unchanged from prior review`) so graph ingestion reads every follow-up review standalone.
+Give Brain ingestion a self-contained assessment of this head using the [scoring rubric](../references/pr-review-guide.md#3-structural-evaluation-metrics). Cite the repair when a deduction changes and the remaining evidence when it still applies.
 
-*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Current score + reason (e.g. `92 - up from 60: boundary fixed`)]
-*   **`[CONTENT_COMPLETENESS]`**: [0-100] - [Current score + reason]
-*   **`[EXECUTION_QUALITY]`**: [0-100] - [Current score + reason]
-*   **`[PRODUCTIVITY]`**: [0-100] - [Current score + reason]
-*   **`[IMPACT]`**: [0-100] - [Current score + reason]
-*   **`[COMPLEXITY]`**: [0-100] - [Current score + reason]
-*   **`[EFFORT_PROFILE]`**: [Quick Win | Heavy Lift | Maintenance | Architectural Pillar] - [Current profile + reason]
+| Metric and value | Evidence at this head |
+|---|---|
+| **`[ARCH_ALIGNMENT]`**: [0-100] | [Reason] |
+| **`[CONTENT_COMPLETENESS]`**: [0-100] | [Reason] |
+| **`[EXECUTION_QUALITY]`**: [0-100] | [Reason] |
+| **`[PRODUCTIVITY]`**: [0-100] | [Reason] |
+| **`[IMPACT]`**: [0-100] | [Reason] |
+| **`[COMPLEXITY]`**: [0-100] | [Reason] |
+| **`[EFFORT_PROFILE]`**: [profile] | [Why this profile fits the whole PR] |
 
 ---
 

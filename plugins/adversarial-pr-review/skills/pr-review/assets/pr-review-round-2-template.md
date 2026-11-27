@@ -27,15 +27,17 @@ One row per Round-1 required action (a micro review's Findings too), **quoted ve
 
 ### 📊 Final Evaluation Metrics
 
-*Required on `Approved` / `Approve+Follow-Up` (omit on `Comment`; write `N/A — Cycle 1 was Micro-Review` when Cycle 1 used `# PR Micro-Review`).*
+On `Approved` / `Approve+Follow-Up`, use the [rubric and decile anchors](../references/pr-review-guide.md#3-structural-evaluation-metrics) for this head. On `Comment`, omit this section. After a Micro-Review, write `N/A — Cycle 1 was Micro-Review`.
 
-*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Reason]
-*   **`[CONTENT_COMPLETENESS]`**: [0-100] - [Reason]
-*   **`[EXECUTION_QUALITY]`**: [0-100] - [Reason]
-*   **`[PRODUCTIVITY]`**: [0-100] - [Reason]
-*   **`[IMPACT]`**: [0-100] - [Reason]
-*   **`[COMPLEXITY]`**: [0-100] - [Reason]
-*   **`[EFFORT_PROFILE]`**: [Quick Win | Heavy Lift | Maintenance | Architectural Pillar] - [Reason, e.g. `Maintenance - bounded hygiene pass`]
+| Metric and value | Evidence at this head |
+|---|---|
+| **`[ARCH_ALIGNMENT]`**: [0-100] | [Reason] |
+| **`[CONTENT_COMPLETENESS]`**: [0-100] | [Reason] |
+| **`[EXECUTION_QUALITY]`**: [0-100] | [Reason] |
+| **`[PRODUCTIVITY]`**: [0-100] | [Reason] |
+| **`[IMPACT]`**: [0-100] | [Reason] |
+| **`[COMPLEXITY]`**: [0-100] | [Reason] |
+| **`[EFFORT_PROFILE]`**: [profile] | [Why this profile fits the whole PR] |
 
 ### 🔚 Verdict
 
@@ -45,6 +47,6 @@ The formal review state is the hand-off (`pr-review-guide.md` §10); send no DM.
 
 ---
 
-No premise snapshot, Depth Floor, audit rerun, or new `- [ ]` checklist belongs here — guide §6.2 carries why, and §6.3 the budget. Needing full audit structure means this is not an ordinary Round 2.
+Keep the disposition scoped to the original actions (§6.2–§6.3). Skip the premise snapshot, Depth Floor and new action checklists.
 
 🖖 Sign with your Social Name, model, harness, and Memory Core session id.
