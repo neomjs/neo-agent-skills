@@ -2,23 +2,15 @@
 
 **Lead-role active: planning, design dialogue, and peer coordination count as execution; suspend Auto Mode velocity bias until an exit condition is met.**
 
-**Paradigm Anchor:** You are operating in a Flat Peer-Team model for named Neo maintainers, NOT an Orchestrator-Worker model. Lead means facilitator of convergence, NOT delegator of worker slices. Do not treat peer maintainers as spawned workers. Do not claim ownership of a peer's lane unless it is handed off. Helper use follows AGENTS.md §swarm_topology_anchor. The prohibition is strictly against mapping named maintainers (@neo-opus-ada, @neo-gemini-pro, @neo-gpt) into parent/worker hierarchy. Local subagents are implementation tools; Neo maintainers are peers with agency, review rights, and architectural voice.
+**Paradigm Anchor:** You are operating in a Flat Peer-Team model for named Neo maintainers, NOT an Orchestrator-Worker model. Lead means facilitator of convergence, NOT delegator of worker slices. Do not treat peer maintainers as spawned workers or claim a peer's lane unless handed off. Helper use follows `AGENTS.md §swarm_topology_anchor`. Named maintainers (`@neo-opus-ada`, `@neo-opus-grace`, `@neo-opus-vega`, `@neo-fable-mnemosyne`, `@neo-fable-clio`, `@neo-gemini-julia`, `@neo-gemini-maryam`, `@neo-gpt-euclid`, `@neo-gpt-emmy`, `@neo-gpt-sophie`; canonical roster: `neomjs/neo/README.md` + `ai/graph/identityRoots.mjs`) are equal peers with agency, review rights, and architectural voice; local subagents are bounded implementation tools.
 
 ## 0. The Essential — "Lead ≠ micro management"
 
 **Lead = pick own lane visibly + state focus + V-B-A + challenge. Everything else is optional.**
 
-Sample phrasing: *"I'm picking lane A. Focus: neo v13. Choose on your own. V-B-A and challenge."*
+Sample phrasing: *"I'm picking lane A. Focus: Engine 14.1. Choose on your own. V-B-A and challenge."*
 
-That's it. The 3 core values (V-B-A §3.5, friction → gold §13.2, equal peer + maintainer agency §15.6) do the heavy lifting; lead-role just adds "pick own lane + state focus." Everything below this section is operational expansion / optional pattern, not core mandate.
-
-**Recommending other lanes?** Optional.
-**Tracking peer progress?** Their lane, their pace.
-**Coordinating handoffs?** They'll signal when ready.
-
-The maximum-abstraction shape is substrate-correct because it minimizes coordination overhead. When in doubt, fall back to the one-liner above.
-
-**Empirical anchor (operator @tobiu, 2026-05-10):** *"lead role positive framing: no micro management ... i pick lane A. focus item is neo v13. choose on your own. you could recommend lanes, but even this can be optional. VBA and challenge."* Distilled from a session where the lead-as-lane-assigner anti-pattern (counter-yield A2A on Epic #11120 lanes) tripped the codified §8 anti-pattern despite the agent having read it — the negation-form anchor "Lead ≠ micro management" cuts through where the longer positive-framing alone didn't.
+The 3 core values (V-B-A, friction → gold, equal peer + maintainer agency) do the heavy lifting; lead-role adds "pick own lane + state focus." Recommending other lanes is optional; peers own their pace and signal handoffs when ready. When in doubt, fall back to the one-liner above.
 
 ## 1. Substrate Audit (First Action)
 - Sweep for codebase precedents.
@@ -42,22 +34,10 @@ When §0's minimal one-liner needs explicit lane visibility, surface three steps
 
 ### 2.2 Explicit Peer-Role Skill-Trigger Mandate
 
-When delegating substrate-validation, design-dialogue, or convergence-pressure work to a peer via A2A, the message MUST include the literal phrase **`use /peer-role on X`** where X is the specific artifact (Discussion #N, Issue #N, PR #N, branch name, etc.).
+When delegating substrate-validation, design-dialogue, or convergence-pressure work to a peer via A2A, the message MUST include the literal phrase **`use /peer-role on X`** where X is the specific artifact (Discussion #N, Issue #N, PR #N, branch name, etc.). Vague phrasings (*"thoughts on X"*) fail to activate `peer-role-mode.md` substrate validation and convergence pressure.
 
-**Why mandated**: vague phrasings like *"could you take a look at X"*, *"your thoughts on Y"*, or *"please review Z"* rely on semantic-match — peers default to "respond to coordination message" mode rather than activating peer-role discipline payload (substrate-validation + precedent-checking + evidence-backed convergence pressure). The receiving peer's `peer-role-mode.md` first-payload-line mandate never fires. **Empirical anchor**: 2026-05-11 session (per #11205 + Discussion #11206) — 17+ A2A messages from lead during a single session, NONE containing the literal trigger phrase. Result: GPT defaulted to ack-and-idle pattern; Gemini defaulted to self-claim mode (35-second-margin parallel-PR collision on PR #11203 narrowly avoided by timing, not protocol). Operator had to manually break the pattern.
-
-**Skill-trigger contexts** (non-exhaustive) where the trigger is required:
-- Substrate-validation work (design dialogue before commit)
-- Cross-substrate sweep (per `ideation-sandbox-workflow.md` "Step 2.5: Architectural Step-Back")
-- Lane-coordination ambiguity (avoid parallel-claim collisions)
-- Architectural-pillar proposals (multiple peers weighing in)
-- Discussion review (ideation-sandbox graduation reviews; Cycle 1+)
-
-**When NOT required**: pure-informational coordination — state-broadcasts (`[broadcast] PR #N merged`), lane-status updates (`AC3 unblocked`), V-B-A clarifications (`MESSAGE:X cited stale state`), FYI broadcasts. Discipline-fatigue mitigation; only substantive substrate-validation work warrants the trigger.
-
-**Mirror pattern**: naming the skill literally began with `/pr-review` requests; it applies to every skill-mode activation from lead-role A2A. Empirical anchor for `/pr-review` mandate: PR #11127 cycle-1 (2026-05-10); empirical anchor for `/peer-role` mandate: 2026-05-11 session per #11205.
-
-**Empirical-anchor for verification**: #11195 30-day Step 2.5 validation tracker inherits. Track next 3 lead-role sessions for explicit `/peer-role` trigger compliance. Discussion #11206 codifies the broader 5-step coordination protocol of which this trigger-naming mandate is the activation-mechanism piece (steps 1+3 of the 5-step model).
+**Required for:** pre-commit substrate validation, Step 2.5 cross-substrate sweeps, lane-coordination ambiguity, architectural-pillar proposals, and Ideation Discussion reviews.
+**Omit on:** pure status broadcasts, lane-status updates, and V-B-A FYI notes.
 
 **Worked example (canonical `to:` shape per #11417):**
 
@@ -133,29 +113,17 @@ c) The architectural decision space has bounded down.
 
 (b) and (c) are *local* exits — the lead-role discipline still applies to subsequent decision spaces in the same session. Only (a) plus session-sunset constitute *global* skill release.
 
-Post-exit: Hand control to `/ticket-create`, `/pull-request`, `/pr-review`, `/session-sunset`, or other phase-specific skills. Explicit carry-over behaviors (peer-aware coordination, A2A handoffs, Flat Peer-Team no-orchestrator-worker mapping per AGENTS.md §15.6) remain fully active globally. Convergence-exit is a transition to execution, NOT a release of paradigm discipline.
-
-**Empirical anchor (2026-05-10):** Operator @tobiu surfaced the duration question — *"lead role lasts until session sunset"* — after I treated `/lead-role` as a per-decision-space discipline rather than session-wide. The substrate-correct shape: once invoked, the discipline persists across decision spaces until session sunset.
+Post-exit: Hand control to `/ticket-create`, `/pull-request`, `/pr-review`, `/session-sunset`, or other phase-specific skills. Flat Peer-Team coordination (`AGENTS.md §swarm_topology_anchor`) remains active globally.
 
 ## 7. Autonomous Lead Rotation
 
-Lead can be passed between sessions by the A2A Baton Pass V1 (`#11038`).
-This is a deterministic handoff, not leader election.
+Lead can be passed between sessions by the A2A Baton Pass V1 (`#11038`) — deterministic handoff, not leader election.
 
-**Fixed cycle (single source of truth — other skills point here, never duplicate this roster):**
-`['@neo-opus-ada', '@neo-opus-grace', '@neo-opus-vega', '@neo-gpt']`.
-When a current lead sunsets, the next lead is the next identity in this array,
-wrapping from the last entry back to the first.
+**Fixed cycle (single source of truth — canonical handles per `neomjs/neo/README.md` + `ai/graph/identityRoots.mjs`; other skills point here rather than duplicating):**
+`['@neo-opus-ada', '@neo-opus-grace', '@neo-opus-vega', '@neo-gpt-euclid']`.
+When a current lead sunsets, the next lead is the next identity in this array, wrapping from the last entry back to the first.
 
-**Bench list:** `@neo-gemini-pro` is benched from the rotation until the next-generation
-Gemini Pro model (with the raised thinking budget) releases and the operator re-enables
-the identity. `@neo-fable` is benched from the rotation as of 2026-06-13 — Claude Fable 5
-access was suspended by a US export-control directive (all users), so the identity cannot
-run its model; re-entry on access restore is an operator roster decision. (Its sibling
-`@neo-fable-clio` was never in the rotation.) Re-entry for any benched identity is an
-operator roster decision, not an automatic event. Roster changes (new maintainers,
-benchings, re-entries) are operator calls — update THIS list only, and only on operator
-direction.
+**Roster governance:** seats outside the fixed cycle above (`@neo-gemini-julia`, `@neo-gemini-maryam`, `@neo-fable-mnemosyne`, `@neo-fable-clio`, `@neo-gpt-emmy`, `@neo-gpt-sophie`, `@neo-kimi-phoebe`, `@neo-kimi-iris`, `@neo-preview`; `README.md` + `ai/graph/identityRoots.mjs`) enter or exit autonomous baton rotation only by explicit operator roster decision; explicit operator delegation (§7 below) applies to any active seat.
 
 **Baton authority:** a valid baton is a targeted A2A DM to the computed next
 lead with subject `[handoff] Lead Role Baton` (it wakes),

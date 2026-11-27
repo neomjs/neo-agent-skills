@@ -85,20 +85,10 @@ Before review prose/tags, read the [reference-hygiene guide](https://github.com/
 
 10% AC/scope layer: binding on close-target overclaim; never a premise, placement, or diff-verdict substitute.
 
-Audit every magic close target in the PR body (the `Commit authorship` check refuses any in commit messages): `Closes #N`, `Resolves #N`, `Fixes #N` (case-insensitive). For Neo agent / `ai` PRs, only newline-isolated `Resolves #N` may close a delivered leaf ticket; `Refs` / `Related` are non-closing extras. Epics are invalid close-targets.
-
 <!-- trigger: close-target over-claim or lint/body contradiction -> read ./close-target-remediation.md -->
-
-**Reviewer-side check:**
-
-1. Parse the PR body; do not trust `closingIssuesReferences` alone.
-2. Flag missing PR-body `Resolves #N`, any `Closes` / `Fixes`, prose-embedded/comma-separated targets, or any target carrying `epic`.
-3. Required fix: isolate one delivered leaf as `Resolves #M`; move broad/epic refs to `Related:`; split broad work into leaf subs.
-4. While an AC is open, any named expiry blocks close — future, due or lapsed alike; satisfy or restate it. Deferred *authoring* (text not yet written) blocks with no expiry too: the close destroys the only pointer. Open-ended *verification* closes normally.
-
 <!-- trigger: restatement RA on author-foreign close-target text (here + §5.4) -> read ../../pull-request/references/foreign-ticket-restatement.md (outcome, never method) -->
 
-Out of scope: valid leaf targets, non-closing `Related:` / `Refs:` / `Part of`. Provenance: `#9999` auto-close, `#10323` duplicate chain.
+Parse the PR body directly (never `closingIssuesReferences` alone): Neo agent/`ai` PRs carry exactly one standalone `Resolves #N` targeting a delivered non-`epic` leaf (`Closes`/`Fixes`, commit-body close keywords, and prose/comma-bundled targets fail; use `Related:`/`Refs` for epics/context). Unmet ACs with any expiry or deferred authoring block close; open-ended post-merge verification closes normally.
 
 ### 5.3 MCP-Tool-Description Budget Audit
 
@@ -127,16 +117,9 @@ Template fidelity is mandatory in both cycle shapes: copy selected-template head
 
 > **Symmetry Note:** authors are mandated to reject structurally non-adherent reviews (`pull-request-workflow.md §6.4`) — substantive content without template structure is not merge-eligible.
 
-### 6.1 Full Review Template
+### 6.1 Full Review Template & Post-Round-1 Contract Reset
 
-Use the full template from `.agents/skills/pr-review/assets/pr-review-template.md` when any of these apply:
-
-- **Cycle 1 / cold-cache review:** first substantive review of the PR.
-- **Fresh session bootstrap / ungrounded handoff:** prior-cycle context is not loaded in this window.
-- **Major delta:** the author changed scope, touched new architectural surfaces, added new files outside the prior Required Actions, or rewrote the PR body/close-target semantics enough that prior scores are no longer reliable.
-- **Lost anchor recovery:** no usable prior review commentId, author response commentId, or last-known anchor exists.
-
-Missing context, broadened scope or lost anchors earn the full template; a merely narrow delta never does.
+Use `.agents/skills/pr-review/assets/pr-review-template.md` on Cycle 1, fresh-session/lost-anchor recovery, or broadened scope. **Single-path successor-PR rule (`Option D`):** if a PR's close-target contract changes (e.g. prototype → public `src/**` class) or a reviewed class is rewritten from scratch after Round 1, supersede the PR via `Drop+Supersede` and open a new PR (`PullRequestService.mjs` counts `CHANGES_REQUESTED` per family across one PR's heads, so rewriting in place starves Cycle-1 review); routine bounded repairs stay in §6.2 Round-2 disposition.
 
 ### 6.2 Round 2 Is Disposition + Final Approval Metrics
 
@@ -152,45 +135,11 @@ If a commentId-scoped A2A arrives without prior-cycle context, that is a cold-ca
 
 ### 6.3 Budgeted Review Closure
 
-At RC2 or >24KB, load the payload. **A demand round is a `CHANGES_REQUESTED`** — a `COMMENT` never opens an action packet, on create or edit, so the round cannot be avoided by picking another state; an `APPROVED` follow-up must cite an independent owning issue, never a coordinate or this PR's close target. On post-cutover PRs the budget is **one such round per canonical reviewer family**, counted across heads, authors, and retractions; a second is refused, as is a reviewer it cannot classify. Another family keeps its round; grandfathered PRs stay judgment-only. Continue with the disposition, `APPROVED`, Maintainer Polish, A+FU, or terminal D+S; size is cost, never scope.
-
-**Payload Pointer:** `view_file` `.agents/skills/pr-review/audits/review-cost-circuit-breaker.md`
-
-**Byte gate:** this file + the payload load together; their combined size is gated. Owner: `COMBINED_BUDGETS` in `neo-agent-skills:scripts/lint-skill-corpus.mjs` §3b — run `npm run lint` from a Skills checkout before growing either. It is **enforced in CI**, not advisory: `.github/workflows/skill-corpus.yml:41` runs `node scripts/lint-skill-corpus.mjs --base "$BASE"` on every PR, so a breach reds there rather than waiting to be noticed.
+One `CHANGES_REQUESTED` demand round per canonical reviewer family across a PR's heads (`COMMENT` never opens actions; `APPROVED` follow-ups cite an independent issue). At RC2 or >24KB, load `.agents/skills/pr-review/audits/review-cost-circuit-breaker.md` and close via disposition `APPROVED`, Maintainer Polish, A+FU, or terminal D+S. Combined byte cap with that payload is CI-enforced (`COMBINED_BUDGETS` in `scripts/lint-skill-corpus.mjs`).
 
 ### 6.4 Micro-Review — the blast-scaled Cycle-1 light path
 
-`# PR Micro-Review` — the asset
-(`assets/pr-review-micro-review-template.md`) carries the anchors and classes.
-No premise snapshot, no Depth Floor, no audits, no metric tags on any cycle. Its
-Round 2 is §6.2's, quoting the `- [ ]` Findings.
-
-**When — a rule, not a permission.** A MECHANICAL PR *gets* this shape — no
-architectural concept to teach (test-only / config-leaf / behavior-preserving /
-docs / receipt refresh) — at ANY size, or a micro/contained diff. Paying the full
-floor on a mechanical diff is itself the violation. **Never** for ADR / new
-abstraction / consumed contract / security / migration / fleet-critical zones
-(`ai/` config, release path, workflows, substrate, MCP contracts, journey-surface
-design pages) — full form regardless of size. A journey-surface design page also
-gets the stranger read (words a stranger lacks · decisions asked · the one next
-action per frame) by a seat that neither wrote nor will build it; the walker is
-never the builder or the designer. Authors signal with `Micro-review eligible: <class> — <why>`;
-**the reviewer owns the classification**, but a full-form escalation must NAME
-the concept-bearing surface or never-zone earning it. The reverse never happens.
-**Keys on mechanical-vs-concept-bearing, never size:** a 400-line receipt refresh
-→ MICRO; a 3-line ADR row → FULL.
-**Scales rigour, never register (`#97`):** `good first issue` means newcomer-ready,
-not mechanical. Classify the actual change; greet newcomers in either form,
-including the micro form's `Opening` slot.
-
-**Bounded-repair guard (Grace, #17527):** a repair stays micro-eligible only
-while it touches NO site the prescription did not name — a widened repair is a
-new change wearing a repair's eligibility: full form.
-
-Three light paths, three axes: Micro-Review = this section's cycle-1 FORM;
-§6.1's **micro-change exception** = the cross-family MERGE gate (`chore` < 20
-lines / pure docs); **Micro-Delta** = mechanical-hygiene RESIDUE after semantics
-cleared.
+Mechanical Cycle-1 PRs (test-only, config-leaf, behavior-preserving, docs, receipt refresh, or micro/contained diffs with no new concept) MUST use `assets/pr-review-micro-review-template.md` (`# PR Micro-Review`; no premise snapshot, Depth Floor, audits, or metrics; Round 2 quotes `- [ ]` Findings via §6.2). **Never** use for ADRs, new abstractions, consumed contracts, classes with new `static config`, security, migrations, or fleet-critical zones (`ai/` config, release, workflows, substrate, MCP contracts, journey-surface design pages — which also require an independent stranger read). Reviewer owns classification; escalating an author's `Micro-review eligible:` claim requires naming the concept-bearing surface; greeting `#97` newcomers applies in either form, and repairs widening past named sites revert to full form. Distinct from §6.1's micro-change merge exception and Micro-Delta residue.
 
 ## 7. Depth Floor — Preventing Rubber-Stamp Approvals
 
@@ -226,7 +175,7 @@ Authors own existing non-CI coverage for touched surfaces. Reviewers validate re
 
 ### 7.5.1 Core-Idiom Audit
 
-Diffs that create, mutate, resolve or destroy Neo instances, manage reactive state, or touch a module owning instances, resources or effects (any dir; test fixtures and test apps too, the idiom references the next seat copies): load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
+Diffs touching Neo classes, instances, reactive state, or stateful owners (any dir, including tests) MUST complete the template's `🏛️ Neo Class & Engine Idiom Audit` (line-1 pre-branch Contract Ledger timestamp check first) and load [`../audits/core-idiom-audit.md`](../audits/core-idiom-audit.md).
 
 ### 7.5.2 Identity-Claim Audit
 

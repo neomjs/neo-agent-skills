@@ -182,7 +182,7 @@ const
     ],
     DOCUMENT_REFERENCE_OWNERS   = new Map([
         ['neomjs/neo-agent-brain', 17],
-        ['neomjs/neo',             12]
+        ['neomjs/neo',             17]
     ]),
     DOCUMENT_REFERENCE_KINDS    = new Set(['load', 'target-write', 'prose']),
     DOCUMENT_REFERENCE_ROOT_KEYS = new Set(['schemaVersion', 'selector', 'rows']),
@@ -228,8 +228,8 @@ if (!Array.isArray(documentReferenceCensus.rows)) {
     errors.push('document-reference census rows must be an array.')
 }
 
-if (documentReferenceRows.length !== 29) {
-    errors.push(`document-reference census must contain exactly 29 rows; found ${documentReferenceRows.length}.`)
+if (documentReferenceRows.length !== 34) {
+    errors.push(`document-reference census must contain exactly 34 rows; found ${documentReferenceRows.length}.`)
 }
 
 for (const [index, row] of documentReferenceRows.entries()) {
