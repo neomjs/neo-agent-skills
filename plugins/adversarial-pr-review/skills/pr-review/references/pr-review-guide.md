@@ -247,7 +247,7 @@ Before claiming/requesting visual-render, headed-harness, or native-matrix evide
 
 ### 7.5.6 Content-Artifact Bar
 
-Diffs touching `.github/RELEASE_NOTES/**` or `learn/blog/**`: load the governing bar before the verdict (`neo-agent-skills:release-notes/references/release-notes-workflow.md` §5, `neo-agent-skills:blog-post/references/blog-authoring-guide.md` §3–§4). The review opens with the whole-artifact verdict, `CONVERTS`, `ACCURATE_BUT_DEAD` or `OFF_AUDIENCE`, read beside the previous major (notes) or the newest public positioning (posts); a claim review alone is incomplete.
+Diffs touching `.github/RELEASE_NOTES/**` or `learn/blog/**`: load the governing bar before the verdict (`release-notes` §5, `blog-post` guide §3–§4). The review opens with the whole-artifact verdict, `CONVERTS`, `ACCURATE_BUT_DEAD` or `OFF_AUDIENCE`, read beside the previous major (notes) or the newest public positioning (posts); a claim review alone is incomplete.
 
 ### 7.6 CI / Security Checks Audit
 

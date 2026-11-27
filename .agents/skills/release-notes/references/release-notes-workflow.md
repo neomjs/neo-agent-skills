@@ -9,7 +9,7 @@ Release notes are a **public narrated release**, ingested twice: humans read the
 **Release notes are an EPIC with multiple iterations BY DESIGN — never a single-pass PR.** (Operator directive, 2026-07-02: "multiple iterations ARE needed"; the single-pass v13.1 first draft empirically carried environment errors, one-lens narration, and downplaying.)
 
 1. File the notes epic per `/epic-create` (problem + intended solution; leaves link incrementally). The authoring leaf, the cut-mechanics leaf, and refinement leaves are separate one-PR deliverables.
-2. **Iteration 1 merges deliberately early** with an explicit in-document banner: `> **Status: iteration 1 of N — a deliberately-early draft.** …` — the draft is a living staging document on dev. The operator reads its TL;DR and chapter titles then, while direction is cheapest to change.
+2. **Iteration 1 merges deliberately early** with an explicit in-document banner: `> **Status: iteration 1 of N — a deliberately-early draft.** …` — the draft is a living staging document on dev.
 3. Mining-driven refinement leaves (one per arc/chapter, §3) iterate until the §7 cut-readiness checklist passes. The final iteration removes the banner.
 4. **Do NOT downplay the release.** A window's headline arc is not its extent; scope framing that shrinks the release ("X is just a Y release") fails review. When the true magnitude is fuzzy (unfiled work, §2), say so honestly rather than rounding down.
 
@@ -44,7 +44,7 @@ Ticket titles do not tell stories; sessions do. Per candidate hero chapter, run 
 
 ## §4 Truth is the floor: anchors while drafting, one fact check at the end — `MACHINE-ENFORCEABLE-CANDIDATE` (review-side)
 
-Every factual claim in the notes carries a verifiable source (ticket, PR, commit, measurement artifact), copied from the PRIMARY while drafting, never from memory. The notes are pitch text, so V-B-A class (3) sets the cadence: a seat that did not draft the claims runs one consolidated fact check at the final version (`.agents/skills/blog-post/references/blog-authoring-guide.md` §2), never a sweep per revision (#438). The v13.1 iteration-1 miss ledger is the empirical anchor for the claim classes that slip:
+Every factual claim in the notes carries a verifiable source (ticket, PR, commit, measurement artifact), copied from the PRIMARY while drafting, never from memory. The notes are pitch text, so V-B-A class (3) sets the cadence: a seat that did not draft the claims runs one consolidated fact check at the final version (`blog-authoring-guide.md` §2), never a sweep per revision (#438). The v13.1 iteration-1 miss ledger is the empirical anchor for the claim classes that slip:
 
 - **Environment claims:** the `#13999` incident was the LOCAL Agent OS deployment; the draft framed it cloud. Self-healing is cloud-MOTIVATED, not cloud-LIMITED. State deployment environments only from the incident's primary tickets.
 - **Scope claims:** "X is an <subsystem> release" / "Y unchanged" require a window-wide check, not a headline-epic check (§2).
@@ -92,7 +92,7 @@ The authoring surface is **`.github/RELEASE_NOTES/v{version}.md`** in the engine
 
 The notes epic's final iteration passes when:
 
-- [ ] The operator read the TL;DR and chapter titles at iteration 1 (§1, rule 2)
+- [ ] The operator read the TL;DR and chapter titles at iteration 1, while direction was cheap to change
 - [ ] Iteration banner removed; content reviewed cross-family at final head, the review opening with `CONVERTS` read beside the previous major (§5)
 - [ ] `Release Type` / `Stability` designations operator-confirmed (§4)
 - [ ] Scope numbers regenerated at the cut boundary (§2 re-run) and reconciled in-document
