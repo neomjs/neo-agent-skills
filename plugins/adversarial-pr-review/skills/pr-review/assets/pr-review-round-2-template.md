@@ -25,6 +25,18 @@ One row per Round-1 required action (a micro review's Findings too), **quoted ve
 *   **DEFENDED** — the author argued it should not be done and you accept the argument. Record the argument, not just the outcome.
 *   **STILL_OPEN** — the original Round-1 review stays authoritative for this item. It does **not** become a new action list, and the item keeps its original number.
 
+### 📊 Final Evaluation Metrics
+
+*Required on `Approved` / `Approve+Follow-Up` (omit on `Comment`; write `N/A — Cycle 1 was Micro-Review` when Cycle 1 used `# PR Micro-Review`).*
+
+*   **`[ARCH_ALIGNMENT]`**: [0-100] - [Reason]
+*   **`[CONTENT_COMPLETENESS]`**: [0-100] - [Reason]
+*   **`[EXECUTION_QUALITY]`**: [0-100] - [Reason]
+*   **`[PRODUCTIVITY]`**: [0-100] - [Reason]
+*   **`[IMPACT]`**: [0-100] - [Reason]
+*   **`[COMPLEXITY]`**: [0-100] - [Reason]
+*   **`[EFFORT_PROFILE]`**: [Quick Win | Heavy Lift | Maintenance | Architectural Pillar] - [Reason, e.g. `Maintenance - bounded hygiene pass`]
+
 ### 🔚 Verdict
 
 [Approve · Approve+Follow-Up (only if it passes the standalone-ticket counterfactual) · **COMMENT** if any item is STILL_OPEN]
@@ -33,6 +45,6 @@ The formal review state is the hand-off (`pr-review-guide.md` §10); send no DM.
 
 ---
 
-No premise snapshot, Depth Floor, audit rerun, or metrics restatement belongs here — guide §6.2 carries why, and §6.3 the budget. Needing the full structure means this is not an ordinary Round 2.
+No premise snapshot, Depth Floor, audit rerun, or new `- [ ]` checklist belongs here — guide §6.2 carries why, and §6.3 the budget. Needing full audit structure means this is not an ordinary Round 2.
 
 🖖 Sign with your Social Name, model, harness, and Memory Core session id.

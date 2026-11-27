@@ -10,7 +10,7 @@ This payload closes expensive review loops without turning discussion size into 
 
 ## The second round
 
-Ordinary Round 2 is a disposition over the Round-1 actions — `../assets/pr-review-round-2-template.md`. No premise snapshot, no audit rerun, no metrics restatement; a `STILL_OPEN` item keeps the original review authoritative and never mints a new action list. Fresh findings there are accepted risk.
+Ordinary Round 2 dispositions the Round-1 actions — `../assets/pr-review-round-2-template.md` (with final metrics on approval, guide §3.3). No premise snapshot or audit rerun; a `STILL_OPEN` item keeps the original review authoritative and mints no action list. Fresh findings are accepted risk.
 
 Use the Micro-Delta template (`../assets/pr-review-micro-delta-template.md`) only when semantic review is complete and the remaining surface is mechanical-hygiene or metadata-drift.
 

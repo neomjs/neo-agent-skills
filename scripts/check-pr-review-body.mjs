@@ -39,12 +39,43 @@ export const REVIEW_TEMPLATES = Object.freeze({
 });
 
 /**
- * The seven evaluation-metric tags of the full and follow-up templates. Named in a diagnostic when missing.
+ * The six numeric `0-100` evaluation-metric tags shared across full, Round-2 approval, and follow-up templates.
+ * @member {String[]} NUMERIC_METRIC_ANCHORS
+ */
+export const NUMERIC_METRIC_ANCHORS = Object.freeze([
+    '[ARCH_ALIGNMENT]', '[CONTENT_COMPLETENESS]', '[EXECUTION_QUALITY]', '[PRODUCTIVITY]', '[IMPACT]', '[COMPLEXITY]'
+]);
+
+/**
+ * The categorical effort-profile tag shared across full, Round-2 approval, and follow-up templates.
+ * @member {String} EFFORT_PROFILE_ANCHOR
+ */
+export const EFFORT_PROFILE_ANCHOR = '[EFFORT_PROFILE]';
+
+/**
+ * Valid categorical labels for `[EFFORT_PROFILE]`.
+ * @member {String[]} EFFORT_PROFILES
+ */
+export const EFFORT_PROFILES = Object.freeze(['Quick Win', 'Heavy Lift', 'Maintenance', 'Architectural Pillar']);
+
+/**
+ * The seven evaluation-metric tags of the full, Round-2 approval, and follow-up templates. Named in a diagnostic when missing.
  * @member {String[]} VISIBLE_METRIC_ANCHORS
  */
-export const VISIBLE_METRIC_ANCHORS = Object.freeze([
-    '[ARCH_ALIGNMENT]', '[CONTENT_COMPLETENESS]', '[EXECUTION_QUALITY]', '[PRODUCTIVITY]', '[IMPACT]', '[COMPLEXITY]', '[EFFORT_PROFILE]'
-]);
+export const VISIBLE_METRIC_ANCHORS = Object.freeze([...NUMERIC_METRIC_ANCHORS, EFFORT_PROFILE_ANCHOR]);
+
+/**
+ * Heading of the Round-2 final-metrics section, required on `Approved` and `Approve+Follow-Up` dispositions.
+ * Checked silently like `SKELETON_ANCHORS`.
+ * @member {String} ROUND_2_FINAL_METRICS_HEADING
+ */
+export const ROUND_2_FINAL_METRICS_HEADING = '### 📊 Final Evaluation Metrics';
+
+/**
+ * Explicit Round-2 metric exemption when Cycle 1 used `# PR Micro-Review`.
+ * @member {RegExp} ROUND_2_MICRO_EXEMPTION
+ */
+export const ROUND_2_MICRO_EXEMPTION = /^[ \t]*(?:[-*][ \t]+)?N\/A[ \t]*(?:—|--|-)[ \t]*Cycle[ \t]+1[ \t]+was[ \t]+Micro-Review\.?[ \t]*$/i;
 
 /**
  * Structural substrings checked and never named. A body rebuilt from a diagnostic carries what the diagnostic
@@ -243,6 +274,64 @@ function isPlaceholder(value) {
     return !value || /^\[.*\]$/.test(value) || /^(?:todo|tbd)$/i.test(value)
 }
 
+const
+    NUMERIC_VALUE_AFTER_TAG = /^[\s*_`]*:[\s*_`]*(\d{1,3})(?:\s*\/\s*100)?(?!\.\d)(?=$|[^0-9A-Za-z_])/,
+    EFFORT_PROFILE_AFTER_TAG = new RegExp(`^[\\s*_\`]*:[\\s*_\`]*(${EFFORT_PROFILES.join('|')})(?=$|[^0-9A-Za-z_])`);
+
+/**
+ * @summary Linearly extracts the normalized `**Status:**` value from a Round-2 body, or null when absent.
+ * @param {String} body
+ * @returns {String|null}
+ */
+function round2DeclaredStatus(body) {
+    const status = body.split(LINE_BREAK).find(line => line.startsWith(ROUND_2_STATUS) && line.length > ROUND_2_STATUS.length);
+
+    return status ? status.slice(ROUND_2_STATUS.length).replace(/[*_`]/g, '').trim().toLowerCase() : null
+}
+
+/**
+ * @summary Validates the 6 numeric `0-100` scores and 1 categorical `[EFFORT_PROFILE]` across unfenced lines.
+ * @param {String[]} lines Unfenced body lines.
+ * @returns {String[]} Static diagnostic strings (never echoing reviewer prose).
+ */
+export function metricMisses(lines) {
+    const misses = [];
+
+    for (const tag of NUMERIC_METRIC_ANCHORS) {
+        const matching = lines.filter(line => line.includes(tag));
+
+        if (!matching.length) {
+            misses.push(tag);
+            continue
+        }
+
+        const valid = matching.some(line => {
+            const after = line.slice(line.indexOf(tag) + tag.length),
+                  match = NUMERIC_VALUE_AFTER_TAG.exec(after);
+
+            return Boolean(match && !/^0\d/.test(match[1]) && Number(match[1]) <= 100)
+        });
+
+        !valid && misses.push(`${tag}: an integer score from 0 to 100`)
+    }
+
+    const profileLines = lines.filter(line => line.includes(EFFORT_PROFILE_ANCHOR));
+
+    if (!profileLines.length) {
+        misses.push(EFFORT_PROFILE_ANCHOR)
+    } else {
+        const validProfile = profileLines.some(line => {
+            const after = line.slice(line.indexOf(EFFORT_PROFILE_ANCHOR) + EFFORT_PROFILE_ANCHOR.length);
+
+            return EFFORT_PROFILE_AFTER_TAG.test(after)
+        });
+
+        !validProfile && misses.push(`${EFFORT_PROFILE_ANCHOR}: ${EFFORT_PROFILES.join(' | ')}`)
+    }
+
+    return misses
+}
+
 /**
  * @summary A shape's template misses, split into what a diagnostic may name and what it never names.
  * @param {String} body
@@ -251,12 +340,13 @@ function isPlaceholder(value) {
  */
 export function templateMisses(body, shape) {
     const
+        lines     = unfencedLines(body),
         visible   = [],
         invisible = SKELETON_ANCHORS[shape].filter(anchor => !body.includes(anchor)),
         lineWith  = label => body.split('\n').find(line => line.includes(label)) || '';
 
     if (shape === 'canonical' || shape === 'follow-up') {
-        visible.push(...VISIBLE_METRIC_ANCHORS.filter(anchor => !body.includes(anchor)));
+        visible.push(...metricMisses(lines));
         visible.push(...PREMISE_ANCHORS.filter(({token}) => !body.includes(token)).map(({label}) => label));
         invisible.push(...INVISIBLE_STRUCTURE_ANCHORS.filter(anchor => !body.includes(anchor)))
     }
@@ -278,9 +368,16 @@ export function templateMisses(body, shape) {
     }
 
     if (shape === 'round-2') {
+        const declared = round2DeclaredStatus(body);
+
         !ROUND_1_REFERENCE.test(body) && visible.push('Round-1 Review ID: the review this round dispositions');
         !ROUND_2_ROW.test(body)       && visible.push('a disposition row: ADDRESSED, DEFENDED or STILL_OPEN');
-        CHECKLIST_ITEM.test(body)     && visible.push('no new action checklist: prior actions live in the disposition table')
+        CHECKLIST_ITEM.test(body)     && visible.push('no new action checklist: prior actions live in the disposition table');
+
+        if (declared === 'approved' || declared === 'approve+follow-up') {
+            !body.includes(ROUND_2_FINAL_METRICS_HEADING) && invisible.push(ROUND_2_FINAL_METRICS_HEADING);
+            !lines.some(line => ROUND_2_MICRO_EXEMPTION.test(line)) && visible.push(...metricMisses(lines))
+        }
     }
 
     return {invisible, visible}
@@ -293,11 +390,9 @@ export function templateMisses(body, shape) {
  */
 export function round2Incoherence(body) {
     // A line scan, not a `[ \t]*(.+?)[ \t]*$` capture, which backtracks quadratically on a run of tabs
-    const status = body.split(LINE_BREAK).find(line => line.startsWith(ROUND_2_STATUS) && line.length > ROUND_2_STATUS.length);
+    const declared = round2DeclaredStatus(body);
 
-    if (!status) return 'no `**Status:**` line';
-
-    const declared = status.slice(ROUND_2_STATUS.length).replace(/[*_`]/g, '').trim().toLowerCase();
+    if (declared === null) return 'no `**Status:**` line';
 
     if (!ROUND_2_LEGAL_STATUSES.includes(declared)) return 'a `**Status:**` outside the legal Round-2 set';
 
