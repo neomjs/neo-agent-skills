@@ -10,6 +10,8 @@
 
 **Findings:** [None, or a short `- [ ]` list — discharged in-place, never deferred.]
 
+**Outstanding verified inherited CI defects, including after retries:** [none / #N each]
+
 - **Origin Session ID:** [Memory Core UUID]
 - [ ] PR body attribution: `Authored by …` is the only attribution; no harness-appended session backlink.
 
