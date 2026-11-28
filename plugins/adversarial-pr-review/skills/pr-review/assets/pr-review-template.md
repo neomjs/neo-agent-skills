@@ -168,7 +168,7 @@ Expand only when triggered; omit otherwise:
 *(Required per guide §7.5.)*
 
 - [ ] Execution evidence: exact-head required CI [green at `<SHA>` / N/A — docs-template] + non-CI surface receipt [present / gap flagged / N/A]
-- [ ] Reds on earlier attempts or outside the diff: [none / #N each]
+- [ ] Outstanding verified inherited CI defects, including after retries: [none / #N each]
 - [ ] AC-table cross-read: `## AC Evidence`, `## Test Evidence`, and `## Post-Merge Validation` agree
 - [ ] Reviewer falsifier & test location: [N/A / command + result; canonical spec path verified]
 
